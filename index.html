@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>釜山行 2026 · 萌萌旅遊管家 V11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@700;900&family=Quicksand:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --bg: #FDFBF7; --card: #FFFFFF; --navy: #1A2B3C; --coral: #FF8E7E;
+    --teal: #78B3B6; --gold: #D4B08C; --gray: #A8A29D; --line: rgba(0,0,0,0.05);
+    --btn-orange: linear-gradient(135deg, #FFAD99 0%, #FF8E7E 100%);
+    --glass: rgba(255, 255, 255, 0.85);
+  }
+
+  /* --- 基礎設定與 Q 彈設計 --- */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { 
+    font-family: 'Quicksand', 'Noto Sans TC', sans-serif; 
+    background-color: var(--bg); color: var(--navy); 
+    margin: 0; padding: 0; font-size: 18.5px; line-height: 1.4;
+    transition: background-color 0.4s;
+  }
+  
+  /* --- 響應式佈局控制 --- */
+  .app-container { 
+    max-width: 520px; margin: 0 auto; min-height: 100vh; 
+    padding-bottom: 120px; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+    position: relative; 
+  }
+  body.tablet-view .app-container { max-width: 1000px; }
+  body.tablet-view .grid-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start; }
+  body.tablet-view .full-width { grid-column: 1 / -1; }
+
+  /* --- 懸浮視角切換按鈕 --- */
+  .view-switcher {
+    position: fixed; top: 20px; right: 20px; z-index: 2000;
+    background: var(--glass); backdrop-filter: blur(15px);
+    padding: 6px; border-radius: 25px; display: flex; gap: 4px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1); border: 1px solid white;
+  }
+  .switch-btn {
+    border: none; background: none; padding: 8px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 800; color: var(--gray); cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: 0.3s;
+  }
+  .switch-btn.active { background: var(--navy); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+  /* --- 可愛標題樣式 --- */
+  .cute-title { 
+    font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 38px; margin: 0; 
+    letter-spacing: -1px; text-shadow: 3px 3px 0px rgba(255, 142, 126, 0.15);
+  }
+
+  /* --- 頁面標頭 --- */
+  .hero-header { 
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%), url('https://images.unsplash.com/photo-1625899139925-57f71ba783b4?w=1000&q=80') center/cover;
+    height: 280px; padding: 30px; display: flex; flex-direction: column; justify-content: flex-end; color: white; border-radius: 0 0 50px 45px;
+  }
+  .page-header { padding: 50px 25px 15px; }
+
+  /* --- 卡片設計 --- */
+  .card { background: var(--card); border-radius: 40px; padding: 28px; margin-bottom: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.03); border: 1px solid var(--line); }
+  .section-title { font-family: 'Noto Sans TC'; font-size: 23px; font-weight: 900; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  
+  /* --- 算帳分頁按鈕 --- */
+  .calc-tabs { display: flex; background: #EEE9E0; border-radius: 25px; padding: 6px; margin-bottom: 25px; }
+  .tab-btn-sub { flex: 1; border: none; background: none; padding: 12px; border-radius: 20px; font-weight: 900; font-size: 16px; color: #888; cursor: pointer; transition: 0.3s; }
+  .tab-btn-sub.active { background: #fff; color: var(--navy); box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+
+  /* --- 輸入區 (九宮格鍵盤) --- */
+  .input-label { font-size: 14px; color: var(--gray); font-weight: 800; margin-bottom: 10px; display: block; padding-left: 10px; }
+  .input-field { position: relative; margin-bottom: 25px; }
+  .input-field input { 
+    width: 100%; border: 3px solid #F3F1ED; border-radius: 25px; padding: 22px 20px 20px 65px; 
+    font-size: 28px; font-family: 'Quicksand'; font-weight: 700; outline: none; background: #FAFBFC; transition: 0.3s; color: var(--navy); 
+  }
+  .input-field input:focus { border-color: var(--gold); background: #fff; transform: scale(1.02); }
+  .input-field .pre { position: absolute; left: 24px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 700; font-size: 28px; }
+
+  /* 智慧微調器 */
+  .smart-stepper { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+  .step-btn { width: 60px; height: 60px; border-radius: 22px; border: none; background: #EEE9E0; color: var(--gold); cursor: pointer; font-size: 30px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step-input-box { flex: 1; position: relative; }
+  .step-input-box input { width: 100%; border: 3px solid #F3F1ED; border-radius: 25px; padding: 15px; text-align: center; font-family: 'Quicksand'; font-weight: 700; font-size: 26px; outline: none; }
+  .step-unit { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--gray); font-weight: 900; }
+
+  /* 最終大卡片 */
+  .final-res-card { background: var(--navy); color: #fff; border-radius: 50px; padding: 45px 30px; text-align: center; box-shadow: 0 25px 50px rgba(26,43,60,0.25); border: 2px solid rgba(255,255,255,0.05); }
+  .final-res-card .twd { font-family: 'Quicksand'; font-size: 56px; font-weight: 700; color: var(--coral); margin: 8px 0; }
+  .final-res-card .krw { font-family: 'Quicksand'; font-size: 20px; opacity: 0.7; font-weight: 500; }
+
+  /* --- 底部導航列 --- */
+  .bottom-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 94%; height: 88px; background: rgba(255,255,255,0.96); backdrop-filter: blur(20px); border-radius: 45px; box-shadow: 0 15px 45px rgba(0,0,0,0.12); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 10px; border: 1px solid rgba(255,255,255,0.5); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: #B0B9C1; border: none; background: none; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+  .nav-btn.active { color: var(--coral); }
+  .nav-btn .icon-wrap { font-size: 24px; margin-bottom: 6px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .nav-btn.active .icon-wrap { transform: translateY(-8px) scale(1.3); }
+
+  /* 列表項目 */
+  .list-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1.5px solid #F9F6F0; }
+  .list-item:last-child { border-bottom: none; }
+  input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--coral); cursor: pointer; }
+
+  .layout-btn-inner { background: var(--navy); color: white; border: none; padding: 10px 18px; border-radius: 15px; font-size: 13px; font-weight: 800; cursor: pointer; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* 提示框 */
+  .step-preview { background: #F9F6F0; border-radius: 30px; padding: 22px; margin-bottom: 20px; border: 2px dashed #E2DCCF; }
+  .step-row { display: flex; justify-content: space-between; font-size: 17px; margin-bottom: 12px; }
+  .step-row b { font-family: 'Quicksand'; color: var(--teal); font-size: 20px; }
+</style>
+</head>
+<body class="mobile-view">
+
+<!-- 懸浮切換器 -->
+<div class="view-switcher">
+    <button class="switch-btn active" id="btn-m" onclick="toggleView('mobile')">
+        <i class="fa-solid fa-mobile-screen-button"></i> 手機
+    </button>
+    <button class="switch-btn" id="btn-t" onclick="toggleView('tablet')">
+        <i class="fa-solid fa-tablet-screen-button"></i> 平板
+    </button>
+</div>
+
+<div class="app-container">
+  
+  <!-- 1. 總覽 🏠 -->
+  <section class="panel active grid-panel" id="p-overview">
+    <div class="hero-header full-width">
+        <span style="font-size: 14px; opacity: 0.9; letter-spacing: 3px; font-weight:900;">BUSAN · 2026</span>
+        <h1 class="cute-title" style="color: white;">釜山行旅</h1>
+        <p style="margin:10px 0 0; opacity:0.9; font-size: 18px; font-weight:700;">11.10 - 11.14 (5天4夜)</p>
+    </div>
+    <div class="card" style="margin-top:25px;">
+        <div class="section-title"><span>✈️</span> 航班資訊</div>
+        <div style="display:flex; justify-content:space-between; font-weight:900;"><span>IT606 去程 (TPE)</span><span>16:50</span></div>
+        <div style="display:flex; justify-content:space-between; margin-top:15px; font-weight:900;"><span>IT607 回程 (PUS)</span><span>20:50</span></div>
+    </div>
+    <div class="card">
+        <div class="section-title"><span>💰</span> 今日實時匯率</div>
+        <div id="overview-rate" style="font-size: 24px; font-weight: 700; color: var(--teal); font-family: 'Quicksand';">正在同步銀行資訊...</div>
+        <p style="font-size: 13px; color: var(--gray); margin-top: 5px;">資料來源：ExchangeRate API</p>
+    </div>
+  </section>
+
+  <!-- 2. 準備 🎒 -->
+  <section class="panel grid-panel" id="p-prep">
+    <div class="page-header full-width"><h1 class="cute-title">出發準備 🎒</h1><p>Ready to go!</p></div>
+    <div class="card">
+        <div class="section-title"><span>✔️</span> 必要檢查</div>
+        <div class="list-item"><input type="checkbox"> <span>護照正本 (效期6個月)</span></div>
+        <div class="list-item"><input type="checkbox"> <span>K-ETA 入境申請</span></div>
+        <div class="list-item"><input type="checkbox"> <span>WOWPASS / 交通卡</span></div>
+    </div>
+    <div class="card">
+        <div class="section-title"><span>📦</span> 打包清單</div>
+        <div class="list-item"><input type="checkbox"> <span>韓國轉接頭 (兩圓孔)</span></div>
+        <div class="list-item"><input type="checkbox"> <span>11月保暖大衣/外套</span></div>
+    </div>
+  </section>
+
+  <!-- 3. 行程 🗓️ -->
+  <section class="panel" id="p-itinerary">
+    <div class="page-header"><h1 class="cute-title">每日行程 🗓️</h1><p>Your Adventure Route</p></div>
+    <div class="card"><p>點選下方日期切換開始規劃精彩的釜山探險...</p></div>
+  </section>
+
+  <!-- 4. 支出 🧾 -->
+  <section class="panel" id="p-expense">
+    <div class="page-header"><h1 class="cute-title">旅行支出 🧾</h1><p>Wallet Manager</p></div>
+    <div class="final-res-card"><div class="twd" id="total-twd">NT$ 0</div><div class="krw" id="total-krw">≈ ₩ 0</div></div>
+  </section>
+
+  <!-- 5. 算帳 🛍️ -->
+  <section class="panel grid-panel" id="p-calc">
+    <div class="page-header full-width"><h1 class="cute-title">購物算帳 🛍️</h1><p id="rate-msg">1 TWD ≈ 42.8 KRW</p></div>
+    
+    <div class="calc-tabs full-width">
+        <button class="tab-btn-sub active" onclick="switchCalc('simple', this)">快速換算 💱</button>
+        <button class="tab-btn-sub" onclick="switchCalc('shop', this)">折扣試算 🏷️</button>
+    </div>
+
+    <!-- 換算分頁 -->
+    <div id="calc-simple-box" class="full-width">
+        <div class="card">
+            <div class="input-label">韓國韓元 KRW (₩)</div>
+            <div class="input-field">
+                <span class="pre">₩</span>
+                <input type="text" id="simp-krw" inputmode="decimal" placeholder="0" oninput="runSimp('krw')">
+            </div>
+            <div style="text-align:center; color:var(--gold); margin:-10px 0 10px; font-size:26px;"><i class="fa-solid fa-arrows-up-down"></i></div>
+            <div class="input-label">台灣台幣 TWD ($)</div>
+            <div class="input-field">
+                <span class="pre">$</span>
+                <input type="text" id="simp-twd" inputmode="decimal" placeholder="0" oninput="runSimp('twd')">
+            </div>
+        </div>
+    </div>
+
+    <!-- 試算分頁 -->
+    <div id="calc-shop-box" class="full-width" style="display:none;">
+        <div class="card">
+            <div class="input-label">商品標價 (KRW)</div>
+            <div class="input-field">
+                <span class="pre">₩</span>
+                <input type="text" id="shop-ori" inputmode="decimal" value="0" oninput="runShop()">
+            </div>
+            
+            <div class="input-label">折扣優惠內容 (<span id="unit-tag">₩</span>)</div>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="layout-btn-inner" id="btn-fix" onclick="setMode('fixed')">減金額 ₩</button>
+                <button class="layout-btn-inner" id="btn-per" onclick="setMode('percent')">打折 %</button>
+            </div>
+            <div class="smart-stepper">
+                <button class="step-btn" onclick="adj('disc',-1)">-</button>
+                <div class="step-input-box">
+                    <input type="text" id="shop-disc" inputmode="decimal" value="0" oninput="runShop()">
+                    <span class="step-unit" id="step-u">₩</span>
+                </div>
+                <button class="step-btn" onclick="adj('disc',1)">+</button>
+            </div>
+
+            <div class="input-label">預計退稅比例 (%)</div>
+            <div class="smart-stepper">
+                <button class="step-btn" onclick="adj('tax',-0.5)">-</button>
+                <div class="step-input-box">
+                    <input type="text" id="shop-tax" inputmode="decimal" value="7.0" oninput="runShop()">
+                    <span class="step-unit">%</span>
+                </div>
+                <button class="step-btn" onclick="adj('tax',0.5)">+</button>
+            </div>
+        </div>
+
+        <div class="step-preview">
+            <div class="step-row"><span>折扣後金額：</span><b id="res-after-disc">₩ 0</b></div>
+            <div class="step-row"><span>退稅金額預估：</span><b id="res-tax-val">₩ 0</b></div>
+            <div class="step-row"><span>退稅後最終價：</span><b id="res-final-krw">₩ 0</b></div>
+        </div>
+
+        <div class="final-res-card">
+            <div style="font-size:16px; opacity:0.8; font-weight:700; margin-bottom:8px;">結帳台幣大約為</div>
+            <div class="twd" id="final-twd">NT$ 0</div>
+            <div class="krw" id="final-krw">≈ ₩ 0</div>
+        </div>
+    </div>
+  </section>
+
+  <!-- 底部導航 -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showP('p-overview',this)"><div class="icon-wrap">🏠</div><span>總覽</span></button>
+    <button class="nav-btn" onclick="showP('p-prep',this)"><div class="icon-wrap">🎒</div><span>準備</span></button>
+    <button class="nav-btn" onclick="showP('p-itinerary',this)"><div class="icon-wrap">🗓️</div><span>行程</span></button>
+    <button class="nav-btn" onclick="showP('p-expense',this)"><div class="icon-wrap">🧾</div><span>支出</span></button>
+    <button class="nav-btn" onclick="showP('p-calc',this)"><div class="icon-wrap">🛍️</div><span>算帳</span></button>
+  </nav>
+
+</div>
+
+<script>
+  let rateTWD = 42.8; 
+  let mode = 'fixed';
+
+  // --- 1. 切換手機/平板模式 ---
+  function toggleView(view) {
+    const btnM = document.getElementById('btn-m');
+    const btnT = document.getElementById('btn-t');
+    if (view === 'tablet') {
+        document.body.classList.add('tablet-view');
+        btnT.classList.add('active');
+        btnM.classList.remove('active');
+    } else {
+        document.body.classList.remove('tablet-view');
+        btnM.classList.add('active');
+        btnT.classList.remove('active');
+    }
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  // --- 2. 智慧匯率抓取 ---
+  async function fetchRates() {
+    try {
+      const res = await fetch("https://open.er-api.com/v6/latest/TWD");
+      const data = await res.json();
+      if(data.result === "success") {
+        rateTWD = data.rates.KRW;
+        const msg = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`;
+        document.getElementById('overview-rate').innerText = msg;
+        document.getElementById('rate-msg').innerText = msg;
+      }
+    } catch(e) { 
+        document.getElementById('overview-rate').innerText = "1 TWD ≈ 42.8 KRW (離線)";
+    }
+  }
+
+  // --- 3. 格式化工具 ---
+  function f(v) { return isNaN(v) ? "0" : Math.round(v).toLocaleString(); }
+  function p(s) { return parseFloat(s.toString().replace(/,/g, '')) || 0; }
+
+  // --- 4. 頁面導航 ---
+  function showP(id, b) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    b.classList.add('active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  // --- 5. 算帳分頁切換 ---
+  function switchCalc(type, btn) {
+    document.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('calc-simple-box').style.display = (type==='simple') ? 'block' : 'none';
+    document.getElementById('calc-shop-box').style.display = (type==='shop') ? 'block' : 'none';
+  }
+
+  // --- 6. 計算邏輯 ---
+  function runSimp(src) {
+    const kI = document.getElementById('simp-krw');
+    const tI = document.getElementById('simp-twd');
+    let v = p(src==='krw'?kI.value:tI.value);
+    if(src==='krw') { kI.value = f(v); tI.value = f(v / rateTWD); }
+    else { tI.value = f(v); kI.value = f(v * rateTWD); }
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btn-fix').style.background = m==='fixed'?'var(--coral)':'var(--navy)';
+    document.getElementById('btn-per').style.background = m==='percent'?'var(--coral)':'var(--navy)';
+    document.getElementById('step-u').innerText = m==='fixed'?'₩':'%';
+    runShop();
+  }
+
+  function adj(type, s) {
+    const el = document.getElementById(type==='disc'?'shop-disc':'shop-tax');
+    let v = p(el.value);
+    el.value = (v + s).toFixed(type==='tax'?1:0);
+    runShop();
+  }
+
+  function runShop() {
+    const oriEl = document.getElementById('shop-ori');
+    const discEl = document.getElementById('shop-disc');
+    const taxEl = document.getElementById('shop-tax');
+
+    let ori = p(oriEl.value);
+    let disc = p(discEl.value);
+    let taxR = p(taxEl.value);
+
+    oriEl.value = f(ori);
+    if(mode==='fixed') discEl.value = f(disc);
+
+    let afterD = mode==='fixed' ? Math.max(0, ori - disc) : ori * (1 - disc/100);
+    let taxAmt = afterD * (taxR / 100);
+    let finalK = afterD - taxAmt;
+
+    document.getElementById('res-after-disc').innerText = `₩ ${f(afterD)}`;
+    document.getElementById('res-tax-val').innerText = `₩ ${f(taxAmt)}`;
+    document.getElementById('res-final-krw').innerText = `₩ ${f(finalK)}`;
+    document.getElementById('final-twd').innerText = `NT$ ${f(finalK / rateTWD)}`;
+    document.getElementById('final-krw').innerText = `≈ ₩ ${f(finalK)}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchRates();
+    setMode('fixed');
+  });
+</script>
+</body>
+</html>
