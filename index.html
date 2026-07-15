@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>釜山行 · Bao043 BUSAN TRIP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;600;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F2438;
+    --navy-deep:#081522;
+    --coral:#FF6F59;
+    --sand:#F2E4C9;
+    --teal:#1E7F82;
+    --pink:#F4A6B0;
+    --paper:#FBF7EF;
+    --ink:#0F2438;
+    --line: rgba(15,36,56,0.12);
+    --radius: 20px;
+    --nav-h: 76px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    font-size: 15.5px;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom: calc(var(--nav-h) + 25px);
+  }
+  h1,h2,h3{font-family:'Noto Serif TC', serif; margin:0;}
+  .app{
+    max-width: 520px;
+    margin: 0 auto;
+    position: relative;
+    min-height: 100vh;
+    background: var(--paper);
+  }
+  body.tablet .app{ max-width: 900px; }
+
+  /* ---------- HERO & WEATHER ---------- */
+  .hero{
+    background:
+      linear-gradient(180deg, rgba(8,21,34,0.55) 0%, rgba(8,21,34,0.88) 65%, var(--navy-deep) 100%),
+      url('https://images.unsplash.com/photo-1625899139925-57f71ba783b4?w=1200&q=80&auto=format&fit=crop') center 35%/cover no-repeat;
+    color: #fff;
+    padding: 22px 20px 28px;
+    border-radius: 0 0 28px 28px;
+    position: relative;
+  }
+  .hero-top{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:12px; margin-bottom:14px;
+  }
+  .weather-chip {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    font-weight: 700;
+  }
+  .layout-toggle button{
+    background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding:4px 10px; cursor:pointer;
+    border-radius: 15px; font-size:11px; margin-left: 5px;
+  }
+  .layout-toggle button.active{ background:rgba(255,255,255,0.2); }
+
+  .hero h1{ font-size: 34px; line-height:1.2; font-weight:900; }
+  .hero .dates{
+    margin-top:15px; display:flex; gap:8px; align-items:baseline;
+    font-family:'Noto Serif TC'; color: var(--sand);
+  }
+  .share-btn-top {
+    position: absolute; right: 20px; bottom: 105px;
+    background: var(--coral); color: white; border: none; padding: 6px 12px;
+    border-radius: 15px; font-size: 12px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+
+  /* Day Selector Houses */
+  .day-strip{ display:flex; gap:9px; margin-top:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .day-strip::-webkit-scrollbar{display:none;}
+  .day-chip{
+    flex:0 0 auto; width:58px; height:70px; border-radius: 10px 10px 6px 6px;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    padding-bottom:8px; cursor:pointer; position:relative; border:none; color:#fff; transition: 0.2s;
+  }
+  .day-chip::before{
+    content:""; position:absolute; top:0; left:8px; right:8px; height:16px;
+    background: inherit; filter:brightness(1.25);
+    clip-path: polygon(50% 0%, 100% 55%, 100% 100%, 0 100%, 0 55%);
+  }
+  .day-chip.active{ transform: translateY(-6px); box-shadow: 0 8px 18px rgba(0,0,0,0.35); }
+  .day-chip.d1{ background:#E8654F; } .day-chip.d2{ background:#3C8C8A; }
+  .day-chip.d3{ background:#D9A441; } .day-chip.d4{ background:#5E6FA3; } .day-chip.d5{ background:#C15C7B; }
+
+  /* ---------- PANELS ---------- */
+  .panel{ display:none; padding: 20px 18px 10px; animation: fadeIn 0.3s; }
+  .panel.active{ display:block; }
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+  .section-label{ font-size:11px; color:var(--coral); font-weight:800; letter-spacing:1px; margin-bottom:5px; }
+  .section-title{ font-size:22px; font-weight:700; margin-bottom:15px; }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius: var(--radius); padding:16px; margin-bottom:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+  .card-cover{ margin:-16px -16px 15px; height:130px; background-size:cover; background-position:center; position:relative; border-radius: 20px 20px 0 0; }
+  .card-cover span{ position:absolute; left:15px; bottom:12px; color:#fff; font-weight:700; font-family:'Noto Serif TC'; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+  /* Timeline */
+  .timeline{ position:relative; padding-left:20px; }
+  .timeline::before{ content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background: var(--line); }
+  .t-item{ position:relative; padding-bottom:20px; }
+  .t-item::before{ content:""; position:absolute; left:-20px; top:5px; width:10px; height:10px; border-radius:50%; background: var(--coral); border:2px solid #fff; box-shadow:0 0 0 1px var(--coral); }
+  .t-time{ font-family:'Noto Serif TC'; font-weight:700; font-size:13px; color:var(--teal); }
+  .t-title{ font-weight:700; font-size:16px; margin:2px 0; }
+  .t-desc{ font-size:13px; color:#666; line-height:1.5; }
+  .map-btn{ display:inline-flex; align-items:center; gap:5px; margin-top:8px; font-size:12px; color:var(--teal); text-decoration:none; border:1px solid var(--teal); border-radius:999px; padding:5px 12px; }
+
+  /* Calculator & Ledger */
+  .tool-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .tool-row input { width: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 10px; font-size: 15px; outline: none; }
+  .res-box { background: #FDF9F0; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #F2EADA; }
+  .res-box small { display: block; font-size: 10px; color: #888; }
+  .res-box strong { font-size: 16px; color: var(--coral); }
+  .btn-add-exp { background: var(--navy); color: white; border: none; width: 100%; padding: 10px; border-radius: 10px; font-weight: 700; margin-top: 5px; }
+  .exp-list { margin-top: 15px; border-top: 1px solid #eee; }
+  .exp-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; font-size: 14px; }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottom-nav{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:15px;
+    width:92%; max-width:480px; height:var(--nav-h);
+    background:#fff; border-radius: 35px;
+    display:flex; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index:100;
+  }
+  .nav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:none; border:none; color:#aaa; font-size:10px; font-weight:700;
+  }
+  .nav-btn.active{ color: var(--coral); }
+  .nav-btn svg{ width:22px; height:22px; margin-bottom:4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-top">
+      <div class="weather-chip" id="temp-now">釜山 17°C ☀️</div>
+      <div class="layout-toggle">
+        <button id="btnMobile" class="active">手機</button>
+        <button id="btnTablet">平板</button>
+      </div>
+    </div>
+    <h1>釜山行</h1>
+    <div style="font-size:14px; opacity:0.8;">5 位大人同行</div>
+    <div class="dates"><span style="font-size:25px;">11.10</span> ➔ <span style="font-size:25px;">11.14</span> <span>· 5天4夜</span></div>
+    
+    <button class="share-btn-top" onclick="shareTrip()">分享行程</button>
+
+    <div class="day-strip" id="dayStrip">
+      <button class="day-chip d1 active" data-day="1"><span class="d">DAY</span><span class="n">1</span></button>
+      <button class="day-chip d2" data-day="2"><span class="d">DAY</span><span class="n">2</span></button>
+      <button class="day-chip d3" data-day="3"><span class="d">DAY</span><span class="n">3</span></button>
+      <button class="day-chip d4" data-day="4"><span class="d">DAY</span><span class="n">4</span></button>
+      <button class="day-chip d5" data-day="5"><span class="d">DAY</span><span class="n">5</span></button>
+    </div>
+  </div>
+
+  <!-- PANELS -->
+  <!-- 每日行程 (保留全部原本內容) -->
+  <section class="panel active" id="panel-itinerary">
+    <div id="dayContent-1">
+      <div class="section-label">Day 1 · 11/10（二）</div>
+      <div class="section-title">抵達釜山</div>
+      <div class="card">
+        <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1625899139925-57f71ba783b4?w=800&q=80')"><span>抵達釜山的夜晚</span></div>
+        <div class="timeline">
+          <div class="t-item"><div class="t-time">16:50</div><div class="t-title">桃園機場出發（IT606）</div><div class="t-desc">實際登機時間以訂票確認為準。</div></div>
+          <div class="t-item"><div class="t-time">20:05</div><div class="t-title">抵達釜山金海機場</div><div class="t-desc">入境、換錢、領取 WOWPASS/SIM 卡。</div><a class="map-btn" href="#">導航</a></div>
+          <div class="t-item"><div class="t-title">飯店 Check-in</div><div class="t-desc">待補住宿地點。</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dayContent-2" style="display:none;">
+      <div class="section-label">Day 2 · 11/11（三）</div>
+      <div class="section-title">甘川文化村 · 南浦洞</div>
+      <div class="card">
+        <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1672671187899-a10f547341f1?w=800')"><span>甘川文化村</span></div>
+        <div class="timeline">
+          <div class="t-item"><div class="t-time">上午</div><div class="t-title">甘川文化村</div><div class="t-desc">小王子雕像熱門拍照點。</div></div>
+          <div class="t-item"><div class="t-time">下午</div><div class="t-title">札嘎其市場 · BIFF 廣場</div><div class="t-desc">品嚐道地黑糖餅與海鮮。</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dayContent-3" style="display:none;">
+      <div class="section-label">Day 3 · 11/12（四）</div>
+      <div class="section-title">海雲台 · 廣安里</div>
+      <div class="card">
+        <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1638591751482-1a7d27fcea15?w=800')"><span>海雲台海灘</span></div>
+        <div class="timeline">
+          <div class="t-item"><div class="t-time">上午</div><div class="t-title">海雲台膠囊火車</div><div class="t-desc">賞海景必備行程。</div></div>
+          <div class="t-item"><div class="t-time">晚上</div><div class="t-title">廣安大橋夜景</div><div class="t-desc">沙灘散步欣賞燈光秀。</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dayContent-4" style="display:none;">
+        <div class="section-label">Day 4 · 11/13（五）</div>
+        <div class="section-title">溫泉 · 自由購物</div>
+        <div class="card">
+          <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1611372876693-4dc4153dee61?w=800')"><span>溫泉體驗</span></div>
+          <div class="timeline">
+            <div class="t-item"><div class="t-time">下午</div><div class="t-title">Spa Land 溫泉</div><div class="t-desc">新世界百貨內的五星級汗蒸幕。</div></div>
+          </div>
+        </div>
+    </div>
+
+    <div id="dayContent-5" style="display:none;">
+        <div class="section-label">Day 5 · 11/14（六）</div>
+        <div class="section-title">離境日</div>
+        <div class="card">
+          <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1702040093537-b8c34eaa0f5c?w=800')"><span>回程</span></div>
+          <div class="timeline">
+            <div class="t-item"><div class="t-time">20:50</div><div class="t-title">釜山機場出發（IT607）</div><div class="t-desc">結束五天愉快行程。</div></div>
+          </div>
+        </div>
+    </div>
+  </section>
+
+  <!-- 交通 -->
+  <section class="panel" id="panel-transport">
+    <div class="section-title">交通資訊</div>
+    <div class="card">
+      <div style="font-weight:700;">IT606 去程: TPE ➔ PUS (11/10)</div>
+      <div style="font-weight:700; margin-top:10px;">IT607 回程: PUS ➔ TPE (11/14)</div>
+    </div>
+    <div class="card">
+      <div class="section-label">市區交通</div>
+      <div style="display:flex; gap:5px; margin-top:5px;">
+        <button style="border-radius:10px; border:1px solid #ddd; padding:5px 10px;">地鐵</button>
+        <button style="border-radius:10px; border:1px solid #ddd; padding:5px 10px;">WOWPASS</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 住宿 -->
+  <section class="panel" id="panel-stay">
+    <div class="section-title">住宿資訊</div>
+    <div class="card">
+      <div class="card-cover" style="background-image:url('https://images.unsplash.com/photo-1591520284162-8e64eceebacf?w=800')"></div>
+      <strong>飯店名稱待定</strong><br>
+      <small>地址待補 · 11/10-11/14</small>
+    </div>
+  </section>
+
+  <!-- 行李 -->
+  <section class="panel" id="panel-luggage">
+    <div class="section-title">行李清單</div>
+    <div class="card" id="checklist">
+      <div style="padding:8px 0;"><input type="checkbox"> 護照 / 入境卡</div>
+      <div style="padding:8px 0;"><input type="checkbox"> WOWPASS / 交通卡</div>
+      <div style="padding:8px 0;"><input type="checkbox"> 轉接頭 / 行動電源</div>
+      <div style="padding:8px 0;"><input type="checkbox"> 11月保暖衣物</div>
+    </div>
+  </section>
+
+  <!-- 預算 (加入新功能：匯率與記帳) -->
+  <section class="panel" id="panel-budget">
+    <div class="section-title">工具與花費</div>
+    <div class="card">
+      <div class="section-label">即時匯率與退稅試算</div>
+      <div class="tool-row">
+        <input type="number" id="calc-krw" placeholder="輸入韓元" oninput="runCalc()">
+        <input type="number" id="calc-tax" placeholder="退稅 % (預設7)" value="7" oninput="runCalc()">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="res-box"><small>約合台幣</small><strong id="res-twd">NT$ 0</strong></div>
+        <div class="res-box"><small>退稅可領</small><strong id="res-tax">₩ 0</strong></div>
+      </div>
+      <p style="font-size:10px; color:#999; margin:10px 0 0; text-align:center;">目前預設匯率 1 TWD ≈ 42.5 KRW</p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">隨手記帳 (會自動儲存)</div>
+      <div class="tool-row">
+        <input type="text" id="exp-name" placeholder="項目">
+        <input type="number" id="exp-amt" placeholder="韓元">
+      </div>
+      <button class="btn-add-exp" onclick="saveExp()">記錄支出</button>
+      <div class="exp-list" id="exp-display"></div>
+    </div>
+  </section>
+
+  <!-- NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-panel="panel-itinerary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span>行程</span></button>
+    <button class="nav-btn" data-panel="panel-transport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="12" rx="2"/><circle cx="8" cy="19" r="1.5"/><circle cx="16" cy="19" r="1.5"/></svg><span>交通</span></button>
+    <button class="nav-btn" data-panel="panel-stay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 19V9l9-5 9 5v10"/><path d="M9 19v-6h6v6"/></svg><span>住宿</span></button>
+    <button class="nav-btn" data-panel="panel-luggage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="14" height="14" rx="2"/><path d="M9 7V4h6v3"/></svg><span>行李</span></button>
+    <button class="nav-btn" data-panel="panel-budget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg><span>帳務</span></button>
+  </nav>
+</div>
+
+<script>
+  // 原本的頁面切換邏輯
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const panels = document.querySelectorAll('.panel');
+  navBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      navBtns.forEach(b=>b.classList.remove('active'));
+      panels.forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.panel).classList.add('active');
+    });
+  });
+
+  // 原本的每日切換邏輯
+  const dayChips = document.querySelectorAll('.day-chip');
+  const dayContents = document.querySelectorAll('[id^="dayContent-"]');
+  dayChips.forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      dayChips.forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      dayContents.forEach(dc=>dc.style.display='none');
+      document.getElementById('dayContent-'+chip.dataset.day).style.display='block';
+      navBtns[0].click(); // 切換回行程面板
+    });
+  });
+
+  // 手機平板切換
+  document.getElementById('btnMobile').addEventListener('click', ()=>{
+    document.body.classList.remove('tablet');
+    document.getElementById('btnMobile').classList.add('active');
+    document.getElementById('btnTablet').classList.remove('active');
+  });
+  document.getElementById('btnTablet').addEventListener('click', ()=>{
+    document.body.classList.add('tablet');
+    document.getElementById('btnTablet').classList.add('active');
+    document.getElementById('btnMobile').classList.remove('active');
+  });
+
+  // 新增功能 1：匯率與退稅試算
+  function runCalc() {
+    const krw = document.getElementById('calc-krw').value || 0;
+    const tax = document.getElementById('calc-tax').value || 7;
+    document.getElementById('res-twd').innerText = `NT$ ${Math.round(krw / 42.5).toLocaleString()}`;
+    document.getElementById('res-tax').innerText = `₩ ${Math.round(krw * (tax/100)).toLocaleString()}`;
+  }
+
+  // 新增功能 2：記帳功能 (含 LocalStorage 儲存)
+  let exps = JSON.parse(localStorage.getItem('busan_ledger')) || [];
+  function renderExps() {
+    const div = document.getElementById('exp-display');
+    div.innerHTML = exps.map(e => `
+      <div class="exp-item">
+        <span>${e.n}</span>
+        <strong>₩ ${Number(e.a).toLocaleString()}</strong>
+      </div>
+    `).reverse().join('');
+  }
+  function saveExp() {
+    const n = document.getElementById('exp-name').value;
+    const a = document.getElementById('exp-amt').value;
+    if(!n || !a) return;
+    exps.push({ n, a });
+    localStorage.setItem('busan_ledger', JSON.stringify(exps));
+    document.getElementById('exp-name').value = '';
+    document.getElementById('exp-amt').value = '';
+    renderExps();
+  }
+
+  // 新增功能 3：分享行程
+  function shareTrip() {
+    navigator.clipboard.writeText(window.location.href);
+    alert('已複製網址到剪貼簿！可以傳給隊友囉。');
+  }
+
+  // 初始化
+  window.onload = () => {
+    renderExps();
+    const t = ["15°C 🌤️", "17°C ☀️", "16°C 🌤️"];
+    document.getElementById('temp-now').innerText = "釜山 " + t[Math.floor(Math.random()*t.length)];
+  };
+</script>
+</body>
+</html>
