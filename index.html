@@ -33,7 +33,8 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
   body.tablet-view .app-container { max-width: 880px; }
-  body.tablet-view .grid-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  /* 修正 CSS 權重問題：僅在 active 面板套用 grid 佈局，防止 inactive 面板重疊出現 */
+  body.tablet-view .grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   body.tablet-view .full-width { grid-column: 1 / -1; }
   
   .view-switcher {
@@ -564,11 +565,41 @@
   let prepData = null; let prepItemSeq = 1;
   let itinData = {}; let itinItemSeq = 1; let activeDay = '2026-11-10'; let formState = {}; let activeDetailId = null;
   let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金'; let expItemSeq = 1;
+  // 將住宿資訊改為全域控管，以便一併上傳雲端同步
+  let accomData = { name: "釜山海雲台格蘭德飯店 (Grand Hotel)", address: "24 Haeundaehaebyeon-ro, Busan", checkin: "15:00", checkout: "11:00" };
 
   const ITIN_DAYS = [
     {key:'2026-11-10', date:'11/10', wd:'二'}, {key:'2026-11-11', date:'11/11', wd:'三'},
     {key:'2026-11-12', date:'11/12', wd:'四'}, {key:'2026-11-13', date:'11/13', wd:'五'}, {key:'2026-11-14', date:'11/14', wd:'六'}
   ];
+
+  // 輔助檢查本機是否已經初始化過（用來防止空資料一直被預設資料覆蓋）
+  async function checkInitialization() {
+    const res = await storage.get('app-initialized');
+    return res && res.value === 'true';
+  }
+
+  // 自動同步小幫手：當是主操作者且開啟自動同步時，自動上傳至雲端
+  async function autoUploadIfEnabled() {
+    const autoEnable = localStorage.getItem('sync-auto-enabled') === 'true';
+    if (autoEnable && syncRoomId && isMasterMode) {
+      const safePayload = {
+        tripSettings: tripSettings || {},
+        prepData: prepData || {},
+        itinData: itinData || {},
+        expenseRecords: expenseRecords || [],
+        masterPin: masterPin || '1234',
+        accomData: accomData || {}
+      };
+      const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
+      try {
+        await db.ref('rooms/' + syncRoomId).set(finalData);
+        console.log("Auto-synced to Firebase room: " + syncRoomId);
+      } catch (e) {
+        console.error("Auto-sync failed:", e);
+      }
+    }
+  }
 
   function triggerRoleSwitch() {
     if (isMasterMode) {
@@ -588,7 +619,11 @@
   }
 
   async function saveTripSettings() {
-    try { await storage.set('trip-settings', JSON.stringify(tripSettings)); renderTripSettingsUI(); } catch(e) { console.error(e); }
+    try { 
+      await storage.set('trip-settings', JSON.stringify(tripSettings)); 
+      renderTripSettingsUI(); 
+      await autoUploadIfEnabled();
+    } catch(e) { console.error(e); }
   }
 
   async function loadTripSettings() {
@@ -817,8 +852,13 @@
   function goToItinerary(dayKey) { showP('p-itinerary', document.querySelectorAll('.nav-btn')[2]); if (dayKey) selectDay(dayKey); }
 
   async function loadAccom() {
-    try { const res = await storage.get('accommodation'); if (res && res.value) { renderAccomView(JSON.parse(res.value)); return; } } catch(e) {}
-    renderAccomView({ name: "釜山海雲台格蘭德飯店 (Grand Hotel)", address: "24 Haeundaehaebyeon-ro, Busan", checkin: "15:00", checkout: "11:00" });
+    try { 
+      const res = await storage.get('accommodation'); 
+      if (res && res.value) { 
+        accomData = JSON.parse(res.value); 
+      } 
+    } catch(e) {}
+    renderAccomView(accomData);
   }
   function renderAccomView(d) {
     const el = document.getElementById('accom-view'); if (!el) return;
@@ -828,22 +868,57 @@
   function toggleAccomEdit() {
     const view = document.getElementById('accom-view'); const edit = document.getElementById('accom-edit'); const opening = edit.style.display === 'none';
     if (opening) {
-      storage.get('accommodation').then(res => { if (res && res.value) { const d = JSON.parse(res.value); document.getElementById('accom-name-in').value = d.name||''; document.getElementById('accom-addr-in').value = d.address||''; document.getElementById('accom-in-in').value = d.checkin||''; document.getElementById('accom-out-in').value = d.checkout||''; } });
+      document.getElementById('accom-name-in').value = accomData.name||''; 
+      document.getElementById('accom-addr-in').value = accomData.address||''; 
+      document.getElementById('accom-in-in').value = accomData.checkin||''; 
+      document.getElementById('accom-out-in').value = accomData.checkout||'';
     }
     view.style.display = opening ? 'none' : 'block'; edit.style.display = opening ? 'block' : 'none';
   }
   async function saveAccom() {
-    const d = { name: document.getElementById('accom-name-in').value.trim(), address: document.getElementById('accom-addr-in').value.trim(), checkin: document.getElementById('accom-in-in').value.trim(), checkout: document.getElementById('accom-out-in').value.trim() };
-    await storage.set('accommodation', JSON.stringify(d)); renderAccomView(d); toggleAccomEdit();
+    accomData = { 
+      name: document.getElementById('accom-name-in').value.trim(), 
+      address: document.getElementById('accom-addr-in').value.trim(), 
+      checkin: document.getElementById('accom-in-in').value.trim(), 
+      checkout: document.getElementById('accom-out-in').value.trim() 
+    };
+    await storage.set('accommodation', JSON.stringify(accomData)); 
+    renderAccomView(accomData); 
+    toggleAccomEdit();
+    await autoUploadIfEnabled();
   }
 
+  // 修改載入檢查邏輯，避免空資料時重置為預設資料
   async function loadPrep() {
-    try { const res = await storage.get('prep-checklist'); if (res && res.value) { prepData = JSON.parse(res.value); } } catch(e) {}
-    if (!prepData || Object.keys(prepData).length === 0) { prepData = {}; Object.keys(PREP_DEFAULT).forEach(cat => { prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); }); }
-    else { Object.values(prepData).forEach(arr => arr.forEach(it => { if(it.id >= prepItemSeq) prepItemSeq = it.id+1; })); }
+    let hasLocal = false;
+    try { 
+      const res = await storage.get('prep-checklist'); 
+      if (res && res.value) { 
+        prepData = JSON.parse(res.value); 
+        hasLocal = true;
+      } 
+    } catch(e) {}
+
+    const initialized = await checkInitialization();
+    if (!hasLocal && !initialized) {
+      prepData = {}; 
+      Object.keys(PREP_DEFAULT).forEach(cat => { 
+        prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); 
+      });
+      await storage.set('prep-checklist', JSON.stringify(prepData));
+    } else if (!prepData) {
+      prepData = {};
+    }
+    
+    Object.values(prepData).forEach(arr => arr.forEach(it => { if(it.id >= prepItemSeq) prepItemSeq = it.id+1; }));
     renderPrep();
   }
-  async function savePrep() { try { await storage.set('prep-checklist', JSON.stringify(prepData)); } catch(e) {} }
+  async function savePrep() { 
+    try { 
+      await storage.set('prep-checklist', JSON.stringify(prepData)); 
+      await autoUploadIfEnabled();
+    } catch(e) {} 
+  }
   function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
 
   function renderPrep() {
@@ -871,14 +946,36 @@
   function deleteCategory(cat) { delete prepData[cat]; savePrep(); renderPrep(); }
   function addCategory() { const name = prompt('新分類名稱?'); if (name && name.trim()) { prepData[name.trim()] = []; savePrep(); renderPrep(); } }
 
+  // 修改載入行程邏輯，防止與雲端同步空行程時不斷被覆寫回預設行程
   async function loadItin() {
-    try { const res = await storage.get('itinerary'); if (res && res.value) { itinData = JSON.parse(res.value); } } catch(e) {}
-    if (!itinData || Object.keys(itinData).length === 0) { itinData = JSON.parse(JSON.stringify(ITIN_DEFAULT)); }
+    let hasLocal = false;
+    try { 
+      const res = await storage.get('itinerary'); 
+      if (res && res.value) { 
+        itinData = JSON.parse(res.value); 
+        hasLocal = true;
+      } 
+    } catch(e) {}
+
+    const initialized = await checkInitialization();
+    if (!hasLocal && !initialized) {
+      itinData = JSON.parse(JSON.stringify(ITIN_DEFAULT));
+      await storage.set('itinerary', JSON.stringify(itinData));
+    } else if (!itinData) {
+      itinData = {};
+    }
+
     ITIN_DAYS.forEach(d => { if(!itinData[d.key]) itinData[d.key]=[]; });
     Object.values(itinData).flat().forEach(it => { if(it.id>=itinItemSeq) itinItemSeq=it.id+1; });
     renderDayTabs(); renderDayContent();
   }
-  async function saveItin() { try { await storage.set('itinerary', JSON.stringify(itinData)); updateDayPillStatuses(); } catch(e) {} }
+  async function saveItin() { 
+    try { 
+      await storage.set('itinerary', JSON.stringify(itinData)); 
+      updateDayPillStatuses(); 
+      await autoUploadIfEnabled();
+    } catch(e) {} 
+  }
 
   function renderDayTabs() {
     const wrap = document.getElementById('itin-day-tabs'); if(!wrap) return;
@@ -999,7 +1096,7 @@
     saveItin();
     selectDay(lastTargetDay);
     document.getElementById('ai-raw-itin-text').value = '';
-    alert(`🎉 成功智慧解析並排入 ${count} 項行程！`);
+    alert(`成功智慧解析並排入 ${count} 項行程！`);
   }
 
   // ===== 記帳與消費功能 =====
@@ -1017,7 +1114,12 @@
     expenseRecords.forEach(r => { if(r.id >= expItemSeq) expItemSeq = r.id + 1; });
     renderExpenseSummary(); renderExpenseList();
   }
-  async function saveExpense() { try { await storage.set('expense-data', JSON.stringify({records:expenseRecords, travelers})); } catch(e) {} }
+  async function saveExpense() { 
+    try { 
+      await storage.set('expense-data', JSON.stringify({records:expenseRecords, travelers})); 
+      await autoUploadIfEnabled();
+    } catch(e) {} 
+  }
 
   function openQuickAdd() {
     const box = document.getElementById('quick-add-box'); box.style.display = 'block';
@@ -1087,13 +1189,18 @@
     if (data.itinData) itinData = data.itinData;
     if (data.expenseRecords) expenseRecords = data.expenseRecords;
     if (data.masterPin) masterPin = data.masterPin;
+    if (data.accomData) accomData = data.accomData;
 
     await storage.set('trip-settings', JSON.stringify(tripSettings));
     await storage.set('prep-checklist', JSON.stringify(prepData));
     await storage.set('itinerary', JSON.stringify(itinData));
     await storage.set('expense-data', JSON.stringify({records: expenseRecords, travelers}));
+    await storage.set('accommodation', JSON.stringify(accomData));
+    
+    // 設定已載入初始化標記，防止未來因清空或同步覆蓋時退回預設 Mock 資料
+    await storage.set('app-initialized', 'true');
 
-    renderTripSettingsUI(); renderPrep(); renderDayTabs(); renderDayContent(); renderExpenseSummary(); renderExpenseList(); renderDayPills();
+    renderTripSettingsUI(); renderPrep(); renderDayTabs(); renderDayContent(); renderExpenseSummary(); renderExpenseList(); renderDayPills(); renderAccomView(accomData);
   }
 
   async function syncUpload() {
@@ -1113,7 +1220,8 @@
       prepData: prepData || {},
       itinData: itinData || {},
       expenseRecords: expenseRecords || [],
-      masterPin: masterPin || '1234'
+      masterPin: masterPin || '1234',
+      accomData: accomData || {}
     };
     
     const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
@@ -1123,12 +1231,12 @@
       document.getElementById('sync-room-name').innerText = `房號: ${roomInput}`;
       syncStatus.style.background = '#ECFDF5'; syncStatus.style.color = '#065F46'; syncStatus.style.borderColor = '#A7F3D0';
       syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-check"></i> 雲端發布成功</span><b>剛剛</b>`;
-      alert(`🎉 雲端數據已成功建立！\n\n您的專屬房間號碼：${roomInput}\n\n旅伴只要輸入同一個房號並開啟「自動同步」，就能瞬間看到你排的行程囉！`);
+      alert(`雲端數據已成功建立！\n\n您的專屬房間號碼：${roomInput}\n\n旅伴只要輸入同一個房號並開啟「自動同步」，就能瞬間看到你排的行程囉！`);
     } catch (error) {
       console.error(error);
       syncStatus.style.background = '#FEF2F2'; syncStatus.style.color = '#991B1B'; syncStatus.style.borderColor = '#FCA5A5';
       syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 發布失敗</span>`;
-      alert(`連線失敗！請確認 Realtime Database 安全規則是否已開放讀寫。`);
+      alert(`連線或發布失敗！請確認您的 Firebase 網路連線，或 Realtime Database 的安全性規則 Rules 是否已開放讀寫。\n\n錯誤訊息：` + error.message);
     }
   }
 
@@ -1155,6 +1263,9 @@
       }
     } catch (error) {
       console.error(error);
+      syncStatus.style.background = '#FEF2F2'; syncStatus.style.color = '#991B1B'; syncStatus.style.borderColor = '#FCA5A5';
+      syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 讀取失敗</span>`;
+      alert(`讀取雲端失敗！請檢查您的網路連線，或確認您的 Firebase Realtime Database 規則是否允許公開讀寫。\n\n錯誤訊息：` + error.message);
     }
   }
 
@@ -1194,7 +1305,17 @@
   // ===== 全域初始化入口 =====
   window.onload = async () => {
     const savedPin = localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
-    await loadTripSettings(); await loadAccom(); await loadPrep(); await loadItin(); await loadExpense();
+    
+    // 按順序同步讀取載入所有本機/預設快取
+    await loadTripSettings(); 
+    await loadAccom(); 
+    await loadPrep(); 
+    await loadItin(); 
+    await loadExpense();
+
+    // 只要有任何一次主流程載入完成，就寫入「app-initialized」防止未來的空同步把 Mock 預設資料再次蓋回來
+    await storage.set('app-initialized', 'true');
+
     fetchRates(); fetchWeather(); updateKoreaTime(); setInterval(updateKoreaTime, 30000); renderDayPills();
 
     const savedRoom = localStorage.getItem('sync-room-id');
