@@ -33,7 +33,7 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
   body.tablet-view .app-container { max-width: 880px; }
-  /* 修正 CSS 權重問題：僅在 active 面板套用 grid 佈局，防止 inactive 面板重疊出現 */
+  /* 修正平板 inactive 面板重疊問題 */
   body.tablet-view .grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   body.tablet-view .full-width { grid-column: 1 / -1; }
   
@@ -565,7 +565,6 @@
   let prepData = null; let prepItemSeq = 1;
   let itinData = {}; let itinItemSeq = 1; let activeDay = '2026-11-10'; let formState = {}; let activeDetailId = null;
   let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金'; let expItemSeq = 1;
-  // 將住宿資訊改為全域控管，以便一併上傳雲端同步
   let accomData = { name: "釜山海雲台格蘭德飯店 (Grand Hotel)", address: "24 Haeundaehaebyeon-ro, Busan", checkin: "15:00", checkout: "11:00" };
 
   const ITIN_DAYS = [
@@ -573,13 +572,12 @@
     {key:'2026-11-12', date:'11/12', wd:'四'}, {key:'2026-11-13', date:'11/13', wd:'五'}, {key:'2026-11-14', date:'11/14', wd:'六'}
   ];
 
-  // 輔助檢查本機是否已經初始化過（用來防止空資料一直被預設資料覆蓋）
   async function checkInitialization() {
     const res = await storage.get('app-initialized');
     return res && res.value === 'true';
   }
 
-  // 自動同步小幫手：當是主操作者且開啟自動同步時，自動上傳至雲端
+  // 自動上傳防禦性同步
   async function autoUploadIfEnabled() {
     const autoEnable = localStorage.getItem('sync-auto-enabled') === 'true';
     if (autoEnable && syncRoomId && isMasterMode) {
@@ -888,7 +886,6 @@
     await autoUploadIfEnabled();
   }
 
-  // 修改載入檢查邏輯，避免空資料時重置為預設資料
   async function loadPrep() {
     let hasLocal = false;
     try { 
@@ -946,7 +943,6 @@
   function deleteCategory(cat) { delete prepData[cat]; savePrep(); renderPrep(); }
   function addCategory() { const name = prompt('新分類名稱?'); if (name && name.trim()) { prepData[name.trim()] = []; savePrep(); renderPrep(); } }
 
-  // 修改載入行程邏輯，防止與雲端同步空行程時不斷被覆寫回預設行程
   async function loadItin() {
     let hasLocal = false;
     try { 
@@ -1144,7 +1140,13 @@
 
   function renderExpenseSummary() {
     const totalKrw = expenseRecords.reduce((s,r)=>s+r.amount,0);
-    document.getElementById('exp-total-krw').innerText = `≈ ₩ ${f(totalKrw)}`; document.getElementById('exp-total-twd').innerText = `NT$ ${f(totalKrw/rateTWD)}`;
+    
+    // 防禦性檢查
+    const krwEl = document.getElementById('exp-total-krw');
+    const twdEl = document.getElementById('exp-total-twd');
+    if (krwEl) krwEl.innerText = `≈ ₩ ${f(totalKrw)}`;
+    if (twdEl) twdEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
+
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return; if (totalKrw===0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; return; }
     const byCat = {}; expenseRecords.forEach(r => { byCat[r.category]=(byCat[r.category]||0)+r.amount; });
     wrap.innerHTML = Object.keys(byCat).map(cat => {
@@ -1197,7 +1199,6 @@
     await storage.set('expense-data', JSON.stringify({records: expenseRecords, travelers}));
     await storage.set('accommodation', JSON.stringify(accomData));
     
-    // 設定已載入初始化標記，防止未來因清空或同步覆蓋時退回預設 Mock 資料
     await storage.set('app-initialized', 'true');
 
     renderTripSettingsUI(); renderPrep(); renderDayTabs(); renderDayContent(); renderExpenseSummary(); renderExpenseList(); renderDayPills(); renderAccomView(accomData);
@@ -1213,7 +1214,9 @@
     localStorage.setItem('sync-room-id', roomInput);
     
     const syncStatus = document.getElementById('sync-status');
-    syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在安全上傳雲端...</span>`;
+    if (syncStatus) {
+      syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在安全上傳雲端...</span>`;
+    }
     
     const safePayload = {
       tripSettings: tripSettings || {},
@@ -1228,14 +1231,29 @@
     
     try {
       await db.ref('rooms/' + roomInput).set(finalData);
-      document.getElementById('sync-room-name').innerText = `房號: ${roomInput}`;
-      syncStatus.style.background = '#ECFDF5'; syncStatus.style.color = '#065F46'; syncStatus.style.borderColor = '#A7F3D0';
-      syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-check"></i> 雲端發布成功</span><b>剛剛</b>`;
+
+      // 防禦性檢查：避免 DOM 元素不存在時導致程式當機
+      const roomNameEl = document.getElementById('sync-room-name');
+      if (roomNameEl) {
+        roomNameEl.innerText = `房號: ${roomInput}`;
+      }
+
+      if (syncStatus) {
+        syncStatus.style.background = '#ECFDF5'; 
+        syncStatus.style.color = '#065F46'; 
+        syncStatus.style.borderColor = '#A7F3D0';
+        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-check"></i> 雲端發布成功</span><b>剛剛</b>`;
+      }
+
       alert(`雲端數據已成功建立！\n\n您的專屬房間號碼：${roomInput}\n\n旅伴只要輸入同一個房號並開啟「自動同步」，就能瞬間看到你排的行程囉！`);
     } catch (error) {
       console.error(error);
-      syncStatus.style.background = '#FEF2F2'; syncStatus.style.color = '#991B1B'; syncStatus.style.borderColor = '#FCA5A5';
-      syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 發布失敗</span>`;
+      if (syncStatus) {
+        syncStatus.style.background = '#FEF2F2'; 
+        syncStatus.style.color = '#991B1B'; 
+        syncStatus.style.borderColor = '#FCA5A5';
+        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 發布失敗</span>`;
+      }
       alert(`連線或發布失敗！請確認您的 Firebase 網路連線，或 Realtime Database 的安全性規則 Rules 是否已開放讀寫。\n\n錯誤訊息：` + error.message);
     }
   }
@@ -1247,24 +1265,44 @@
     syncRoomId = roomInput;
     localStorage.setItem('sync-room-id', roomInput);
     const syncStatus = document.getElementById('sync-status');
-    syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 下載遠端數據中...</span>`;
+    if (syncStatus) {
+      syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 下載遠端數據中...</span>`;
+    }
     
     try {
       const snapshot = await db.ref('rooms/' + roomInput).once('value');
       if (snapshot.exists()) {
         await updateLocalData(snapshot.val());
-        document.getElementById('sync-room-name').innerText = `房號: ${roomInput}`;
-        syncStatus.style.background = '#ECFDF5'; syncStatus.style.color = '#065F46'; syncStatus.style.borderColor = '#A7F3D0';
-        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-check"></i> 讀取完成</span>`;
+
+        // 防禦性檢查
+        const roomNameEl = document.getElementById('sync-room-name');
+        if (roomNameEl) {
+          roomNameEl.innerText = `房號: ${roomInput}`;
+        }
+
+        if (syncStatus) {
+          syncStatus.style.background = '#ECFDF5'; 
+          syncStatus.style.color = '#065F46'; 
+          syncStatus.style.borderColor = '#A7F3D0';
+          syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-check"></i> 讀取完成</span>`;
+        }
       } else {
         alert('查無此房號資料，請檢查輸入是否正確！');
-        syncStatus.style.background = '#FFFBEB'; syncStatus.style.color = '#B45309'; syncStatus.style.borderColor = '#FDE68A';
-        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> 查無房號</span>`;
+        if (syncStatus) {
+          syncStatus.style.background = '#FFFBEB'; 
+          syncStatus.style.color = '#B45309'; 
+          syncStatus.style.borderColor = '#FDE68A';
+          syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-exclamation"></i> 查無房號</span>`;
+        }
       }
     } catch (error) {
       console.error(error);
-      syncStatus.style.background = '#FEF2F2'; syncStatus.style.color = '#991B1B'; syncStatus.style.borderColor = '#FCA5A5';
-      syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 讀取失敗</span>`;
+      if (syncStatus) {
+        syncStatus.style.background = '#FEF2F2'; 
+        syncStatus.style.color = '#991B1B'; 
+        syncStatus.style.borderColor = '#FCA5A5';
+        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 讀取失敗</span>`;
+      }
       alert(`讀取雲端失敗！請檢查您的網路連線，或確認您的 Firebase Realtime Database 規則是否允許公開讀寫。\n\n錯誤訊息：` + error.message);
     }
   }
@@ -1274,7 +1312,8 @@
     if (checked) {
       if (!roomInput) { 
         alert('請先輸入房號再開啟即時更新。'); 
-        document.getElementById('sync-auto-check').checked = false; 
+        const checkEl = document.getElementById('sync-auto-check');
+        if (checkEl) checkEl.checked = false; 
         return; 
       }
       syncRoomId = roomInput;
@@ -1285,20 +1324,39 @@
       activeSyncListener.on('value', (snapshot) => {
         if (snapshot.exists()) {
           updateLocalData(snapshot.val());
+          
           const syncStatus = document.getElementById('sync-status');
-          document.getElementById('sync-room-name').innerText = `房號: ${roomInput}`;
-          syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
-          setTimeout(() => {
-             syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 即時監聽連線中...</span>`;
-          }, 2000);
+          
+          // 防禦性檢查
+          const roomNameEl = document.getElementById('sync-room-name');
+          if (roomNameEl) {
+            roomNameEl.innerText = `房號: ${roomInput}`;
+          }
+
+          if (syncStatus) {
+            syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
+            setTimeout(() => {
+               if (syncStatus) {
+                 syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 即時監聽連線中...</span>`;
+               }
+            }, 2000);
+          }
         }
       });
     } else {
       localStorage.setItem('sync-auto-enabled', 'false');
       if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+      
       const syncStatus = document.getElementById('sync-status');
-      syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-dot"></i> 單機模式</span>`;
-      document.getElementById('sync-room-name').innerText = '未開啟雲端同步';
+      if (syncStatus) {
+        syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-dot"></i> 單機模式</span>`;
+      }
+
+      // 防禦性檢查
+      const roomNameEl = document.getElementById('sync-room-name');
+      if (roomNameEl) {
+        roomNameEl.innerText = '未開啟雲端同步';
+      }
     }
   }
 
@@ -1306,27 +1364,32 @@
   window.onload = async () => {
     const savedPin = localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
     
-    // 按順序同步讀取載入所有本機/預設快取
     await loadTripSettings(); 
     await loadAccom(); 
     await loadPrep(); 
     await loadItin(); 
     await loadExpense();
 
-    // 只要有任何一次主流程載入完成，就寫入「app-initialized」防止未來的空同步把 Mock 預設資料再次蓋回來
     await storage.set('app-initialized', 'true');
 
     fetchRates(); fetchWeather(); updateKoreaTime(); setInterval(updateKoreaTime, 30000); renderDayPills();
 
     const savedRoom = localStorage.getItem('sync-room-id');
     if (savedRoom) {
-      document.getElementById('sync-room-input').value = savedRoom;
+      const roomInp = document.getElementById('sync-room-input');
+      if (roomInp) roomInp.value = savedRoom;
       syncRoomId = savedRoom;
-      document.getElementById('sync-room-name').innerText = `房號: ${savedRoom}`;
+
+      // 防禦性檢查
+      const roomNameEl = document.getElementById('sync-room-name');
+      if (roomNameEl) {
+        roomNameEl.innerText = `房號: ${savedRoom}`;
+      }
       
       const autoEnable = localStorage.getItem('sync-auto-enabled');
       if (autoEnable === 'true') {
-        document.getElementById('sync-auto-check').checked = true;
+        const checkEl = document.getElementById('sync-auto-check');
+        if (checkEl) checkEl.checked = true;
         toggleAutoSync(true);
       }
     }
