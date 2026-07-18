@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版 V16 Pro (Firebase 雲端同步版)</title>
+<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;700;900&family=Quicksand:wght=500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- 引入 Firebase 官方 CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<!-- 引入 SheetJS，用於「匯出 Excel」功能 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #F5F7FA; --card: #FFFFFF; --navy: #1A2B3C; --coral: #FF8E7E;
@@ -18,12 +20,13 @@
     --note-bg: #FFFDF2; --note-border: #F1C40F;
     --btn-orange: linear-gradient(135deg, #FFAD99 0%, #FF8E7E 100%);
     --glass: rgba(255, 255, 255, 0.9);
+    --font-scale: 1;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
     background-color: #E9EDF0; color: var(--navy);
-    margin: 0; padding: 0; font-size: 16px; line-height: 1.5;
+    margin: 0; padding: 0; font-size:calc(16px * var(--font-scale)); line-height: 1.5;
   }
   
   .app-container {
@@ -45,11 +48,11 @@
   }
   .switch-btn {
     border: none; background: none; padding: 6px 12px; border-radius: 16px;
-    font-size: 12px; font-weight: 800; color: var(--gray); cursor: pointer; transition: 0.3s;
+    font-size:calc(12px * var(--font-scale)); font-weight: 800; color: var(--gray); cursor: pointer; transition: 0.3s;
   }
   .switch-btn.active { background: var(--navy); color: white; }
   
-  .clean-title { font-family: 'Noto Sans TC', sans-serif; font-weight: 800; font-size: 28px; margin: 0; letter-spacing: -0.5px; color: var(--navy); }
+  .clean-title { font-family: 'Noto Sans TC', sans-serif; font-weight: 800; font-size:calc(28px * var(--font-scale)); margin: 0; letter-spacing: -0.5px; color: var(--navy); }
   
   .hero-header {
     background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%);
@@ -62,56 +65,56 @@
   }
   .page-header { padding: 35px 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
-  .section-title { font-family: 'Noto Sans TC'; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
+  .section-title { font-family: 'Noto Sans TC'; font-size:calc(18px * var(--font-scale)); font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
   .calc-tabs { display: flex; background: #E2E7EC; border-radius: 20px; padding: 4px; margin-bottom: 20px; }
-  .tab-btn-sub { flex: 1; border: none; background: none; padding: 10px; border-radius: 16px; font-weight: 700; font-size: 14px; color: #7A828A; cursor: pointer; transition: 0.3s; }
+  .tab-btn-sub { flex: 1; border: none; background: none; padding: 10px; border-radius: 16px; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: #7A828A; cursor: pointer; transition: 0.3s; }
   .tab-btn-sub.active { background: #fff; color: var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   
-  .input-label { font-size: 13px; color: var(--gray); font-weight: 700; margin-bottom: 8px; display: block; padding-left: 6px; }
+  .input-label { font-size:calc(13px * var(--font-scale)); color: var(--gray); font-weight: 700; margin-bottom: 8px; display: block; padding-left: 6px; }
   .input-field { position: relative; margin-bottom: 20px; }
   .input-field input {
     width: 100%; border: 2.5px solid #E9EDF0; border-radius: 18px; padding: 16px 16px 16px 50px;
-    font-size: 22px; font-family: 'Quicksand'; font-weight: 700; outline: none; background: #FAFBFC; transition: 0.3s; color: var(--navy);
+    font-size:calc(22px * var(--font-scale)); font-family: 'Quicksand'; font-weight: 700; outline: none; background: #FAFBFC; transition: 0.3s; color: var(--navy);
   }
   .input-field input:focus { border-color: var(--teal); background: #fff; }
-  .input-field .pre { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 700; font-size: 22px; }
+  .input-field .pre { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 700; font-size:calc(22px * var(--font-scale)); }
   
   .smart-stepper { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-  .step-btn { width: 46px; height: 46px; border-radius: 16px; border: none; background: #E2E7EC; color: var(--navy); cursor: pointer; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step-btn { width: 46px; height: 46px; border-radius: 16px; border: none; background: #E2E7EC; color: var(--navy); cursor: pointer; font-size:calc(20px * var(--font-scale)); font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .step-input-box { flex: 1; position: relative; }
-  .step-input-box input { width: 100%; border: 2.5px solid #E9EDF0; border-radius: 16px; padding: 10px; text-align: center; font-family: 'Quicksand'; font-weight: 700; font-size: 18px; outline: none; }
+  .step-input-box input { width: 100%; border: 2.5px solid #E9EDF0; border-radius: 16px; padding: 10px; text-align: center; font-family: 'Quicksand'; font-weight: 700; font-size:calc(18px * var(--font-scale)); outline: none; }
   
   .final-res-card { background: var(--navy); color: #fff; border-radius: 36px; padding: 30px 20px; text-align: center; box-shadow: 0 15px 35px rgba(26,43,60,0.15); border: 1px solid rgba(255,255,255,0.05); }
-  .final-res-card .twd { font-family: 'Quicksand'; font-size: 42px; font-weight: 700; color: var(--coral); margin: 6px 0; }
-  .final-res-card .krw { font-family: 'Quicksand'; font-size: 16px; opacity: 0.7; font-weight: 500; }
+  .final-res-card .twd { font-family: 'Quicksand'; font-size:calc(42px * var(--font-scale)); font-weight: 700; color: var(--coral); margin: 6px 0; }
+  .final-res-card .krw { font-family: 'Quicksand'; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
   .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
   body.tablet-view .bottom-nav { max-width: 800px; }
-  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: #A0ACB6; border: none; background: none; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: #A0ACB6; border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 700; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
-  .nav-btn i { font-size: 20px; margin-bottom: 4px; transition: 0.3s; }
+  .nav-btn i { font-size:calc(20px * var(--font-scale)); margin-bottom: 4px; transition: 0.3s; }
   .nav-btn.active i { transform: translateY(-4px) scale(1.1); }
   .panel { display: none; }
   .panel.active { display: block; }
   
   .countdown-chip { background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 16px; padding: 8px 14px; text-align:center; border: 1px solid rgba(255,255,255,0.25); }
-  .countdown-chip .cd-num { display:block; font-family:'Quicksand'; font-size: 20px; font-weight:800; color: var(--coral); line-height:1; }
-  .countdown-chip .cd-label { display:block; font-size: 10px; opacity: 0.9; margin-top:2px; }
+  .countdown-chip .cd-num { display:block; font-family:'Quicksand'; font-size:calc(20px * var(--font-scale)); font-weight:800; color: var(--coral); line-height:1; }
+  .countdown-chip .cd-label { display:block; font-size:calc(10px * var(--font-scale)); opacity: 0.9; margin-top:2px; }
   
-  .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size: 13px; background: #FAFBFC; padding: 12px; border-radius: 16px; }
+  .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size:calc(13px * var(--font-scale)); background: #FAFBFC; padding: 12px; border-radius: 16px; }
   .bp-grid-item { display: flex; flex-direction: column; }
   .bp-grid-item span { color: var(--gray); font-weight: 600; margin-bottom: 2px; }
-  .bp-grid-item b { color: var(--navy); font-size: 14px; }
+  .bp-grid-item b { color: var(--navy); font-size:calc(14px * var(--font-scale)); }
 
   .dual-card-row { display:flex; gap: 12px; margin-bottom: 6px; }
   .mini-card { flex:1; padding: 16px; margin-bottom:0; text-align:center; }
-  .mini-label { font-size: 12px; color: var(--gray); font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:4px; }
-  .mini-value { font-family:'Quicksand'; font-size: 18px; font-weight:700; color: var(--teal); }
-  .mini-sub { font-size: 10px; color: var(--gray); margin-top: 3px; font-weight:600; }
-  .climate-note { background: #EBF2F3; border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #4A6B6C; margin: 12px 0 18px; display:flex; align-items:center; gap:8px; }
+  .mini-label { font-size:calc(12px * var(--font-scale)); color: var(--gray); font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:4px; }
+  .mini-value { font-family:'Quicksand'; font-size:calc(18px * var(--font-scale)); font-weight:700; color: var(--teal); }
+  .mini-sub { font-size:calc(10px * var(--font-scale)); color: var(--gray); margin-top: 3px; font-weight:600; }
+  .climate-note { background: #EBF2F3; border-radius: 16px; padding: 12px 16px; font-size:calc(13px * var(--font-scale)); color: #4A6B6C; margin: 12px 0 18px; display:flex; align-items:center; gap:8px; }
 
-  .edit-pill { margin-left:auto; background:#E2E7EC; border:none; width:28px; height:28px; border-radius:50%; color:var(--navy); cursor:pointer; font-size:11px; display: inline-flex; align-items: center; justify-content: center; }
-  .ghost-btn { width:100%; background:none; border:2px solid var(--navy); color:var(--navy); padding:12px; border-radius:18px; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Noto Sans TC'; }
+  .edit-pill { margin-left:auto; background:#E2E7EC; border:none; width:28px; height:28px; border-radius:50%; color:var(--navy); cursor:pointer; font-size:calc(11px * var(--font-scale)); display: inline-flex; align-items: center; justify-content: center; }
+  .ghost-btn { width:100%; background:none; border:2px solid var(--navy); color:var(--navy); padding:12px; border-radius:18px; font-weight:700; font-size:calc(14px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Noto Sans TC'; }
 
   .day-pill-row::-webkit-scrollbar, .day-tab-row::-webkit-scrollbar { height: 4px; }
   .day-pill-row::-webkit-scrollbar-thumb, .day-tab-row::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
@@ -133,9 +136,9 @@
     box-shadow: 0 8px 24px rgba(241, 196, 15, 0.12);
   }
   
-  .contact-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1.5px solid var(--line); font-size:14.5px; }
+  .contact-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1.5px solid var(--line); font-size:calc(14.5px * var(--font-scale)); }
   .contact-row:last-child { border-bottom:none; padding-bottom:0; }
-  .contact-row a { color:var(--coral); font-family:'Quicksand'; font-weight:700; text-decoration:none; font-size:15px; background: #FFF1F0; padding: 4px 10px; border-radius: 8px; }
+  .contact-row a { color:var(--coral); font-family:'Quicksand'; font-weight:700; text-decoration:none; font-size:calc(15px * var(--font-scale)); background: #FFF1F0; padding: 4px 10px; border-radius: 8px; }
 
   .timeline-container { position: relative; padding-left: 20px; margin: 15px 5px; }
   .timeline-container::before { content: ''; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-left: 2px dashed #CBD5E1; }
@@ -143,20 +146,20 @@
   .timeline-dot { position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); border: 2px solid white; box-shadow: 0 0 0 3px rgba(91,158,162,0.2); }
   .timeline-card { background: white; border-radius: 20px; border: 1px solid var(--line); padding: 16px; cursor: pointer; transition: 0.3s; position: relative; }
   .timeline-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
-  .timeline-time { font-family: 'Quicksand'; font-weight: 700; font-size: 14px; color: var(--teal); margin-bottom: 4px; }
-  .timeline-title { font-weight: 700; font-size: 16px; color: var(--navy); }
-  .timeline-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 13.5px; color: #555; }
+  .timeline-time { font-family: 'Quicksand'; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: var(--teal); margin-bottom: 4px; }
+  .timeline-title { font-weight: 700; font-size:calc(16px * var(--font-scale)); color: var(--navy); }
+  .timeline-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size:calc(13.5px * var(--font-scale)); color: #555; }
   .timeline-detail.active { display: block; }
   .detail-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .detail-row i { color: var(--gold); width: 16px; text-align: center; }
   
-  .sync-status-bar { display: flex; justify-content: space-between; align-items: center; background: #ECFDF5; border: 1.5px solid #A7F3D0; padding: 10px 16px; border-radius: 16px; font-size: 13px; color: #065F46; margin-bottom: 15px; }
+  .sync-status-bar { display: flex; justify-content: space-between; align-items: center; background: #ECFDF5; border: 1.5px solid #A7F3D0; padding: 10px 16px; border-radius: 16px; font-size:calc(13px * var(--font-scale)); color: #065F46; margin-bottom: 15px; }
 
   body.sub-mode .only-master { display: none !important; }
   
   .role-toggle-badge {
     cursor: pointer; display: inline-flex; align-items: center; gap: 6px; 
-    padding: 6px 12px; border-radius: 14px; font-size: 12px; font-weight: 800;
+    padding: 6px 12px; border-radius: 14px; font-size:calc(12px * var(--font-scale)); font-weight: 800;
     transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2);
   }
   body.sub-mode .role-toggle-badge { background: #E6F4EA; color: #137333; }
@@ -173,7 +176,7 @@
     padding: 14px;
     border-radius: 18px;
     font-weight: 700;
-    font-size: 15px;
+    font-size:calc(15px * var(--font-scale));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -213,25 +216,25 @@
             <i class="fa-solid fa-user-shield"></i> <span id="display-role-text">一般使用者模式</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.25); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: 0.3s;"><i class="fa-solid fa-gear" style="font-size: 16px;"></i></button>
+            <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.25); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: 0.3s;"><i class="fa-solid fa-gear" style="font-size:calc(16px * var(--font-scale));"></i></button>
             <div class="countdown-chip"><span class="cd-num" id="countdown-num">--</span><span class="cd-label" id="countdown-label">天後出發</span></div>
           </div>
         </div>
         <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 8px;">釜山行旅</h1>
-        <p class="hero-sub" id="display-trip-sub" style="margin:6px 0 0; opacity:0.9; font-size: 15px; font-weight:700;">11.10(二) - 11.14(六)・5天4夜</p>
+        <p class="hero-sub" id="display-trip-sub" style="margin:6px 0 0; opacity:0.9; font-size:calc(15px * var(--font-scale)); font-weight:700;">11.10(二) - 11.14(六)・5天4夜</p>
     </div>
 
     <!-- 航班資訊 -->
     <div class="card boarding-pass full-width" style="margin-top:18px;">
         <div class="section-title"><i class="fa-solid fa-plane"></i> 航班資訊 <button class="edit-pill only-master" onclick="openFlightEdit()"><i class="fa-solid fa-pen"></i></button></div>
         <div class="bp-row" style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
-            <div class="bp-flight" style="display:flex; align-items:center; gap:8px; font-family:'Quicksand'; font-weight:700; font-size:17px;"><span class="bp-code" id="display-dep-code" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">TPE</span><i class="fa-solid fa-plane-departure" style="color:var(--gold); font-size:13px;"></i><span class="bp-code" id="display-arr-code" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">PUS</span></div>
-            <div class="bp-meta" style="font-size: 12px; color: var(--gray); text-align:right; line-height:1.5;"><b id="display-flight-no-1" style="color:var(--navy); font-size:14px;">IT606</b> 去程<br><span id="display-flight-time-1">11/10(二) 16:50</span></div>
+            <div class="bp-flight" style="display:flex; align-items:center; gap:8px; font-family:'Quicksand'; font-weight:700; font-size:calc(17px * var(--font-scale));"><span class="bp-code" id="display-dep-code" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">TPE</span><i class="fa-solid fa-plane-departure" style="color:var(--gold); font-size:calc(13px * var(--font-scale));"></i><span class="bp-code" id="display-arr-code" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">PUS</span></div>
+            <div class="bp-meta" style="font-size:calc(12px * var(--font-scale)); color: var(--gray); text-align:right; line-height:1.5;"><b id="display-flight-no-1" style="color:var(--navy); font-size:calc(14px * var(--font-scale));">IT606</b> 去程<br><span id="display-flight-time-1">11/10(二) 16:50</span></div>
         </div>
-        <div class="bp-divider" style="display:flex; align-items:center; gap:10px; margin: 12px 0; color: var(--gold); font-size:12px;"><span style="flex:1; border-top: 2px dashed #E2E8F0;"></span><i class="fa-solid fa-plane" style="transform:rotate(90deg);"></i><span style="flex:1; border-top: 2px dashed #E2E8F0;"></span></div>
+        <div class="bp-divider" style="display:flex; align-items:center; gap:10px; margin: 12px 0; color: var(--gold); font-size:calc(12px * var(--font-scale));"><span style="flex:1; border-top: 2px dashed #E2E8F0;"></span><i class="fa-solid fa-plane" style="transform:rotate(90deg);"></i><span style="flex:1; border-top: 2px dashed #E2E8F0;"></span></div>
         <div class="bp-row" style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
-            <div class="bp-flight" style="display:flex; align-items:center; gap:8px; font-family:'Quicksand'; font-weight:700; font-size:17px;"><span class="bp-code" id="display-arr-code-2" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">PUS</span><i class="fa-solid fa-plane-arrival" style="color:var(--gold); font-size:13px;"></i><span class="bp-code" id="display-dep-code-2" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">TPE</span></div>
-            <div class="bp-meta" style="font-size: 12px; color: var(--gray); text-align:right; line-height:1.5;"><b id="display-flight-no-2" style="color:var(--navy); font-size:14px;">IT607</b> 回程<br><span id="display-flight-time-2">11/14(六) 20:50</span></div>
+            <div class="bp-flight" style="display:flex; align-items:center; gap:8px; font-family:'Quicksand'; font-weight:700; font-size:calc(17px * var(--font-scale));"><span class="bp-code" id="display-arr-code-2" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">PUS</span><i class="fa-solid fa-plane-arrival" style="color:var(--gold); font-size:calc(13px * var(--font-scale));"></i><span class="bp-code" id="display-dep-code-2" style="background:#F1F5F9; padding:4px 10px; border-radius:10px;">TPE</span></div>
+            <div class="bp-meta" style="font-size:calc(12px * var(--font-scale)); color: var(--gray); text-align:right; line-height:1.5;"><b id="display-flight-no-2" style="color:var(--navy); font-size:calc(14px * var(--font-scale));">IT607</b> 回程<br><span id="display-flight-time-2">11/14(六) 20:50</span></div>
         </div>
         
         <div class="bp-grid">
@@ -240,7 +243,7 @@
           <div class="bp-grid-item"><span>目前動態</span><b id="display-flight-status" style="color:#059669;">● 準點 On Time</b></div>
           <div class="bp-grid-item"><span>最後更新時間</span><b id="display-flight-update">剛剛</b></div>
         </div>
-        <button class="ghost-btn only-master" style="margin-top:10px; font-size:12px; padding:8px;" onclick="checkLiveFlightStatus()"><i class="fa-solid fa-arrows-rotate"></i> 更新即時航班動態</button>
+        <button class="ghost-btn only-master" style="margin-top:10px; font-size:calc(12px * var(--font-scale)); padding:8px;" onclick="checkLiveFlightStatus()"><i class="fa-solid fa-arrows-rotate"></i> 更新即時航班動態</button>
     </div>
 
     <!-- 即時資訊匯率 -->
@@ -269,7 +272,7 @@
     <!-- 住宿資訊 -->
     <div class="card" id="accom-card">
         <div class="section-title"><i class="fa-solid fa-hotel"></i> 住宿資訊 <button class="edit-pill only-master" onclick="toggleAccomEdit()"><i class="fa-solid fa-pen"></i></button></div>
-        <div id="accom-view"><p class="empty-hint" style="color:var(--gray); font-size:14px; margin:0;">尚未填寫住宿資訊，點右上角安全解鎖新增</p></div>
+        <div id="accom-view"><p class="empty-hint" style="color:var(--gray); font-size:calc(14px * var(--font-scale)); margin:0;">尚未填寫住宿資訊，點右上角安全解鎖新增</p></div>
         <div id="accom-edit" style="display:none">
             <input class="accom-edit-field" id="accom-name-in" placeholder="飯店名稱" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; margin-bottom:8px;">
             <input class="accom-edit-field" id="accom-addr-in" placeholder="地址" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; margin-bottom:8px;">
@@ -287,13 +290,13 @@
         <div class="contact-row"><span>觀光諮詢熱線(多語服務)</span><a href="tel:1330">1330</a></div>
         <div class="contact-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
           <div style="display:flex; justify-content:space-between; width:100%;"><span>駐釜山辦事處急難救助專線</span><a href="tel:010-4537-7961">010-4537-7961</a></div>
-          <small style="color:var(--gray); font-size:12px;">※ 僅限急難救助事件・中文溝通服務</small>
+          <small style="color:var(--gray); font-size:calc(12px * var(--font-scale));">※ 僅限急難救助事件・中文溝通服務</small>
         </div>
     </div>
 
     <div class="alert-warning-card">
         <div class="section-title" style="color: #B7950B; font-weight: 800;"><i class="fa-solid fa-circle-info"></i> 行程注意事項 <button class="edit-pill only-master" onclick="openNoteEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
-        <ul class="note-list" id="display-notes-list" style="margin:0; padding-left:18px; font-size:14.5px; line-height: 1.6; color:#7D6608; font-weight: 500;">
+        <ul class="note-list" id="display-notes-list" style="margin:0; padding-left:18px; font-size:calc(14.5px * var(--font-scale)); line-height: 1.6; color:#7D6608; font-weight: 500;">
             <li>時差：韓國比台灣快 1 小時</li>
             <li>插座為 Type C/F、電壓 220V,記得帶轉接頭</li>
             <li>建議儲值 T-money 卡搭地鐵、公車較方便</li>
@@ -308,13 +311,13 @@
 
     <div class="alert-danger-card">
         <div class="section-title" style="color:var(--warn); font-weight: 800; margin-bottom:10px;"><i class="fa-solid fa-triangle-exclamation"></i> 行前攜帶限制提醒 <button class="edit-pill only-master" onclick="openWarnEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
-        <ul class="warn-list" id="display-warn-list" style="margin:0; padding-left:18px; font-size:14px; line-height:1.7; color:#78281F; font-weight: 500;">
+        <ul class="warn-list" id="display-warn-list" style="margin:0; padding-left:18px; font-size:calc(14px * var(--font-scale)); line-height:1.7; color:#78281F; font-weight: 500;">
             <li><b>止痛/感冒藥：</b>日本 EVE 系列止痛藥已被韓國禁止入境;含可待因、右美沙芬、偽麻黃鹼成分的止咳藥也可能被攔查。</li>
             <li><b>慢性病處方藥：</b>安眠藥、精神科用藥務必攜帶英文診斷證明+處方箋並保留原包裝。</li>
             <li><b>行動電源/鋰電池：</b>只能放隨身行李,不可託運。</li>
             <li><b>肉類製品：</b>肉乾、肉鬆、香腸、火腿等一律禁止攜帶入境。</li>
         </ul>
-        <p class="warn-footnote" style="font-size:11.5px; color:#943126; margin-top:10px; border-top:1px dashed rgba(228,87,46,0.25); padding-top:6px; font-weight: bold;">※ 法規隨時異動，出發前請再次確認各官網最新公告。</p>
+        <p class="warn-footnote" style="font-size:calc(11.5px * var(--font-scale)); color:#943126; margin-top:10px; border-top:1px dashed rgba(228,87,46,0.25); padding-top:6px; font-weight: bold;">※ 法規隨時異動，出發前請再次確認各官網最新公告。</p>
     </div>
 
     <div id="prep-categories"></div>
@@ -327,14 +330,14 @@
     
     <div class="card only-master" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-color:#BFDBFE;">
       <div class="section-title" style="color: #1E40AF;"><i class="fa-solid fa-wand-magic-sparkles"></i> 智慧型離線行程文字解析器</div>
-      <p style="font-size:12px; color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">貼上大綱文字即可秒級解析！每一行只要開頭標明日期（如 11/12），無論你目前停留在哪個日期頁籤，都會自動歸入該日期，不受目前頁籤限制；沒寫日期的行才會歸入目前頁籤。若日期超出本次行程範圍，或與現有行程時間重複，會另外列出讓你確認、編輯或刪除。</p>
+      <p style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">貼上大綱文字即可秒級解析！每一行只要開頭標明日期（如 11/12），無論你目前停留在哪個日期頁籤，都會自動歸入該日期，不受目前頁籤限制；沒寫日期的行才會歸入目前頁籤。若日期超出本次行程範圍，或與現有行程時間重複，會另外列出讓你確認、編輯或刪除。</p>
       <div style="display:flex; flex-direction:column; gap:8px;">
         <textarea id="ai-raw-itin-text" placeholder="格式範例一（含日期）：
 11/11 10:00 甘川洞文化村 | 門票 免費 | 備註 必看小王子雕像
 
 格式範例二（直接加入當前頁籤日期）：
-14:00 海雲台沙灘漫步 | 門票 5000" style="width:100%; height:90px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:13px; outline:none; font-family:sans-serif;"></textarea>
-        <button class="save-btn" style="background:#2563EB; font-size:13px;" onclick="parseRawItinOffline()"><i class="fa-solid fa-gears"></i> 本地智慧解析並排入行程</button>
+14:00 海雲台沙灘漫步 | 門票 5000" style="width:100%; height:90px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif;"></textarea>
+        <button class="save-btn" style="background:#2563EB; font-size:calc(13px * var(--font-scale));" onclick="parseRawItinOffline()"><i class="fa-solid fa-gears"></i> 本地智慧解析並排入行程</button>
       </div>
     </div>
 
@@ -354,13 +357,18 @@
 
     <div style="padding:0 12px;">
       <div class="card">
-        <div class="section-title"><i class="fa-solid fa-chart-pie"></i> 分類佔比</div>
+        <div class="section-title"><i class="fa-solid fa-chart-pie"></i> 消費統計</div>
+        <div class="calc-tabs" id="exp-breakdown-tabs" style="margin-bottom:14px;">
+          <button class="tab-btn-sub active" onclick="switchExpBreakdown('category', this)">類別</button>
+          <button class="tab-btn-sub" onclick="switchExpBreakdown('member', this)">成員</button>
+          <button class="tab-btn-sub" onclick="switchExpBreakdown('date', this)">日期</button>
+        </div>
         <div id="cat-breakdown"><p class="empty-hint">尚無消費紀錄</p></div>
       </div>
 
       <div class="dual-card-row only-master" style="margin-bottom:15px;">
-        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:14.5px; flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
-        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:14.5px; flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="triggerReceiptCapture()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
+        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
+        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="triggerReceiptCapture()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
       </div>
       <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptFile(event)">
       <div id="receipt-ai-status" style="display:none; margin-bottom:15px;"></div>
@@ -385,7 +393,7 @@
         <div class="card">
             <div class="input-label">韓元 KRW (₩)</div>
             <div class="input-field"><span class="pre">₩</span><input type="text" id="simp-krw" inputmode="decimal" placeholder="0" oninput="runSimp('krw')"></div>
-            <div style="text-align:center; color:var(--gold); margin:-10px 0 10px; font-size:22px;"><i class="fa-solid fa-arrows-up-down"></i></div>
+            <div style="text-align:center; color:var(--gold); margin:-10px 0 10px; font-size:calc(22px * var(--font-scale));"><i class="fa-solid fa-arrows-up-down"></i></div>
             <div class="input-label">台幣 TWD ($)</div>
             <div class="input-field"><span class="pre">$</span><input type="text" id="simp-twd" inputmode="decimal" placeholder="0" oninput="runSimp('twd')"></div>
         </div>
@@ -400,10 +408,10 @@
                 <button class="switch-btn" style="background:#E2E7EC; color:var(--gray); border:none; padding:6px 12px; border-radius:10px; font-weight:700;" id="btn-per" onclick="setMode('percent')">% 打折</button>
             </div>
             <div class="chip-row" style="margin-bottom:14px; display:flex; gap:6px;">
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer;" onclick="setPresetDisc(10)">10%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer;" onclick="setPresetDisc(20)">20%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer;" onclick="setPresetDisc(30)">30%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer;" onclick="setPresetDisc(50)">50%</div>
+                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(10)">10%</div>
+                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(20)">20%</div>
+                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(30)">30%</div>
+                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(50)">50%</div>
             </div>
             <div class="smart-stepper">
                 <button class="step-btn" onclick="adj('disc',-1)">-</button>
@@ -423,7 +431,7 @@
             <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>退稅後最終價：</span><b id="res-final-krw" style="color:var(--teal);">₩ 0</b></div>
         </div>
         <div class="final-res-card"><div class="twd" id="final-twd">NT$ 0</div><div class="krw" id="final-krw">≈ ₩ 0</div></div>
-        <button class="save-btn only-master" style="margin-top:16px; padding: 16px; font-size: 16px;" onclick="sendCalcToExpense()"><i class="fa-solid fa-arrow-right-to-bracket"></i> 加入支出紀錄</button>
+        <button class="save-btn only-master" style="margin-top:16px; padding: 16px; font-size:calc(16px * var(--font-scale));" onclick="sendCalcToExpense()"><i class="fa-solid fa-arrow-right-to-bracket"></i> 加入支出紀錄</button>
     </div>
   </section>
 
@@ -440,26 +448,37 @@
 <!-- 齒輪控制面板 Modal -->
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
-    <h3 style="margin-top: 0; color: var(--navy);"><i class="fa-solid fa-gears"></i> 雲端同步與管家設定</h3>
-    
+    <h3 style="margin-top: 0; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
+
+    <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
-      <h4 style="margin-top:0; margin-bottom:8px; font-size:15px; color:var(--navy);"><i class="fa-solid fa-database"></i> Firebase 即時雲端同步</h4>
-      <p style="font-size:11.5px; color:var(--gray); margin-top:0; margin-bottom:8px;">主操作者建立房號後發布；其他人輸入相同房號即可連線，並享有 WebSocket 瞬間自動同步功能！</p>
+      <h4 style="margin-top:0; margin-bottom:6px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-text-height"></i> 文字大小</h4>
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px;">調整全部頁面的文字顯示大小，方便閱讀；不會改變版面排列</p>
+      <div class="calc-tabs" id="font-scale-tabs" style="margin-bottom:0;">
+        <button class="tab-btn-sub" data-fs="1" onclick="setFontScale(1, this)">標準</button>
+        <button class="tab-btn-sub" data-fs="1.15" onclick="setFontScale(1.15, this)">大</button>
+        <button class="tab-btn-sub" data-fs="1.3" onclick="setFontScale(1.3, this)">特大</button>
+      </div>
+    </div>
+
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-database"></i> Firebase 即時雲端同步</h4>
+      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">主操作者建立房號後發布；其他人輸入相同房號即可連線，並享有 WebSocket 瞬間自動同步功能！</p>
       
       <div class="sync-status-bar" id="sync-status" style="margin-bottom:10px;">
         <span><i class="fa-solid fa-circle-dot"></i> 狀態：</span><b id="sync-room-name">未開啟雲端同步</b>
       </div>
       
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <input type="text" id="sync-room-input" placeholder="請輸入房號 (Room ID)" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; font-size:13px; outline:none;">
+        <input type="text" id="sync-room-input" placeholder="請輸入房號 (Room ID)" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none;">
         
         <div class="only-master" style="display:flex; gap:6px;">
-          <button class="save-btn" style="flex:1; padding:8px 12px; font-size:12px; background:#10B981;" onclick="syncUpload()"><i class="fa-solid fa-cloud-arrow-up"></i> 主控：建立房號並發布</button>
+          <button class="save-btn" style="flex:1; padding:8px 12px; font-size:calc(12px * var(--font-scale)); background:#10B981;" onclick="syncUpload()"><i class="fa-solid fa-cloud-arrow-up"></i> 主控：建立房號並發布</button>
         </div>
         
-        <button class="ghost-btn" style="padding:8px 12px; font-size:12px; width:100%;" onclick="syncDownload()"><i class="fa-solid fa-cloud-arrow-down"></i> 讀取此房號資料</button>
+        <button class="ghost-btn" style="padding:8px 12px; font-size:calc(12px * var(--font-scale)); width:100%;" onclick="syncDownload()"><i class="fa-solid fa-cloud-arrow-down"></i> 讀取此房號資料</button>
         
-        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gray); cursor:pointer; margin-top:4px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:calc(12px * var(--font-scale)); color:var(--gray); cursor:pointer; margin-top:4px;">
           <input type="checkbox" id="sync-auto-check" onchange="toggleAutoSync(this.checked)"> 開啟 Firebase 雲端即時同步 (自動更新)
         </label>
       </div>
@@ -467,20 +486,40 @@
 
     <!-- 主操作者密碼設定 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
-      <h4 style="margin-top:0; margin-bottom:8px; font-size:15px; color:var(--navy);"><i class="fa-solid fa-lock"></i> 主操作者解鎖密碼設定</h4>
-      <p style="font-size:11px; color:var(--gray); margin-top:0; margin-bottom:8px;">預設解鎖密碼為：1234。</p>
-      <input type="password" maxlength="4" id="setting-master-pin" placeholder="預設密碼：1234" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:13px; outline:none;">
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-lock"></i> 主操作者解鎖密碼設定</h4>
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">預設解鎖密碼為：1234。</p>
+      <input type="password" maxlength="4" id="setting-master-pin" placeholder="預設密碼：1234" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none;">
     </div>
 
     <!-- 全域行程主控設定 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
-      <h4 style="margin-top:0; margin-bottom:8px; font-size:15px; color:var(--navy);"><i class="fa-solid fa-pen-nib"></i> 行程全域變數自訂</h4>
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-pen-nib"></i> 行程全域變數自訂</h4>
       <div class="input-label">主標題</div>
-      <input type="text" id="setting-trip-title" placeholder="釜山行旅" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="text" id="setting-trip-title" placeholder="釜山行旅" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
       <div class="input-label">日期與天數標題</div>
-      <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:13px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
       <div class="input-label">啟航日期 (用於計算精確倒數天數)</div>
-      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:14px; outline:none; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit;">
+    </div>
+
+    <!-- 旅伴成員名單：緊接在啟航日期設定之後，方便一開始就建立好成員 -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:6px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-users"></i> 旅伴成員名單</h4>
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px;">記帳時可選擇成員作為付款人，並能依成員查看花費統計</p>
+      <div id="setting-members-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
+      <div class="only-master" style="display:flex; gap:6px;">
+        <input type="text" id="setting-new-member" placeholder="輸入成員稱呼，如：爸爸" style="flex:1; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box; min-width:0;">
+        <button onclick="addMemberFromSettings()" style="background:var(--navy); color:white; border:none; width:42px; border-radius:12px; cursor:pointer; font-size:calc(16px * var(--font-scale)); flex-shrink:0;"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
+
+    <!-- 實用工具：加入桌面捷徑教學 / 匯出整趟行程 Excel -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:10px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-toolbox"></i> 實用工具</h4>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="ghost-btn" onclick="openInstallGuide()"><i class="fa-solid fa-mobile-screen-button"></i> 加入桌面捷徑教學</button>
+        <button class="ghost-btn" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> 匯出整趟行程 Excel</button>
+      </div>
     </div>
 
     <div style="display:flex; gap:8px;">
@@ -506,9 +545,62 @@
 <div class="guide-overlay" id="ai-review-overlay">
   <div class="guide-content" style="max-height:88vh; overflow-y:auto; text-align:left; max-width:400px;">
      <h3 style="margin-top:0; color:#B7472A;"><i class="fa-solid fa-triangle-exclamation"></i> 部分行程需要您確認</h3>
-     <p id="ai-review-intro" style="font-size:12.5px; color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.6;"></p>
+     <p id="ai-review-intro" style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.6;"></p>
      <div id="ai-review-list" style="display:flex; flex-direction:column; gap:14px; margin-bottom:16px;"></div>
      <button class="ghost-btn" onclick="closeAiReview()">稍後再處理，先關閉</button>
+  </div>
+</div>
+
+<!-- 加入桌面捷徑教學彈窗 -->
+<div class="guide-overlay" id="install-guide-overlay">
+  <div class="guide-content" style="max-height:85vh; overflow-y:auto; text-align:left;">
+     <h3 style="margin-top:0; text-align:center; color:var(--navy);"><i class="fa-solid fa-mobile-screen-button"></i> 加入桌面捷徑</h3>
+     <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); text-align:center; margin-top:-8px; margin-bottom:14px; line-height:1.6;">加入後，之後點桌面圖示就能直接開啟，不用再找連結</p>
+     <div class="calc-tabs" style="margin-bottom:16px;">
+        <button class="tab-btn-sub" id="install-btn-ios" onclick="showInstallTab('ios')">iPhone (iOS)</button>
+        <button class="tab-btn-sub" id="install-btn-android" onclick="showInstallTab('android')">Android</button>
+     </div>
+     <div id="install-tab-ios">
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">1</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">用 <b>Safari</b> 瀏覽器開啟本頁面，點畫面下方工具列中間的<i class="fa-solid fa-share-from-square" style="color:var(--teal); margin:0 2px;"></i>「分享」圖示</div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">2</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">在選單中往下滑動，點選「加入主畫面」</div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:6px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">3</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">確認顯示名稱後，點右上角「新增」，桌面就會出現捷徑圖示</div>
+        </div>
+     </div>
+     <div id="install-tab-android" style="display:none;">
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">1</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">用 <b>Chrome</b> 瀏覽器開啟本頁面，點右上角<i class="fa-solid fa-ellipsis-vertical" style="color:var(--teal); margin:0 2px;"></i>選單圖示</div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">2</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">選單中點選「新增至主畫面」（或「安裝應用程式」）</div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:6px;">
+          <div style="width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:calc(13px * var(--font-scale)); flex-shrink:0;">3</div>
+          <div style="font-size:calc(13.5px * var(--font-scale)); color:var(--navy); line-height:1.6; padding-top:2px;">點「新增」或「安裝」確認，桌面就會出現捷徑圖示</div>
+        </div>
+     </div>
+     <button class="save-btn" style="margin-top:8px;" onclick="closeInstallGuide()">我知道了</button>
+  </div>
+</div>
+
+<!-- 首次使用導覽（可跳過；不介紹身分切換，避免長輩誤觸） -->
+<div class="guide-overlay" id="onboarding-overlay">
+  <div class="guide-content" style="max-height:85vh; overflow-y:auto; max-width:380px;">
+    <div id="onboarding-slide-body"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px;">
+      <button onclick="skipOnboarding()" style="background:none; border:none; color:var(--gray); font-size:calc(13px * var(--font-scale)); cursor:pointer; padding:8px;">跳過導覽</button>
+      <div id="onboarding-dots" style="display:flex; gap:6px;"></div>
+      <button class="save-btn" id="onboarding-next-btn" style="width:auto; padding:10px 22px; margin-bottom:0;" onclick="nextOnboardingSlide()">下一步</button>
+    </div>
   </div>
 </div>
 
@@ -592,6 +684,8 @@
   let itinData = {}; let itinItemSeq = 1; let activeDay = '2026-11-10'; let formState = {}; let activeDetailId = null;
   let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金'; let expItemSeq = 1;
   let accomData = { name: "釜山海雲台格蘭德飯店 (Grand Hotel)", address: "24 Haeundaehaebyeon-ro, Busan", checkin: "15:00", checkout: "11:00" };
+  let expBreakdownMode = 'category';
+  let currentFontScale = 1;
 
   const ITIN_DAYS = [
     {key:'2026-11-10', date:'11/10', wd:'二'}, {key:'2026-11-11', date:'11/11', wd:'三'},
@@ -613,7 +707,8 @@
         itinData: itinData || {},
         expenseRecords: expenseRecords || [],
         masterPin: masterPin || '1234',
-        accomData: accomData || {}
+        accomData: accomData || {},
+        travelers: travelers || []
       };
       const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
       try {
@@ -678,6 +773,8 @@
     document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
     document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
+    renderMembersSettingsList();
+    syncFontScaleTabsUI();
     document.getElementById('settings-drawer-overlay').style.display = 'flex';
   }
   function closeSettingsModal() { document.getElementById('settings-drawer-overlay').style.display = 'none'; }
@@ -782,7 +879,9 @@
   }
 
   function switchCalc(type, btn) {
-    document.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+    const parent = btn.closest('.calc-tabs');
+    if (parent) { parent.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active')); }
+    btn.classList.add('active');
     document.getElementById('calc-simple-box').style.display = (type==='simple')?'block':'none';
     document.getElementById('calc-shop-box').style.display = (type==='shop')?'block':'none';
   }
@@ -824,7 +923,7 @@
 
   function renderChipRow(elId, labels, activeIdx, onSelect) {
     const el = document.getElementById(elId); if (!el) return;
-    el.innerHTML = labels.map((l,i) => `<div class="chip ${i===activeIdx?'active':''}" data-idx="${i}" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer; color:var(--navy);">${escapeHtml(l)}</div>`).join('');
+    el.innerHTML = labels.map((l,i) => `<div class="chip ${i===activeIdx?'active':''}" data-idx="${i}" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer; color:var(--navy);">${escapeHtml(l)}</div>`).join('');
     el.querySelectorAll('.chip').forEach(chip => {
       if(chip.classList.contains('active')) { chip.style.background='var(--navy)'; chip.style.color='#fff'; }
       chip.addEventListener('click', () => {
@@ -867,7 +966,7 @@
     const row = document.getElementById('day-pill-row'); if (!row) return;
     row.innerHTML = ITIN_DAYS.map(d => `
       <div class="day-pill" onclick="goToItinerary('${d.key}')" style="flex:0 0 auto; background:#fff; border:1px solid var(--line); border-radius:16px; padding:10px 14px; text-align:center; min-width:68px; cursor:pointer;">
-        <span class="dp-date" style="display:block; font-family:'Quicksand'; font-weight:700; font-size:13px;">${d.date}</span><span class="dp-wd" style="display:block; font-size:10px; color:var(--gray); margin:2px 0;">週${d.wd}</span><span class="dp-status" id="dp-status-${d.key}" style="display:block; font-size:10px; color:var(--teal); font-weight:700;">--</span>
+        <span class="dp-date" style="display:block; font-family:'Quicksand'; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span class="dp-wd" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--gray); margin:2px 0;">週${d.wd}</span><span class="dp-status" id="dp-status-${d.key}" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--teal); font-weight:700;">--</span>
       </div>
     `).join('');
     updateDayPillStatuses();
@@ -887,7 +986,7 @@
   function renderAccomView(d) {
     const el = document.getElementById('accom-view'); if (!el) return;
     if (!d || !d.name) { el.innerHTML = `<p class="empty-hint">尚未填寫住宿資訊</p>`; return; }
-    el.innerHTML = `<div style="font-weight:700; font-size:17px;">${escapeHtml(d.name)}</div><div style="font-size:13px; color:var(--gray); margin:4px 0;"><i class="fa-solid fa-location-dot" style="color:var(--gold)"></i> ${escapeHtml(d.address)}</div><div style="font-size:13px; color:var(--gray);"><i class="fa-solid fa-right-to-bracket" style="color:var(--gold)"></i> 入住 ${escapeHtml(d.checkin)}  <i class="fa-solid fa-right-from-bracket" style="color:var(--gold)"></i> 退房 ${escapeHtml(d.checkout)}</div>`;
+    el.innerHTML = `<div style="font-weight:700; font-size:calc(17px * var(--font-scale));">${escapeHtml(d.name)}</div><div style="font-size:calc(13px * var(--font-scale)); color:var(--gray); margin:4px 0;"><i class="fa-solid fa-location-dot" style="color:var(--gold)"></i> ${escapeHtml(d.address)}</div><div style="font-size:calc(13px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-right-to-bracket" style="color:var(--gold)"></i> 入住 ${escapeHtml(d.checkin)}  <i class="fa-solid fa-right-from-bracket" style="color:var(--gold)"></i> 退房 ${escapeHtml(d.checkout)}</div>`;
   }
   function toggleAccomEdit() {
     const view = document.getElementById('accom-view'); const edit = document.getElementById('accom-edit'); const opening = edit.style.display === 'none';
@@ -950,16 +1049,16 @@
       const itemsHtml = prepData[cat].map(it => `
         <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);">
           <div onclick="toggleItem('${cat}',${it.id})" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.checked?'var(--teal)':'#fff'}">
-            ${it.checked?'<i class="fa-solid fa-check" style="color:white; font-size:12px;"></i>':''}
+            ${it.checked?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}
           </div>
-          <span style="flex:1; font-size:14.5px; text-decoration:${it.checked?'line-through':'none'}; color:${it.checked?'var(--gray)':'var(--navy)'};">${escapeHtml(it.text)}</span>
+          <span style="flex:1; font-size:calc(14.5px * var(--font-scale)); text-decoration:${it.checked?'line-through':'none'}; color:${it.checked?'var(--gray)':'var(--navy)'};">${escapeHtml(it.text)}</span>
           <button class="only-master" onclick="deleteItem('${cat}',${it.id})" style="background:none; border:none; color:#CBD5E1; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
         </div>
       `).join('');
       return `<div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div class="section-title" style="margin-bottom:0;">${catIcon(cat)} ${escapeHtml(cat)}</div><button class="only-master" onclick="deleteCategory('${cat}')" style="background:none; border:none; color:var(--gray); cursor:pointer;"><i class="fa-solid fa-trash"></i></button></div>
         ${itemsHtml || '<p class="empty-hint">尚無項目</p>'}
-        <div style="display:flex; gap:8px; margin-top:10px;"><input type="text" placeholder="新增項目..." id="newitem-${cat}" style="flex:1; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:13px; outline:none;"><button onclick="addItem('${cat}')" style="background:var(--navy); color:white; border:none; width:36px; border-radius:10px; cursor:pointer;"><i class="fa-solid fa-plus"></i></button></div>
+        <div style="display:flex; gap:8px; margin-top:10px;"><input type="text" placeholder="新增項目..." id="newitem-${cat}" style="flex:1; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none;"><button onclick="addItem('${cat}')" style="background:var(--navy); color:white; border:none; width:36px; border-radius:10px; cursor:pointer;"><i class="fa-solid fa-plus"></i></button></div>
       </div>`;
     }).join('');
   }
@@ -1001,7 +1100,7 @@
 
   function renderDayTabs() {
     const wrap = document.getElementById('itin-day-tabs'); if(!wrap) return;
-    wrap.innerHTML = ITIN_DAYS.map(d => `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-family:'Quicksand'; font-weight:700; font-size:13px;">${d.date}</span><span style="display:block; font-size:10px; margin-top:2px;">週${d.wd}</span></div>`).join('');
+    wrap.innerHTML = ITIN_DAYS.map(d => `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-family:'Quicksand'; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px;">週${d.wd}</span></div>`).join('');
     wrap.querySelectorAll('.day-tab').forEach(tab => { if(tab.classList.contains('active')) { tab.style.background = 'var(--navy)'; tab.style.color = '#fff'; } });
   }
   function selectDay(key) { activeDay = key; renderDayTabs(); renderDayContent(); }
@@ -1177,21 +1276,21 @@
       const dayChips = isDup ? '' : `
         <div class="input-label">請指定要匯入的日期</div>
         <div class="chip-row ai-review-day-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
-          ${ITIN_DAYS.map(d => `<div class="chip" onclick="pickAiReviewDay(${ridx},'${d.key}',this)" style="background:${d.key===it.targetDay?'var(--navy)':'#F1F5F9'}; color:${d.key===it.targetDay?'#fff':'var(--navy)'}; border-radius:10px; padding:6px 12px; font-size:12px; cursor:pointer; font-weight:700;">${d.date}</div>`).join('')}
+          ${ITIN_DAYS.map(d => `<div class="chip" onclick="pickAiReviewDay(${ridx},'${d.key}',this)" style="background:${d.key===it.targetDay?'var(--navy)':'#F1F5F9'}; color:${d.key===it.targetDay?'#fff':'var(--navy)'}; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer; font-weight:700;">${d.date}</div>`).join('')}
         </div>`;
       return `<div class="card" id="ai-review-card-${ridx}" style="margin-bottom:0; border:2px solid var(--warn-border); background:var(--warn-bg); padding:14px;">
-        <div style="font-size:12px; color:#943126; font-weight:800; margin-bottom:10px; line-height:1.5;">${reasonText}</div>
+        <div style="font-size:calc(12px * var(--font-scale)); color:#943126; font-weight:800; margin-bottom:10px; line-height:1.5;">${reasonText}</div>
         ${dayChips}
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input type="time" id="ai-rev-time-${ridx}" value="${it.time}" style="width:38%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:13px; box-sizing:border-box;">
-          <input type="text" id="ai-rev-title-${ridx}" value="${escapeHtml(it.title)}" placeholder="行程名稱" style="flex:1; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:13px; box-sizing:border-box; min-width:0;">
+          <input type="time" id="ai-rev-time-${ridx}" value="${it.time}" style="width:38%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
+          <input type="text" id="ai-rev-title-${ridx}" value="${escapeHtml(it.title)}" placeholder="行程名稱" style="flex:1; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:calc(13px * var(--font-scale)); box-sizing:border-box; min-width:0;">
         </div>
-        <input type="text" id="ai-rev-price-${ridx}" value="${escapeHtml(it.price)}" placeholder="費用預估" style="width:100%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:13px; margin-bottom:8px; box-sizing:border-box;">
-        <textarea id="ai-rev-notes-${ridx}" placeholder="備註說明" style="width:100%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:13px; box-sizing:border-box; min-height:44px;">${escapeHtml(it.notes)}</textarea>
+        <input type="text" id="ai-rev-price-${ridx}" value="${escapeHtml(it.price)}" placeholder="費用預估" style="width:100%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:calc(13px * var(--font-scale)); margin-bottom:8px; box-sizing:border-box;">
+        <textarea id="ai-rev-notes-${ridx}" placeholder="備註說明" style="width:100%; padding:9px; border-radius:8px; border:1px solid #F0C2B4; font-size:calc(13px * var(--font-scale)); box-sizing:border-box; min-height:44px;">${escapeHtml(it.notes)}</textarea>
         <div style="display:flex; gap:6px; margin-top:10px;">
-          <button class="save-btn" style="flex:1; font-size:12.5px; padding:10px; background:var(--teal); box-shadow:none;" onclick="resolveAiItem(${ridx},'import')"><i class="fa-solid fa-check"></i> ${isDup ? '另外新增' : '確認匯入'}</button>
-          ${isDup ? `<button class="save-btn" style="flex:1; font-size:12.5px; padding:10px; background:#E4572E; box-shadow:none;" onclick="resolveAiItem(${ridx},'replace')"><i class="fa-solid fa-rotate"></i> 取代原本</button>` : ''}
-          <button class="ghost-btn" style="flex:1; font-size:12.5px; padding:10px; border-color:#943126; color:#943126;" onclick="resolveAiItem(${ridx},'skip')"><i class="fa-solid fa-trash"></i> 刪除</button>
+          <button class="save-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px; background:var(--teal); box-shadow:none;" onclick="resolveAiItem(${ridx},'import')"><i class="fa-solid fa-check"></i> ${isDup ? '另外新增' : '確認匯入'}</button>
+          ${isDup ? `<button class="save-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px; background:#E4572E; box-shadow:none;" onclick="resolveAiItem(${ridx},'replace')"><i class="fa-solid fa-rotate"></i> 取代原本</button>` : ''}
+          <button class="ghost-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px; border-color:#943126; color:#943126;" onclick="resolveAiItem(${ridx},'skip')"><i class="fa-solid fa-trash"></i> 刪除</button>
         </div>
       </div>`;
     }).join('');
@@ -1255,10 +1354,12 @@
       if (res && res.value) { 
         const d = JSON.parse(res.value); 
         expenseRecords = d.records || []; 
+        if (d.travelers && d.travelers.length) travelers = d.travelers;
       } 
     } catch(e) {}
     expenseRecords.forEach(r => { if(r.id >= expItemSeq) expItemSeq = r.id + 1; });
-    renderExpenseSummary(); renderExpenseList();
+    if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
+    renderExpenseSummary(); renderExpenseList(); renderMembersSettingsList();
   }
   async function saveExpense() { 
     try { 
@@ -1267,10 +1368,37 @@
     } catch(e) {} 
   }
 
+  // ===== 旅伴成員管理 =====
+  function renderMembersSettingsList() {
+    const wrap = document.getElementById('setting-members-list'); if (!wrap) return;
+    if (!travelers.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0;">尚未新增任何成員</p>`; return; }
+    wrap.innerHTML = travelers.map((name, idx) => `
+      <div style="display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid #E2E7EC; border-radius:12px; padding:8px 12px;">
+        <i class="fa-solid fa-user" style="color:var(--teal); width:16px; text-align:center;"></i>
+        <span style="flex:1; font-size:calc(14px * var(--font-scale)); font-weight:700; color:var(--navy);">${escapeHtml(name)}</span>
+        <button class="only-master" onclick="removeMemberFromSettings(${idx})" style="background:none; border:none; color:var(--gray); cursor:pointer; padding:4px;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    `).join('');
+  }
+  function addMemberFromSettings() {
+    const inp = document.getElementById('setting-new-member'); const name = inp.value.trim(); if (!name) return;
+    if (travelers.includes(name)) { alert('這個成員名稱已經存在囉！'); return; }
+    travelers.push(name); inp.value = '';
+    renderMembersSettingsList(); saveExpense();
+  }
+  function removeMemberFromSettings(idx) {
+    if (travelers.length <= 1) { alert('至少需要保留一位成員！'); return; }
+    if (!confirm(`確定要移除成員「${travelers[idx]}」嗎？(已記錄的支出不會被刪除或更動)`)) return;
+    travelers.splice(idx, 1);
+    if (!travelers.includes(qaPayer)) qaPayer = travelers[0];
+    renderMembersSettingsList(); saveExpense();
+  }
+
   function openQuickAdd(prefill) {
     const box = document.getElementById('quick-add-box'); box.style.display = 'block';
     const pf = prefill || {};
     if (pf.category && EXP_CATS.includes(pf.category)) qaCat = pf.category;
+    if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
     const prefillAmount = pf.amount ? f(pf.amount) : '';
     const prefillItem = pf.item || '';
     const prefillDate = (pf.date && /^\d{4}-\d{2}-\d{2}$/.test(pf.date)) ? pf.date : todayOrTripDate();
@@ -1278,15 +1406,18 @@
     let aiNotice = '';
     if (prefill) {
       aiNotice = (pf.amount > 0)
-        ? `<div style="background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px 12px; font-size:12px; color:#1E40AF; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 已辨識收據內容，請確認或修改後再存入</div>`
-        : `<div style="background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:12px; padding:10px 12px; font-size:12px; color:#B45309; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-circle-exclamation"></i> AI 無法確定金額，請手動確認並填寫</div>`;
+        ? `<div style="background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px 12px; font-size:calc(12px * var(--font-scale)); color:#1E40AF; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 已辨識收據內容，請確認或修改後再存入</div>`
+        : `<div style="background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:12px; padding:10px 12px; font-size:calc(12px * var(--font-scale)); color:#B45309; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-circle-exclamation"></i> AI 無法確定金額，請手動確認並填寫</div>`;
     }
 
     box.innerHTML = `
       <div class="card" style="border: 2px solid var(--navy);">
         ${aiNotice}
-        <div class="chip-row" id="qa-cat-row" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-        <div style="display:flex; gap:8px; margin:12px 0;">
+        <div class="input-label">類別</div>
+        <div class="chip-row" id="qa-cat-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div class="input-label">付款人</div>
+        <div class="chip-row" id="qa-payer-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
           <input type="number" id="qa-amount" placeholder="金額 (KRW)" value="${escapeHtml(prefillAmount)}" style="flex:1; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
           <input type="text" id="qa-item" placeholder="品項名稱" value="${escapeHtml(prefillItem)}" style="flex:1; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
         </div>
@@ -1295,6 +1426,7 @@
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
+    renderChipRow('qa-payer-row', travelers, travelers.indexOf(qaPayer), (i)=>{qaPayer=travelers[i];});
   }
 
   function submitQuickAdd() {
@@ -1304,6 +1436,20 @@
     expenseRecords.push({ id: expItemSeq++, amount: amt, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: rateTWD });
     saveExpense(); document.getElementById('quick-add-box').style.display = 'none'; renderExpenseSummary(); renderExpenseList();
   }
+
+  // ===== 消費統計切換（類別／成員／日期） =====
+  function switchExpBreakdown(mode, btn) {
+    expBreakdownMode = mode;
+    const tabs = document.getElementById('exp-breakdown-tabs');
+    if (tabs) tabs.querySelectorAll('.tab-btn-sub').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderExpenseSummary();
+  }
+  function formatDateLabel(dateStr) {
+    const found = ITIN_DAYS.find(d => d.key === dateStr);
+    return found ? `${found.date} (週${found.wd})` : (dateStr || '未填日期');
+  }
+
 
   // ===== AI 拍照辨識收據 =====
   const RECEIPT_AI_PROMPT = `請閱讀這張收據或發票圖片，只回傳一個 JSON 物件，不要有任何其他文字、說明或 markdown 標記（不要加 \`\`\`json）。格式為：
@@ -1331,7 +1477,7 @@
 
     const statusEl = document.getElementById('receipt-ai-status');
     statusEl.style.display = 'block';
-    statusEl.innerHTML = `<div class="card" style="text-align:center; padding:22px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:22px; color:#4A6FA1;"></i><p style="margin:10px 0 0; font-size:13px; color:var(--gray);">AI 正在辨識收據內容，請稍候...</p></div>`;
+    statusEl.innerHTML = `<div class="card" style="text-align:center; padding:22px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(22px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:10px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">AI 正在辨識收據內容，請稍候...</p></div>`;
 
     try {
       const base64Data = await fileToBase64(file);
@@ -1368,7 +1514,7 @@
       openQuickAdd(parsed);
     } catch (err) {
       console.error('收據辨識失敗:', err);
-      statusEl.innerHTML = `<div class="card" style="text-align:center; padding:18px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn); font-size:20px;"></i><p style="margin:8px 0 0; font-size:13px; color:#943126;">辨識失敗，請確認網路連線與圖片是否清晰，或改用手動輸入。</p></div>`;
+      statusEl.innerHTML = `<div class="card" style="text-align:center; padding:18px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn); font-size:calc(20px * var(--font-scale));"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:#943126;">辨識失敗，請確認網路連線與圖片是否清晰，或改用手動輸入。</p></div>`;
     }
   }
 
@@ -1382,10 +1528,22 @@
     if (twdEl) twdEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
 
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return; if (totalKrw===0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; return; }
-    const byCat = {}; expenseRecords.forEach(r => { byCat[r.category]=(byCat[r.category]||0)+r.amount; });
-    wrap.innerHTML = Object.keys(byCat).map(cat => {
-      const pct = Math.round(byCat[cat]/totalKrw*100);
-      return `<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:13px;"><span>${CAT_ICON[cat]} ${cat}</span><span>${pct}% (₩${f(byCat[cat])})</span></div></div>`;
+
+    const groups = {};
+    if (expBreakdownMode === 'member') { expenseRecords.forEach(r => { const k = r.payer || '未指定'; groups[k] = (groups[k]||0) + r.amount; }); }
+    else if (expBreakdownMode === 'date') { expenseRecords.forEach(r => { const k = r.date || '未填日期'; groups[k] = (groups[k]||0) + r.amount; }); }
+    else { expenseRecords.forEach(r => { groups[r.category] = (groups[r.category]||0) + r.amount; }); }
+
+    const keys = expBreakdownMode === 'date' ? Object.keys(groups).sort() : Object.keys(groups).sort((a,b) => groups[b]-groups[a]);
+
+    wrap.innerHTML = keys.map(k => {
+      const pct = Math.round(groups[k]/totalKrw*100);
+      const icon = expBreakdownMode === 'category' ? (CAT_ICON[k]||'📎') : (expBreakdownMode === 'member' ? '<i class="fa-solid fa-user" style="color:var(--teal);"></i>' : '<i class="fa-solid fa-calendar-day" style="color:var(--teal);"></i>');
+      const label = expBreakdownMode === 'date' ? formatDateLabel(k) : k;
+      return `<div style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:calc(13px * var(--font-scale)); margin-bottom:4px;"><span>${icon} ${escapeHtml(label)}</span><span style="font-weight:700; color:var(--navy);">${pct}% (₩${f(groups[k])})</span></div>
+        <div style="background:#F1F5F9; border-radius:6px; height:6px; overflow:hidden;"><div style="background:var(--teal); height:100%; width:${pct}%;"></div></div>
+      </div>`;
     }).join('');
   }
 
@@ -1396,11 +1554,11 @@
       <div class="contact-row">
         <div style="display:flex; flex-direction:column;">
           <span style="font-weight:700; color:var(--navy);">${escapeHtml(r.item)}</span>
-          <small style="color:var(--gray); font-size:11px;">${r.date} · ${r.category}</small>
+          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${r.date} · ${r.category}</small>
         </div>
         <div style="text-align:right;">
-          <b style="color:var(--coral); font-family:'Quicksand'; font-size:15px;">₩ ${f(r.amount)}</b><br>
-          <small style="color:var(--gray); font-size:11px;">≈ NT$ ${f(r.amount/r.rateAtTime)}</small>
+          <b style="color:var(--coral); font-family:'Quicksand'; font-size:calc(15px * var(--font-scale));">₩ ${f(r.amount)}</b><br>
+          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">≈ NT$ ${f(r.amount/r.rateAtTime)}</small>
         </div>
         <button class="only-master" onclick="deleteExpenseItem(${r.id})" style="background:none; border:none; color:var(--gray); margin-left:8px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
       </div>
@@ -1426,6 +1584,7 @@
     if (data.expenseRecords) expenseRecords = data.expenseRecords;
     if (data.masterPin) masterPin = data.masterPin;
     if (data.accomData) accomData = data.accomData;
+    if (data.travelers && data.travelers.length) travelers = data.travelers;
 
     await storage.set('trip-settings', JSON.stringify(tripSettings));
     await storage.set('prep-checklist', JSON.stringify(prepData));
@@ -1435,7 +1594,7 @@
     
     await storage.set('app-initialized', 'true');
 
-    renderTripSettingsUI(); renderPrep(); renderDayTabs(); renderDayContent(); renderExpenseSummary(); renderExpenseList(); renderDayPills(); renderAccomView(accomData);
+    renderTripSettingsUI(); renderPrep(); renderDayTabs(); renderDayContent(); renderExpenseSummary(); renderExpenseList(); renderDayPills(); renderAccomView(accomData); renderMembersSettingsList();
   }
 
   async function syncUpload() {
@@ -1458,7 +1617,8 @@
       itinData: itinData || {},
       expenseRecords: expenseRecords || [],
       masterPin: masterPin || '1234',
-      accomData: accomData || {}
+      accomData: accomData || {},
+      travelers: travelers || []
     };
     
     const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
@@ -1594,10 +1754,154 @@
     }
   }
 
+  // ===== 文字大小（不分身分皆可調整，只改變文字大小，不影響版面配置） =====
+  function setFontScale(scale, btn) {
+    currentFontScale = scale;
+    document.documentElement.style.setProperty('--font-scale', scale);
+    syncFontScaleTabsUI();
+    storage.set('font-scale', String(scale));
+  }
+  function syncFontScaleTabsUI() {
+    const tabs = document.getElementById('font-scale-tabs'); if (!tabs) return;
+    tabs.querySelectorAll('.tab-btn-sub').forEach(b => { b.classList.toggle('active', parseFloat(b.dataset.fs) === currentFontScale); });
+  }
+  async function loadFontScale() {
+    try {
+      const res = await storage.get('font-scale');
+      if (res && res.value) { currentFontScale = parseFloat(res.value) || 1; document.documentElement.style.setProperty('--font-scale', currentFontScale); }
+    } catch(e) {}
+  }
+
+  // ===== 加入桌面捷徑教學 =====
+  function openInstallGuide() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    showInstallTab(isIOS ? 'ios' : 'android');
+    document.getElementById('install-guide-overlay').style.display = 'flex';
+  }
+  function showInstallTab(platform) {
+    const iosTab = document.getElementById('install-tab-ios'); const androidTab = document.getElementById('install-tab-android');
+    const iosBtn = document.getElementById('install-btn-ios'); const androidBtn = document.getElementById('install-btn-android');
+    if (iosTab) iosTab.style.display = platform === 'ios' ? 'block' : 'none';
+    if (androidTab) androidTab.style.display = platform === 'android' ? 'block' : 'none';
+    if (iosBtn) iosBtn.classList.toggle('active', platform === 'ios');
+    if (androidBtn) androidBtn.classList.toggle('active', platform === 'android');
+  }
+  function closeInstallGuide() { document.getElementById('install-guide-overlay').style.display = 'none'; }
+
+  // ===== 首次使用導覽（可跳過；刻意不介紹身分切換，避免長輩不了解而誤觸） =====
+  const ONBOARDING_SLIDES = [
+    { icon: 'fa-plane', title: '歡迎使用釜山行旅！', body: '這是專屬這趟旅程的行程小幫手，下方五個分頁分別是：總覽、準備、行程、支出、算帳，點一下就能切換。' },
+    { icon: 'fa-calendar-days', title: '每日行程一目了然', body: '「行程」頁可依日期查看每天的安排，點一下項目可以展開查看費用與備註。' },
+    { icon: 'fa-wallet', title: '輕鬆記帳', body: '「支出」頁可以手動記一筆，或用「AI 拍照記帳」直接拍收據，AI 會自動幫你讀取金額與品項，確認後再存入即可。' },
+    { icon: 'fa-mobile-screen-button', title: '加入桌面更方便', body: '建議把這個頁面加到手機桌面，之後點一下圖示就能直接開啟，不用每次找連結。', action: 'install' }
+  ];
+  let onboardingIdx = 0;
+  function renderOnboardingSlide() {
+    const s = ONBOARDING_SLIDES[onboardingIdx];
+    const body = document.getElementById('onboarding-slide-body'); if (!body) return;
+    body.innerHTML = `
+      <div style="text-align:center; padding:10px 6px 6px;">
+        <div style="width:64px; height:64px; border-radius:50%; background:#EFF6FF; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+          <i class="fa-solid ${s.icon}" style="font-size:calc(26px * var(--font-scale)); color:#2563EB;"></i>
+        </div>
+        <h3 style="margin:0 0 8px; color:var(--navy);">${s.title}</h3>
+        <p style="font-size:calc(13.5px * var(--font-scale)); color:var(--gray); line-height:1.6; margin:0;">${s.body}</p>
+        ${s.action === 'install' ? `<button class="ghost-btn" style="margin-top:14px;" onclick="openInstallGuide()">查看加入桌面步驟</button>` : ''}
+      </div>
+    `;
+    const dots = document.getElementById('onboarding-dots');
+    if (dots) dots.innerHTML = ONBOARDING_SLIDES.map((_, i) => `<div style="width:${i===onboardingIdx?'18px':'6px'}; height:6px; border-radius:3px; background:${i===onboardingIdx?'var(--teal)':'#E2E7EC'}; transition:0.3s;"></div>`).join('');
+    const nextBtn = document.getElementById('onboarding-next-btn');
+    if (nextBtn) nextBtn.innerText = (onboardingIdx === ONBOARDING_SLIDES.length - 1) ? '開始使用' : '下一步';
+  }
+  function nextOnboardingSlide() {
+    if (onboardingIdx < ONBOARDING_SLIDES.length - 1) { onboardingIdx++; renderOnboardingSlide(); } else { finishOnboarding(); }
+  }
+  function skipOnboarding() { finishOnboarding(); }
+  async function finishOnboarding() {
+    const overlay = document.getElementById('onboarding-overlay'); if (overlay) overlay.style.display = 'none';
+    try { await storage.set('onboarding-seen', 'true'); } catch(e) {}
+  }
+  async function maybeShowOnboarding() {
+    try {
+      const res = await storage.get('onboarding-seen');
+      if (res && res.value === 'true') return;
+    } catch(e) {}
+    onboardingIdx = 0;
+    renderOnboardingSlide();
+    const overlay = document.getElementById('onboarding-overlay'); if (overlay) overlay.style.display = 'flex';
+  }
+
+  // ===== 匯出整趟行程 Excel（總覽／每日行程／消費紀錄／成員分攤／行前準備，共5個工作表） =====
+  function exportToExcel() {
+    if (typeof XLSX === 'undefined') { alert('匯出功能載入中，請確認網路連線後再試一次。'); return; }
+    const wb = XLSX.utils.book_new();
+
+    const overviewRows = [
+      ['項目', '內容'],
+      ['行程標題', tripSettings.title || ''],
+      ['日期', tripSettings.sub || ''],
+      ['去程航班', `${tripSettings.flightNo1||''} ${tripSettings.flightTime1||''} (${tripSettings.depCode||''} → ${tripSettings.arrCode||''})`],
+      ['回程航班', `${tripSettings.flightNo2||''} ${tripSettings.flightTime2||''} (${tripSettings.arrCode||''} → ${tripSettings.depCode||''})`],
+      ['住宿名稱', accomData.name || ''],
+      ['住宿地址', accomData.address || ''],
+      ['入住時間', accomData.checkin || ''],
+      ['退房時間', accomData.checkout || ''],
+      ['旅伴成員', travelers.join('、')]
+    ];
+    const wsOverview = XLSX.utils.aoa_to_sheet(overviewRows);
+    wsOverview['!cols'] = [{wch:14},{wch:50}];
+    XLSX.utils.book_append_sheet(wb, wsOverview, '總覽');
+
+    const itinRows = [['日期','星期','時間','行程名稱','費用','備註']];
+    ITIN_DAYS.forEach(d => {
+      (itinData[d.key]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).forEach(it => {
+        itinRows.push([d.date, `週${d.wd}`, it.time||'', it.title||'', it.price||'', it.notes||'']);
+      });
+    });
+    const wsItin = XLSX.utils.aoa_to_sheet(itinRows);
+    wsItin['!cols'] = [{wch:8},{wch:6},{wch:8},{wch:30},{wch:14},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
+
+    const totalKrw = expenseRecords.reduce((s,r)=>s+r.amount,0);
+    const expRows = [['日期','類別','品項','金額(KRW)','約合(TWD)','付款人','付款方式']];
+    expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
+      expRows.push([r.date||'', r.category||'', r.item||'', r.amount||0, Math.round(r.amount/(r.rateAtTime||rateTWD)), r.payer||'', r.method||'']);
+    });
+    expRows.push([]);
+    expRows.push(['', '', '總計', totalKrw, Math.round(totalKrw/rateTWD), '', '']);
+    const wsExp = XLSX.utils.aoa_to_sheet(expRows);
+    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:12},{wch:12},{wch:10},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
+
+    const memberTotals = {};
+    expenseRecords.forEach(r => { const k = r.payer || '未指定'; memberTotals[k] = (memberTotals[k]||0) + r.amount; });
+    const memberRows = [['成員','已付金額(KRW)','約合(TWD)','佔比']];
+    Object.keys(memberTotals).forEach(k => {
+      memberRows.push([k, memberTotals[k], Math.round(memberTotals[k]/rateTWD), totalKrw ? `${Math.round(memberTotals[k]/totalKrw*100)}%` : '0%']);
+    });
+    const wsMember = XLSX.utils.aoa_to_sheet(memberRows);
+    wsMember['!cols'] = [{wch:12},{wch:16},{wch:12},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsMember, '成員分攤');
+
+    const prepRows = [['分類','項目','已完成']];
+    Object.keys(prepData||{}).forEach(cat => {
+      (prepData[cat]||[]).forEach(it => { prepRows.push([cat, it.text||'', it.checked ? '✓' : '']); });
+    });
+    const wsPrep = XLSX.utils.aoa_to_sheet(prepRows);
+    wsPrep['!cols'] = [{wch:14},{wch:30},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsPrep, '行前準備');
+
+    const fileName = `${(tripSettings.title||'旅行')}_行程總覽_${todayOrTripDate()}.xlsx`;
+    try { XLSX.writeFile(wb, fileName); } catch (e) { console.error('Excel 匯出失敗:', e); alert('匯出失敗，請稍後再試一次。'); }
+  }
+
   // ===== 全域初始化入口 =====
   window.onload = async () => {
     const savedPin = localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
-    
+    await loadFontScale();
+
     await loadTripSettings(); 
     await loadAccom(); 
     await loadPrep(); 
@@ -1627,6 +1931,8 @@
         toggleAutoSync(true);
       }
     }
+
+    await maybeShowOnboarding();
   };
 </script>
 </body>
