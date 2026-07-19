@@ -329,16 +329,18 @@
     <div class="page-header"><h1 class="clean-title">每日行程</h1><p>Adventure Route</p></div>
     
     <div class="card only-master" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-color:#BFDBFE;">
-      <div class="section-title" style="color: #1E40AF;"><i class="fa-solid fa-wand-magic-sparkles"></i> 智慧型離線行程文字解析器</div>
-      <p style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">貼上大綱文字即可秒級解析！每一行只要開頭標明日期（如 11/12），無論你目前停留在哪個日期頁籤，都會自動歸入該日期，不受目前頁籤限制；沒寫日期的行才會歸入目前頁籤。若日期超出本次行程範圍，或與現有行程時間重複，會另外列出讓你確認、編輯或刪除。</p>
+      <div class="section-title" style="color: #1E40AF;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 行程文字解析</div>
+      <p style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">直接貼上口語描述就好，不用刻意排格式——AI 會自動判斷有幾個行程活動、幾點，並把交通方式、預估花費、是否訂位等細節整理進備註，不會拆成一堆瑣碎項目。日期支援 11/12、Day2、11月12日、週三 等多種寫法，且以文字內容判斷為準，不受目前所在頁籤限制；沒提到日期的項目才會歸入目前頁籤。超出行程範圍或時間重複的項目，會另外列出讓你確認、編輯或刪除。</p>
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <textarea id="ai-raw-itin-text" placeholder="格式範例一（含日期）：
-11/11 10:00 甘川洞文化村 | 門票 免費 | 備註 必看小王子雕像
+        <textarea id="ai-raw-itin-text" placeholder="範例：
+Day2 12:00 outlet購物，預計逛一小時
+14:00 吃飯，預計花費2000韓元，已訂位，搭地鐵10分鐘再走路5分鐘
 
-格式範例二（直接加入當前頁籤日期）：
-14:00 海雲台沙灘漫步 | 門票 5000" style="width:100%; height:90px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif;"></textarea>
-        <button class="save-btn" style="background:#2563EB; font-size:calc(13px * var(--font-scale));" onclick="parseRawItinOffline()"><i class="fa-solid fa-gears"></i> 本地智慧解析並排入行程</button>
+也支援固定格式：
+11/11 10:00 甘川洞文化村 | 門票 免費 | 備註 必看小王子雕像" style="width:100%; height:110px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif;"></textarea>
+        <button class="save-btn" style="background:#2563EB; font-size:calc(13px * var(--font-scale));" onclick="parseItinWithAI()"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 智慧解析並排入行程</button>
       </div>
+      <div id="itin-ai-status" style="display:none; margin-top:10px;"></div>
     </div>
 
     <div class="day-tab-row" id="itin-day-tabs" style="display:flex; gap:6px; overflow-x:auto; padding: 0 12px 14px;"></div>
@@ -682,7 +684,7 @@
 
   let prepData = null; let prepItemSeq = 1;
   let itinData = {}; let itinItemSeq = 1; let activeDay = '2026-11-10'; let formState = {}; let activeDetailId = null;
-  let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金'; let expItemSeq = 1;
+  let expenseRecords = []; let travelers = ['我','旅伴B']; let qaCat = '飲食', qaPayer = '我', qaMethod = '現金', qaCurrency = 'KRW'; let expItemSeq = 1;
   let accomData = { name: "釜山海雲台格蘭德飯店 (Grand Hotel)", address: "24 Haeundaehaebyeon-ro, Busan", checkin: "15:00", checkout: "11:00" };
   let expBreakdownMode = 'category';
   let currentFontScale = 1;
@@ -914,7 +916,7 @@
     let afterD = (shopMode==='fixed') ? Math.max(0, ori - disc) : ori * (1 - disc/100);
     let finalK = afterD - (afterD * (tax/100));
     if (finalK <= 0) { alert('請先輸入標價！'); return; }
-    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: rateTWD });
+    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), currency: 'KRW', category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: rateTWD });
     saveExpense(); renderExpenseSummary(); renderExpenseList(); alert(`已成功加入支出紀錄！`);
   }
 
@@ -1058,7 +1060,7 @@
       return `<div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div class="section-title" style="margin-bottom:0;">${catIcon(cat)} ${escapeHtml(cat)}</div><button class="only-master" onclick="deleteCategory('${cat}')" style="background:none; border:none; color:var(--gray); cursor:pointer;"><i class="fa-solid fa-trash"></i></button></div>
         ${itemsHtml || '<p class="empty-hint">尚無項目</p>'}
-        <div style="display:flex; gap:8px; margin-top:10px;"><input type="text" placeholder="新增項目..." id="newitem-${cat}" style="flex:1; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none;"><button onclick="addItem('${cat}')" style="background:var(--navy); color:white; border:none; width:36px; border-radius:10px; cursor:pointer;"><i class="fa-solid fa-plus"></i></button></div>
+        <div style="display:flex; gap:8px; margin-top:10px;"><input type="text" placeholder="新增項目..." id="newitem-${cat}" style="flex:1; min-width:0; box-sizing:border-box; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none;"><button onclick="addItem('${cat}')" style="background:var(--navy); color:white; border:none; width:36px; border-radius:10px; cursor:pointer; flex-shrink:0;"><i class="fa-solid fa-plus"></i></button></div>
       </div>`;
     }).join('');
   }
@@ -1175,27 +1177,128 @@
     return null;
   }
 
-  function parseRawItinOffline() {
+  // 將單一筆解析結果 {date,time,title,price,notes} 分類成可直接匯入(ok)或需要確認(flagged)
+  // date 為空字串時，沿用目前頁籤(activeDay)；date 有值但不在本次行程範圍內，視為 out_of_range
+  function categorizeParsedItem(item) {
+    const time = (item.time && /^\d{1,2}:\d{2}$/.test(item.time)) ? item.time : '12:00';
+    const title = (item.title || '').trim() || '(未命名項目，請編輯)';
+    const price = (item.price || '').trim();
+    const notes = (item.notes || '').trim();
+    const rawDate = (item.date || '').trim();
+
+    let targetDay = rawDate ? (ITIN_DAYS.find(d => d.key === rawDate) ? rawDate : null) : activeDay;
+    const base = { time, title, price, notes };
+
+    if (!targetDay) return { ...base, status: 'out_of_range', rawDateText: rawDate, targetDay: activeDay, flagged: true };
+    const conflict = (itinData[targetDay] || []).find(it => it.time === time);
+    if (conflict) return { ...base, status: 'duplicate', targetDay, conflictTitle: conflict.title, conflictId: conflict.id, flagged: true };
+    return { ...base, targetDay, flagged: false };
+  }
+
+  // 統一收尾：把分類好的項目直接匯入(ok)，其餘(flagged)交給確認彈窗
+  function finalizeParsedItems(rawItems) {
+    const okItems = []; const flaggedItems = [];
+    (rawItems || []).forEach(raw => {
+      const cat = categorizeParsedItem(raw);
+      const { flagged, ...rest } = cat;
+      if (flagged) flaggedItems.push(rest); else okItems.push(rest);
+    });
+
+    okItems.forEach(it => {
+      itinData[it.targetDay].push({ id: itinItemSeq++, time: it.time, title: it.title, price: it.price, notes: it.notes || 'AI 智慧排入' });
+    });
+    if (okItems.length > 0) { saveItin(); selectDay(okItems[okItems.length - 1].targetDay); }
+
+    document.getElementById('ai-raw-itin-text').value = '';
+
+    if (flaggedItems.length === 0) {
+      if (okItems.length > 0) alert(`AI 已成功解析，排入 ${okItems.length} 項行程！`);
+      else alert('沒有辨識出任何行程項目，請確認文字內容後再試一次。');
+      return;
+    }
+    openAiReview(okItems.length, flaggedItems);
+  }
+
+  // ===== AI 行程文字解析（真的呼叫 Claude 理解自然語言，而非關鍵字比對） =====
+  async function parseItinWithAI() {
     const rawText = document.getElementById('ai-raw-itin-text').value.trim(); if (!rawText) return;
+    const statusEl = document.getElementById('itin-ai-status');
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.innerHTML = `<div class="card" style="text-align:center; padding:20px; border:2px solid #2563EB; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(22px * var(--font-scale)); color:#2563EB;"></i><p style="margin:10px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">AI 正在讀懂你的行程描述，請稍候...</p></div>`;
+    }
+
+    const dayContextLines = ITIN_DAYS.map((d, i) => `${d.date}(週${d.wd}) = ${d.key} = Day${i+1}`).join('\n');
+    const prompt = `你是旅遊行程助理。請閱讀使用者貼上的行程描述文字，判斷其中包含幾個「獨立的行程活動」，並為每個活動萃取出結構化資料。
+
+行程活動的定義：每一個有明確主要行為（通常伴隨時間點）的段落算一個活動，例如「12:00 outlet購物」是一個活動。同一個活動內的補充說明——例如預計停留多久、預估花費、是否已訂位、交通移動方式、注意事項等——都不要拆成獨立活動，應合併寫入該活動的 price 或 notes 欄位，不要重複列出成新的項目。
+
+本次行程的有效日期如下，請依此判斷文字中提到的日期、Day1~Day5、或星期幾對應到哪一天：
+${dayContextLines}
+若文字中完全沒有提到日期（也沒有Day幾或星期幾），該筆的 date 請回傳空字串，代表沿用使用者目前所在的頁籤日期。
+
+請只回傳一個 JSON 陣列，不要有任何其他文字、說明、或 markdown 標記（不要加\`\`\`json），格式為：
+[{"date": "YYYY-MM-DD格式，若未提及日期則為空字串", "time": "HH:MM格式，若未明確提及則依上下文合理推斷，否則用12:00", "title": "活動名稱，簡潔扼要", "price": "費用相關描述，若未提及則空字串", "notes": "交通方式、是否訂位、停留時間等其他補充細節，若未提及則空字串"}]
+
+使用者貼上的文字如下：
+"""
+${rawText}
+"""`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (!response.ok) throw new Error(`API 回應失敗 (狀態碼 ${response.status})`);
+      const data = await response.json();
+      const textBlock = (data.content || [])
+        .map(item => (item.type === "text" ? item.text : ""))
+        .filter(Boolean)
+        .join("\n")
+        .trim();
+      const cleaned = textBlock.replace(/```json|```/g, '').trim();
+      const items = JSON.parse(cleaned);
+      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 未辨識出任何行程項目');
+
+      if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+      finalizeParsedItems(items);
+    } catch (err) {
+      console.error('AI 行程解析失敗:', err);
+      if (statusEl) {
+        statusEl.innerHTML = `<div class="card" style="text-align:center; padding:18px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;">
+          <i class="fa-solid fa-circle-exclamation" style="color:var(--warn); font-size:calc(20px * var(--font-scale));"></i>
+          <p style="margin:8px 0 10px; font-size:calc(13px * var(--font-scale)); color:#943126;">AI 解析失敗，請確認網路連線；也可以改用僅支援固定格式的簡易離線解析。</p>
+          <button class="ghost-btn" style="border-color:#943126; color:#943126;" onclick="parseItinOfflineFallback()">改用簡易離線解析</button>
+        </div>`;
+      }
+    }
+  }
+
+  // 簡易離線解析後備方案（AI連線失敗時使用；僅支援固定格式：[日期] [時間] 標題 | 費用 xxx | 備註 xxx）
+  function parseItinOfflineFallback() {
+    const rawText = document.getElementById('ai-raw-itin-text').value.trim();
+    const statusEl = document.getElementById('itin-ai-status');
+    if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+    if (!rawText) return;
+
     const lines = rawText.split('\n');
-    const okItems = [];
-    const flaggedItems = [];
+    const rawItems = [];
 
     lines.forEach(line => {
       line = line.trim(); if(!line) return;
       let remaining = line;
-      let targetDay = null;
-      let rawDateText = '';
+      let dateStr = '';
 
-      // 每一行的日期以「文字內容」為準，與目前開啟哪個頁籤無關；沒寫日期才會歸入目前頁籤
       const dateInfo = parseLeadingDate(remaining);
       if (dateInfo) {
-        rawDateText = dateInfo.raw;
-        const foundDay = ITIN_DAYS.find(d => d.key.endsWith(`${dateInfo.mm}-${dateInfo.dd}`));
-        targetDay = foundDay ? foundDay.key : null;
+        dateStr = `2026-${dateInfo.mm}-${dateInfo.dd}`;
         remaining = remaining.substring(dateInfo.matchLen).trim();
-      } else {
-        targetDay = activeDay;
       }
 
       let time = "12:00";
@@ -1217,39 +1320,10 @@
           notes.push(seg.replace(/^備註\s*/, ''));
         }
       }
-      const parsedItem = { time, title: title || '(未命名項目，請編輯)', price, notes: notes.join(' | ') };
-
-      if (!targetDay) {
-        // 日期不在本次行程 11/10-11/14 範圍內，另外列出讓使用者確認
-        flaggedItems.push({ ...parsedItem, status: 'out_of_range', rawDateText, targetDay: activeDay });
-        return;
-      }
-
-      const conflict = (itinData[targetDay] || []).find(it => it.time === time);
-      if (conflict) {
-        // 同一天同一個時間已有行程，視為重複，另外列出讓使用者確認
-        flaggedItems.push({ ...parsedItem, status: 'duplicate', targetDay, conflictTitle: conflict.title, conflictId: conflict.id });
-        return;
-      }
-
-      okItems.push({ ...parsedItem, targetDay });
+      rawItems.push({ date: dateStr, time, title, price, notes: notes.join(' | ') });
     });
 
-    okItems.forEach(it => {
-      itinData[it.targetDay].push({ id: itinItemSeq++, time: it.time, title: it.title, price: it.price, notes: it.notes || '智慧排入' });
-    });
-    if (okItems.length > 0) {
-      saveItin();
-      selectDay(okItems[okItems.length - 1].targetDay);
-    }
-
-    document.getElementById('ai-raw-itin-text').value = '';
-
-    if (flaggedItems.length === 0) {
-      if (okItems.length > 0) alert(`成功智慧解析，已依日期排入 ${okItems.length} 項行程！`);
-      return;
-    }
-    openAiReview(okItems.length, flaggedItems);
+    finalizeParsedItems(rawItems);
   }
 
   function openAiReview(okCount, flaggedItems) {
@@ -1394,11 +1468,24 @@
     renderMembersSettingsList(); saveExpense();
   }
 
+  const QA_METHODS = ['現金','信用卡','行動支付','其他'];
+
+  function setQaCurrency(cur, btn) {
+    qaCurrency = cur;
+    if (btn && btn.parentElement) {
+      Array.from(btn.parentElement.children).forEach(b => { b.style.background = '#E2E7EC'; b.style.color = 'var(--gray)'; });
+      btn.style.background = 'var(--navy)'; btn.style.color = '#fff';
+    }
+    const amtInput = document.getElementById('qa-amount');
+    if (amtInput) amtInput.placeholder = `金額 (${cur})`;
+  }
+
   function openQuickAdd(prefill) {
     const box = document.getElementById('quick-add-box'); box.style.display = 'block';
     const pf = prefill || {};
     if (pf.category && EXP_CATS.includes(pf.category)) qaCat = pf.category;
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
+    if (pf.currency === 'TWD' || pf.currency === 'KRW') qaCurrency = pf.currency;
     const prefillAmount = pf.amount ? f(pf.amount) : '';
     const prefillItem = pf.item || '';
     const prefillDate = (pf.date && /^\d{4}-\d{2}-\d{2}$/.test(pf.date)) ? pf.date : todayOrTripDate();
@@ -1417,23 +1504,33 @@
         <div class="chip-row" id="qa-cat-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         <div class="input-label">付款人</div>
         <div class="chip-row" id="qa-payer-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div class="input-label">付款方式</div>
+        <div class="chip-row" id="qa-method-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div class="input-label">金額</div>
         <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <input type="number" id="qa-amount" placeholder="金額 (KRW)" value="${escapeHtml(prefillAmount)}" style="flex:1; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
-          <input type="text" id="qa-item" placeholder="品項名稱" value="${escapeHtml(prefillItem)}" style="flex:1; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+          <div style="display:flex; border-radius:12px; overflow:hidden; flex:0 0 auto;">
+            <button type="button" onclick="setQaCurrency('KRW', this)" style="padding:10px 12px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='KRW'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='KRW'?'#fff':'var(--gray)'};">₩ 韓元</button>
+            <button type="button" onclick="setQaCurrency('TWD', this)" style="padding:10px 12px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='TWD'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='TWD'?'#fff':'var(--gray)'};">NT$ 台幣</button>
+          </div>
+          <input type="number" id="qa-amount" inputmode="decimal" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="flex:1; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
         </div>
+        <div class="input-label">品項名稱</div>
+        <input type="text" id="qa-item" placeholder="例如：晚餐、地鐵票、門票" value="${escapeHtml(prefillItem)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+        <div class="input-label">日期</div>
         <input type="date" id="qa-date" value="${prefillDate}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
         <button class="save-btn" onclick="submitQuickAdd()">確認記帳</button>
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
     renderChipRow('qa-payer-row', travelers, travelers.indexOf(qaPayer), (i)=>{qaPayer=travelers[i];});
+    renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
   }
 
   function submitQuickAdd() {
     const amt = p(document.getElementById('qa-amount').value); const item = document.getElementById('qa-item').value.trim(); if(!amt) return;
     const dateEl = document.getElementById('qa-date');
     const date = (dateEl && dateEl.value) ? dateEl.value : todayOrTripDate();
-    expenseRecords.push({ id: expItemSeq++, amount: amt, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: rateTWD });
+    expenseRecords.push({ id: expItemSeq++, amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: rateTWD });
     saveExpense(); document.getElementById('quick-add-box').style.display = 'none'; renderExpenseSummary(); renderExpenseList();
   }
 
@@ -1518,8 +1615,12 @@
     }
   }
 
+  // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示
+  function recordToKRW(r) { return (r.currency === 'TWD') ? Math.round((r.amount||0) * (r.rateAtTime || rateTWD)) : Math.round(r.amount||0); }
+  function recordToTWD(r) { return (r.currency === 'TWD') ? Math.round(r.amount||0) : Math.round((r.amount||0) / (r.rateAtTime || rateTWD)); }
+
   function renderExpenseSummary() {
-    const totalKrw = expenseRecords.reduce((s,r)=>s+r.amount,0);
+    const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
     
     // 防禦性檢查
     const krwEl = document.getElementById('exp-total-krw');
@@ -1530,9 +1631,9 @@
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return; if (totalKrw===0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; return; }
 
     const groups = {};
-    if (expBreakdownMode === 'member') { expenseRecords.forEach(r => { const k = r.payer || '未指定'; groups[k] = (groups[k]||0) + r.amount; }); }
-    else if (expBreakdownMode === 'date') { expenseRecords.forEach(r => { const k = r.date || '未填日期'; groups[k] = (groups[k]||0) + r.amount; }); }
-    else { expenseRecords.forEach(r => { groups[r.category] = (groups[r.category]||0) + r.amount; }); }
+    if (expBreakdownMode === 'member') { expenseRecords.forEach(r => { const k = r.payer || '未指定'; groups[k] = (groups[k]||0) + recordToKRW(r); }); }
+    else if (expBreakdownMode === 'date') { expenseRecords.forEach(r => { const k = r.date || '未填日期'; groups[k] = (groups[k]||0) + recordToKRW(r); }); }
+    else { expenseRecords.forEach(r => { groups[r.category] = (groups[r.category]||0) + recordToKRW(r); }); }
 
     const keys = expBreakdownMode === 'date' ? Object.keys(groups).sort() : Object.keys(groups).sort((a,b) => groups[b]-groups[a]);
 
@@ -1550,19 +1651,25 @@
   function renderExpenseList() {
     const wrap = document.getElementById('expense-list'); if (!wrap) return;
     if (expenseRecords.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; return; }
-    wrap.innerHTML = expenseRecords.map(r => `
+    wrap.innerHTML = expenseRecords.map(r => {
+      const isTwd = r.currency === 'TWD';
+      const primary = isTwd ? `NT$ ${f(r.amount)}` : `₩ ${f(r.amount)}`;
+      const secondary = isTwd ? `≈ ₩ ${f(recordToKRW(r))}` : `≈ NT$ ${f(recordToTWD(r))}`;
+      const metaBits = [r.date, r.category, r.payer, r.method].filter(Boolean).map(escapeHtml).join(' · ');
+      return `
       <div class="contact-row">
         <div style="display:flex; flex-direction:column;">
           <span style="font-weight:700; color:var(--navy);">${escapeHtml(r.item)}</span>
-          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${r.date} · ${r.category}</small>
+          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${metaBits}</small>
         </div>
         <div style="text-align:right;">
-          <b style="color:var(--coral); font-family:'Quicksand'; font-size:calc(15px * var(--font-scale));">₩ ${f(r.amount)}</b><br>
-          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">≈ NT$ ${f(r.amount/r.rateAtTime)}</small>
+          <b style="color:var(--coral); font-family:'Quicksand'; font-size:calc(15px * var(--font-scale));">${primary}</b><br>
+          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
         </div>
         <button class="only-master" onclick="deleteExpenseItem(${r.id})" style="background:none; border:none; color:var(--gray); margin-left:8px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function deleteExpenseItem(id) {
@@ -1864,19 +1971,19 @@
     wsItin['!cols'] = [{wch:8},{wch:6},{wch:8},{wch:30},{wch:14},{wch:30}];
     XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
 
-    const totalKrw = expenseRecords.reduce((s,r)=>s+r.amount,0);
-    const expRows = [['日期','類別','品項','金額(KRW)','約合(TWD)','付款人','付款方式']];
+    const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
+    const expRows = [['日期','類別','品項','原始金額','幣別','約當KRW','約當TWD','付款人','付款方式']];
     expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
-      expRows.push([r.date||'', r.category||'', r.item||'', r.amount||0, Math.round(r.amount/(r.rateAtTime||rateTWD)), r.payer||'', r.method||'']);
+      expRows.push([r.date||'', r.category||'', r.item||'', r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', r.method||'']);
     });
     expRows.push([]);
-    expRows.push(['', '', '總計', totalKrw, Math.round(totalKrw/rateTWD), '', '']);
+    expRows.push(['', '', '總計', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '']);
     const wsExp = XLSX.utils.aoa_to_sheet(expRows);
-    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:12},{wch:12},{wch:10},{wch:10}];
+    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:10}];
     XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
 
     const memberTotals = {};
-    expenseRecords.forEach(r => { const k = r.payer || '未指定'; memberTotals[k] = (memberTotals[k]||0) + r.amount; });
+    expenseRecords.forEach(r => { const k = r.payer || '未指定'; memberTotals[k] = (memberTotals[k]||0) + recordToKRW(r); });
     const memberRows = [['成員','已付金額(KRW)','約合(TWD)','佔比']];
     Object.keys(memberTotals).forEach(k => {
       memberRows.push([k, memberTotals[k], Math.round(memberTotals[k]/rateTWD), totalKrw ? `${Math.round(memberTotals[k]/totalKrw*100)}%` : '0%']);
