@@ -215,9 +215,13 @@
           <div class="role-toggle-badge" onclick="triggerRoleSwitch()">
             <i class="fa-solid fa-user-shield"></i> <span id="display-role-text">一般使用者模式</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.25); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: 0.3s;"><i class="fa-solid fa-gear" style="font-size:calc(16px * var(--font-scale));"></i></button>
-            <div class="countdown-chip"><span class="cd-num" id="countdown-num">--</span><span class="cd-label" id="countdown-label">天後出發</span></div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:9px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.25); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: 0.3s;"><i class="fa-solid fa-gear" style="font-size:calc(16px * var(--font-scale));"></i></button>
+              <div class="countdown-chip"><span class="cd-num" id="countdown-num">--</span><span class="cd-label" id="countdown-label">天後出發</span></div>
+            </div>
+            <div id="hero-members-row" style="display:flex;"></div>
+            <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.25); border-radius:12px; padding:5px 10px; font-size:calc(10.5px * var(--font-scale)); color:#fff; cursor:pointer; font-weight:700; white-space:nowrap;"></div>
           </div>
         </div>
         <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 8px;">釜山行旅</h1>
@@ -1692,6 +1696,20 @@ ${rawText}
         <button class="only-master" onclick="removeMemberFromSettings(${idx})" style="background:none; border:none; color:var(--gray); cursor:pointer; padding:4px;"><i class="fa-solid fa-xmark"></i></button>
       </div>
     `).join('');
+    renderHeroMembersRow();
+  }
+  function renderHeroMembersRow() {
+    const wrap = document.getElementById('hero-members-row'); if (!wrap) return;
+    if (!travelers.length) { wrap.innerHTML = ''; return; }
+    const shown = travelers.slice(0, 5);
+    wrap.innerHTML = shown.map((name, i) => `<div title="${escapeHtml(name)}" style="width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.28); border:1.5px solid rgba(255,255,255,0.55); display:flex; align-items:center; justify-content:center; font-size:calc(11px * var(--font-scale)); font-weight:800; color:#fff; margin-left:${i>0?'-8px':'0'};">${escapeHtml(name.slice(0,1))}</div>`).join('')
+      + (travelers.length > 5 ? `<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:calc(10px * var(--font-scale)); font-weight:800; color:#fff; margin-left:-8px;">+${travelers.length-5}</div>` : '');
+  }
+  function renderHeroSyncStatus() {
+    const wrap = document.getElementById('hero-sync-status'); if (!wrap) return;
+    wrap.innerHTML = syncRoomId
+      ? `<i class="fa-solid fa-cloud"></i> 房號 ${escapeHtml(syncRoomId)}`
+      : `<i class="fa-solid fa-cloud-arrow-up"></i> 尚未雲端同步`;
   }
   function addMemberFromSettings() {
     const inp = document.getElementById('setting-new-member'); const name = inp.value.trim(); if (!name) return;
@@ -2023,7 +2041,13 @@ ${rawText}
       const label = expBreakdownMode === 'date' ? formatDateLabel(k) : k;
       const sortedRecords = g.records.slice().sort((a,b)=>(b.id||0)-(a.id||0));
       return `<div style="margin-bottom:20px;">
-        <div style="display:flex; justify-content:space-between; font-size:calc(13px * var(--font-scale)); margin-bottom:4px;"><span>${icon} ${escapeHtml(label)}</span><span style="font-weight:700; color:var(--navy);">${pct}% (₩${f(g.total)})</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:4px;">
+          <span style="font-size:calc(13px * var(--font-scale));">${icon} ${escapeHtml(label)}</span>
+          <span style="text-align:right; flex-shrink:0;">
+            <span style="font-weight:700; color:var(--navy); font-size:calc(13px * var(--font-scale));">${pct}% · NT$ ${f(g.total/rateTWD)}</span>
+            <span style="display:block; color:var(--gray); font-size:calc(10.5px * var(--font-scale)); margin-top:1px;">≈ ₩ ${f(g.total)}</span>
+          </span>
+        </div>
         <div style="background:#F1F5F9; border-radius:6px; height:6px; overflow:hidden; margin-bottom:12px;"><div style="background:var(--teal); height:100%; width:${pct}%;"></div></div>
         ${sortedRecords.map(r => renderExpenseCard(r)).join('')}
       </div>`;
@@ -2139,6 +2163,7 @@ ${rawText}
       if (roomNameEl) {
         roomNameEl.innerText = `房號: ${roomInput}`;
       }
+      renderHeroSyncStatus();
 
       if (syncStatus) {
         syncStatus.style.background = '#ECFDF5'; 
@@ -2181,6 +2206,7 @@ ${rawText}
         if (roomNameEl) {
           roomNameEl.innerText = `房號: ${roomInput}`;
         }
+        renderHeroSyncStatus();
 
         if (syncStatus) {
           syncStatus.style.background = '#ECFDF5'; 
@@ -2234,6 +2260,7 @@ ${rawText}
           if (roomNameEl) {
             roomNameEl.innerText = `房號: ${roomInput}`;
           }
+          renderHeroSyncStatus();
 
           if (syncStatus) {
             syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
@@ -2259,6 +2286,7 @@ ${rawText}
       if (roomNameEl) {
         roomNameEl.innerText = '未開啟雲端同步';
       }
+      renderHeroSyncStatus();
     }
   }
 
@@ -2467,6 +2495,7 @@ ${rawText}
       if (roomNameEl) {
         roomNameEl.innerText = `房號: ${savedRoom}`;
       }
+      renderHeroSyncStatus();
       
       const autoEnable = localStorage.getItem('sync-auto-enabled');
       if (autoEnable === 'true') {
@@ -2474,6 +2503,8 @@ ${rawText}
         if (checkEl) checkEl.checked = true;
         toggleAutoSync(true);
       }
+    } else {
+      renderHeroSyncStatus();
     }
 
     await maybeShowOnboarding();
