@@ -56,7 +56,7 @@
   
   .hero-header {
     background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%);
-    height: 220px; padding: 25px; display: flex; flex-direction: column; justify-content: flex-end; color: white; 
+    min-height: 220px; padding: 25px; display: flex; flex-direction: column; justify-content: flex-end; color: white; 
     border-radius: 0 0 36px 36px; position: relative; overflow: hidden; margin: 0 -16px;
   }
   .hero-header::after {
@@ -221,7 +221,7 @@
               <div class="countdown-chip"><span class="cd-num" id="countdown-num">--</span><span class="cd-label" id="countdown-label">天後出發</span></div>
             </div>
             <div id="hero-members-row" style="display:flex;"></div>
-            <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.25); border-radius:12px; padding:5px 10px; font-size:calc(10.5px * var(--font-scale)); color:#fff; cursor:pointer; font-weight:700; white-space:nowrap;"></div>
+            <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.18); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.3); border-radius:16px; padding:8px 14px; color:#fff; cursor:pointer; white-space:nowrap;"></div>
           </div>
         </div>
         <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 8px;">釜山行旅</h1>
@@ -495,11 +495,9 @@ Day2 12:00 outlet購物，預計逛一小時
 
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-database"></i> Firebase 即時雲端同步</h4>
-      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">主操作者建立房號後發布；其他人輸入相同房號即可連線，並享有 WebSocket 瞬間自動同步功能！</p>
+      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">主操作者建立房號後發布；其他人輸入相同房號即可連線，並享有 WebSocket 瞬間自動同步功能！目前房號會顯示在總覽頁上方。</p>
       
-      <div class="sync-status-bar" id="sync-status" style="margin-bottom:10px;">
-        <span><i class="fa-solid fa-circle-dot"></i> 狀態：</span><b id="sync-room-name">未開啟雲端同步</b>
-      </div>
+      <div class="sync-status-bar" id="sync-status" style="margin-bottom:10px; display:none;"></div>
       
       <div style="display:flex; flex-direction:column; gap:8px;">
         <input type="text" id="sync-room-input" placeholder="請輸入房號 (Room ID)" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none;">
@@ -1698,18 +1696,19 @@ ${rawText}
     `).join('');
     renderHeroMembersRow();
   }
+  const AVATAR_COLORS = ['#FF8E7E', '#5B9EA2', '#C5A07A', '#8B7FD1', '#6FCF97', '#F2994A', '#56A8E8', '#E8749A'];
   function renderHeroMembersRow() {
     const wrap = document.getElementById('hero-members-row'); if (!wrap) return;
     if (!travelers.length) { wrap.innerHTML = ''; return; }
     const shown = travelers.slice(0, 5);
-    wrap.innerHTML = shown.map((name, i) => `<div title="${escapeHtml(name)}" style="width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.28); border:1.5px solid rgba(255,255,255,0.55); display:flex; align-items:center; justify-content:center; font-size:calc(11px * var(--font-scale)); font-weight:800; color:#fff; margin-left:${i>0?'-8px':'0'};">${escapeHtml(name.slice(0,1))}</div>`).join('')
-      + (travelers.length > 5 ? `<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:calc(10px * var(--font-scale)); font-weight:800; color:#fff; margin-left:-8px;">+${travelers.length-5}</div>` : '');
+    wrap.innerHTML = shown.map((name, i) => `<div title="${escapeHtml(name)}" style="width:28px; height:28px; border-radius:50%; background:${AVATAR_COLORS[i % AVATAR_COLORS.length]}; border:2px solid rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#fff; margin-left:${i>0?'-9px':'0'}; box-shadow:0 2px 5px rgba(0,0,0,0.18);">${escapeHtml(name.slice(0,1).toUpperCase())}</div>`).join('')
+      + (travelers.length > 5 ? `<div style="width:28px; height:28px; border-radius:50%; background:#2C3E50; border:2px solid rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; font-size:calc(10px * var(--font-scale)); font-weight:800; color:#fff; margin-left:-9px; box-shadow:0 2px 5px rgba(0,0,0,0.18);">+${travelers.length-5}</div>` : '');
   }
   function renderHeroSyncStatus() {
     const wrap = document.getElementById('hero-sync-status'); if (!wrap) return;
     wrap.innerHTML = syncRoomId
-      ? `<i class="fa-solid fa-cloud"></i> 房號 ${escapeHtml(syncRoomId)}`
-      : `<i class="fa-solid fa-cloud-arrow-up"></i> 尚未雲端同步`;
+      ? `<i class="fa-solid fa-cloud" style="font-size:calc(15px * var(--font-scale)); opacity:0.9;"></i><span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;"><span style="font-size:calc(9.5px * var(--font-scale)); opacity:0.85; font-weight:600;">房號</span><span style="font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:0.5px; font-family:'Quicksand';">${escapeHtml(syncRoomId)}</span></span>`
+      : `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(14px * var(--font-scale));"></i><span style="font-size:calc(12px * var(--font-scale)); font-weight:700;">尚未雲端同步</span>`;
   }
   function addMemberFromSettings() {
     const inp = document.getElementById('setting-new-member'); const name = inp.value.trim(); if (!name) return;
@@ -2140,6 +2139,7 @@ ${rawText}
     
     const syncStatus = document.getElementById('sync-status');
     if (syncStatus) {
+      syncStatus.style.display = 'flex';
       syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在安全上傳雲端...</span>`;
     }
     
@@ -2157,12 +2157,6 @@ ${rawText}
     
     try {
       await db.ref('rooms/' + roomInput).set(finalData);
-
-      // 防禦性檢查：避免 DOM 元素不存在時導致程式當機
-      const roomNameEl = document.getElementById('sync-room-name');
-      if (roomNameEl) {
-        roomNameEl.innerText = `房號: ${roomInput}`;
-      }
       renderHeroSyncStatus();
 
       if (syncStatus) {
@@ -2193,6 +2187,7 @@ ${rawText}
     localStorage.setItem('sync-room-id', roomInput);
     const syncStatus = document.getElementById('sync-status');
     if (syncStatus) {
+      syncStatus.style.display = 'flex';
       syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 下載遠端數據中...</span>`;
     }
     
@@ -2200,12 +2195,6 @@ ${rawText}
       const snapshot = await db.ref('rooms/' + roomInput).once('value');
       if (snapshot.exists()) {
         await updateLocalData(snapshot.val());
-
-        // 防禦性檢查
-        const roomNameEl = document.getElementById('sync-room-name');
-        if (roomNameEl) {
-          roomNameEl.innerText = `房號: ${roomInput}`;
-        }
         renderHeroSyncStatus();
 
         if (syncStatus) {
@@ -2252,17 +2241,11 @@ ${rawText}
       activeSyncListener.on('value', (snapshot) => {
         if (snapshot.exists()) {
           updateLocalData(snapshot.val());
+          renderHeroSyncStatus();
           
           const syncStatus = document.getElementById('sync-status');
-          
-          // 防禦性檢查
-          const roomNameEl = document.getElementById('sync-room-name');
-          if (roomNameEl) {
-            roomNameEl.innerText = `房號: ${roomInput}`;
-          }
-          renderHeroSyncStatus();
-
           if (syncStatus) {
+            syncStatus.style.display = 'flex';
             syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
             setTimeout(() => {
                if (syncStatus) {
@@ -2278,13 +2261,8 @@ ${rawText}
       
       const syncStatus = document.getElementById('sync-status');
       if (syncStatus) {
+        syncStatus.style.display = 'flex';
         syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-dot"></i> 單機模式</span>`;
-      }
-
-      // 防禦性檢查
-      const roomNameEl = document.getElementById('sync-room-name');
-      if (roomNameEl) {
-        roomNameEl.innerText = '未開啟雲端同步';
       }
       renderHeroSyncStatus();
     }
@@ -2489,12 +2467,6 @@ ${rawText}
       const roomInp = document.getElementById('sync-room-input');
       if (roomInp) roomInp.value = savedRoom;
       syncRoomId = savedRoom;
-
-      // 防禦性檢查
-      const roomNameEl = document.getElementById('sync-room-name');
-      if (roomNameEl) {
-        roomNameEl.innerText = `房號: ${savedRoom}`;
-      }
       renderHeroSyncStatus();
       
       const autoEnable = localStorage.getItem('sync-auto-enabled');
