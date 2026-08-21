@@ -249,10 +249,11 @@
         </div>
     </div>
 
-    <!-- 釜山行 Siri 精選建議：依倒數天數、行前準備進度、當日行程完成狀態計算出當下最相關的一則提醒 -->
-    <div class="card full-width" id="siri-suggestion-card" style="margin-top:18px; background:linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border-color:#DDD6FE;">
-        <div class="section-title" style="color:#6D28D9;"><i class="fa-solid fa-wand-magic-sparkles"></i> 釜山行 Siri 精選建議</div>
-        <div id="siri-suggestion-body" style="font-size:calc(14px * var(--font-scale)); color:#5B21B6; line-height:1.6; font-weight:600;">載入最新今日建議中...</div>
+    <!-- 待辦提醒卡：依倒數天數、行前準備進度、當日行程完成狀態計算出當下最相關的一項待辦，並附上可直接跳轉的按鈕 -->
+    <div class="card full-width" id="reminder-card" style="margin-top:18px; background:linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border-color:#DDD6FE;">
+        <div class="section-title" style="color:#6D28D9;"><i class="fa-solid fa-list-check"></i> 待辦提醒</div>
+        <div id="reminder-body" style="font-size:calc(14px * var(--font-scale)); color:#5B21B6; line-height:1.6; font-weight:600; margin-bottom:12px;">載入最新提醒中...</div>
+        <button id="reminder-btn" style="display:none; align-items:center; gap:6px; background:#6D28D9; color:#fff; border:none; padding:10px 16px; border-radius:14px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; font-family:inherit;"></button>
     </div>
 
     <!-- 航班摘要（精簡版，完整資訊在準備頁的憑證資訊） -->
@@ -978,7 +979,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem('master-pin-code', pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
     await saveTripSettings(); closeSettingsModal(); alert('所有配置已儲存完成！');
-    renderDashboard(); renderSiriSuggestion(true);
+    renderDashboard(); renderReminder(true);
   }
 
   function openNoteEdit() {
@@ -1145,12 +1146,20 @@ Day2 12:00 outlet購物，預計逛一小時
     spentEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
   }
 
-  // ===== 釜山行 Siri 精選建議：規則式判斷（非呼叫外部AI），依倒數天數、行前準備完成度、
-  // 當日行程完成狀態，計算出當下最相關的一則提醒，模擬 iOS Siri 建議依情境即時浮現的體驗 =====
-  function computeSiriSuggestion() {
-    if (!tripSettings || !tripSettings.startDate) return '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！';
+  // ===== 待辦提醒：規則式判斷（非呼叫外部AI），依倒數天數、行前準備完成度、
+  // 當日行程完成狀態，算出當下最相關的一項待辦——同時回傳文字與一個可直接跳轉的動作，而不只是一句話 =====
+  function goToPrepChecklist() {
+    showP('p-prep', document.querySelectorAll('.nav-btn')[1]);
+    switchPrepTab('checklist', document.querySelectorAll('#prep-main-tabs .tab-btn-sub')[1]);
+  }
+  function computeReminder() {
+    if (!tripSettings || !tripSettings.startDate) {
+      return { text: '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！', btnLabel: '前往設定', action: openSettingsModal };
+    }
     const parts = tripSettings.startDate.split('-');
-    if (parts.length !== 3) return '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！';
+    if (parts.length !== 3) {
+      return { text: '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！', btnLabel: '前往設定', action: openSettingsModal };
+    }
     const tripStart = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
     const today = new Date(); today.setHours(0,0,0,0);
     const daysLeft = Math.round((tripStart - today) / 86400000);
@@ -1163,31 +1172,46 @@ Day2 12:00 outlet購物，預計逛一小時
     const todayUndone = todayItems.filter(it => !it.done);
 
     if (daysLeft < -4) {
-      return '旅程已經結束囉，希望這趟釜山行玩得盡興！記得回來把 Excel 紀錄匯出留作紀念 📖';
+      return { text: '旅程已經結束囉，希望這趟釜山行玩得盡興！記得把記帳紀錄匯出留作紀念 📖', btnLabel: '匯出 Excel', action: exportToExcel };
     }
     if (daysLeft <= 0) {
       if (todayUndone.length > 0) {
-        return `今天還有 ${todayUndone.length} 項行程尚未完成，點「行程」頁查看細節，別錯過精彩的部分！`;
+        return { text: `今天還有 ${todayUndone.length} 項行程尚未完成，點下方按鈕查看細節，別錯過精彩的部分！`, btnLabel: '查看今日行程', action: () => goToItinerary(todayKey) };
       }
-      return '祝旅途愉快！記得隨時到「支出」頁追蹤花費，回國前別忘了辦理退稅 🧳';
+      return { text: '祝旅途愉快！記得隨時追蹤花費，回國前別忘了辦理退稅 🧳', btnLabel: '前往記帳', action: () => showP('p-expense', document.querySelectorAll('.nav-btn')[3]) };
     }
     if (daysLeft <= 3) {
-      return `倒數 ${daysLeft} 天就出發了！記得確認護照效期、充飽行動電源，行李也該收得差不多了`;
+      return { text: `倒數 ${daysLeft} 天就出發了！記得確認護照效期、充飽行動電源，行李也該收得差不多了`, btnLabel: '查看打包清單', action: goToPrepChecklist };
     }
     if (daysLeft <= 7) {
-      return `只剩 ${daysLeft} 天！建議先把「行程」頁的每日安排排好，出發前比較不手忙腳亂`;
+      return { text: `只剩 ${daysLeft} 天！建議先把每日行程安排好，出發前比較不手忙腳亂`, btnLabel: '前往排行程', action: () => goToItinerary() };
     }
     if (prepTotal > 0 && prepDone < prepTotal) {
-      return `行前準備目前完成 ${prepDone} / ${prepTotal} 項，還有 ${daysLeft} 天可以慢慢準備，別忘了「準備」頁還有清單等你打勾 ✅`;
+      return { text: `行前準備目前完成 ${prepDone} / ${prepTotal} 項，還有 ${daysLeft} 天可以慢慢準備`, btnLabel: '前往打包清單', action: goToPrepChecklist };
     }
-    return `距離出發還有 ${daysLeft} 天，記得先把機票、住宿等憑證資訊填進「準備」頁，出國時查詢比較方便`;
+    return { text: `距離出發還有 ${daysLeft} 天，記得先把機票、住宿等憑證資訊填進準備頁，出國時查詢比較方便`, btnLabel: '前往憑證資訊', action: () => goToPrepDocs('flight') };
   }
-  function renderSiriSuggestion(skipLoadingFlash) {
-    const bodyEl = document.getElementById('siri-suggestion-body');
+  function renderReminder(skipLoadingFlash) {
+    const bodyEl = document.getElementById('reminder-body');
+    const btnEl = document.getElementById('reminder-btn');
     if (!bodyEl) return;
-    if (skipLoadingFlash) { bodyEl.innerText = computeSiriSuggestion(); return; }
-    bodyEl.innerText = '載入最新今日建議中...';
-    setTimeout(() => { if (bodyEl) bodyEl.innerText = computeSiriSuggestion(); }, 400);
+    const doRender = () => {
+      const r = computeReminder();
+      bodyEl.innerText = r.text;
+      if (btnEl) {
+        if (r.btnLabel && r.action) {
+          btnEl.style.display = 'inline-flex';
+          btnEl.innerHTML = `${escapeHtml(r.btnLabel)} <i class="fa-solid fa-arrow-right" style="font-size:calc(11px * var(--font-scale));"></i>`;
+          btnEl.onclick = r.action;
+        } else {
+          btnEl.style.display = 'none';
+        }
+      }
+    };
+    if (skipLoadingFlash) { doRender(); return; }
+    bodyEl.innerText = '載入最新提醒中...';
+    if (btnEl) btnEl.style.display = 'none';
+    setTimeout(doRender, 400);
   }
 
   async function fetchWeather() {
@@ -1460,7 +1484,7 @@ Day2 12:00 outlet購物，預計逛一小時
       await storage.set('prep-checklist', JSON.stringify(prepData)); 
       await autoUploadIfEnabled();
     } catch(e) {} 
-    renderSiriSuggestion(true);
+    renderReminder(true);
   }
   function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
 
@@ -1590,7 +1614,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!it) return;
     it.done = !it.done;
     saveItin(); renderDayContent();
-    renderDashboard(); renderSiriSuggestion(true);
+    renderDashboard(); renderReminder(true);
   }
   function openItinMap(id) {
     const it = ensureDayArray(activeDay).find(i => i.id === id);
@@ -2585,7 +2609,7 @@ ${dayContextLines}
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
     renderExpenseSummary(); renderDayPills(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
-    renderSiriSuggestion(true);
+    renderReminder(true);
   }
 
   async function syncUpload() {
@@ -2924,7 +2948,7 @@ ${dayContextLines}
     await storage.set('app-initialized', 'true');
 
     fetchRates(); fetchWeather(); updateKoreaTime(); setInterval(updateKoreaTime, 30000); renderDayPills();
-    renderDashboard(); renderSiriSuggestion();
+    renderDashboard(); renderReminder();
     setInterval(updatePassCountdowns, 1000);
 
     const savedRoom = localStorage.getItem('sync-room-id');
