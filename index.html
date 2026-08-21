@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;700;900&family=Quicksand:wght=500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- 引入 Firebase 官方 CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -16,18 +16,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
 <style>
   :root {
-    --bg: #F5F7FA; --card: #FFFFFF; --navy: #1A2B3C; --coral: #FF8E7E;
-    --teal: #5B9EA2; --gold: #C5A07A; --gray: #8A929C; --line: rgba(0,0,0,0.06);
-    --warn: #E4572E; --warn-bg: #FFF5F2; --warn-border: #FF8E7E;
+    --bg: #F5F7FA; --card: #FFFFFF; --navy: #1D2B45; --coral: #FF8A84;
+    --teal: #49B8D0; --gold: #C5A07A; --gray: #98A2B3; --line: rgba(0,0,0,0.06);
+    --text-general: #49566B; --text-secondary: #667085; --success: #28C76F;
+    --warn: #FF5A5F; --warn-bg: #FFF5F2; --warn-border: #FF8E7E;
     --note-bg: #FFFDF2; --note-border: #F1C40F;
-    --btn-orange: linear-gradient(135deg, #FFAD99 0%, #FF8E7E 100%);
+    --btn-orange: linear-gradient(135deg, #FFAD99 0%, #FF8A84 100%);
     --glass: rgba(255, 255, 255, 0.9);
     --font-scale: 1;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
-    background-color: #E9EDF0; color: var(--navy);
+    font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+    background-color: #E9EDF0; color: var(--text-general); font-weight: 600;
     margin: 0; padding: 0; font-size:calc(16px * var(--font-scale)); line-height: 1.5;
   }
   
@@ -54,7 +55,7 @@
   }
   .switch-btn.active { background: var(--navy); color: white; }
   
-  .clean-title { font-family: 'Noto Sans TC', sans-serif; font-weight: 800; font-size:calc(28px * var(--font-scale)); margin: 0; letter-spacing: -0.5px; color: var(--navy); }
+  .clean-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight: 800; font-size:calc(28px * var(--font-scale)); margin: 0; letter-spacing: -0.5px; color: var(--navy); }
   
   .hero-header {
     background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%);
@@ -68,16 +69,16 @@
   }
   .page-header { padding: 35px 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
-  .section-title { font-family: 'Noto Sans TC'; font-size:calc(18px * var(--font-scale)); font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
+  .section-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(18px * var(--font-scale)); font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
   .calc-tabs { display: flex; background: #E2E7EC; border-radius: 20px; padding: 4px; margin-bottom: 20px; }
-  .tab-btn-sub { flex: 1; border: none; background: none; padding: 10px; border-radius: 16px; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: #7A828A; cursor: pointer; transition: 0.3s; }
+  .tab-btn-sub { flex: 1; border: none; background: none; padding: 10px; border-radius: 16px; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: var(--gray); cursor: pointer; transition: 0.3s; }
   .tab-btn-sub.active { background: #fff; color: var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
   
-  .input-label { font-size:calc(13px * var(--font-scale)); color: var(--gray); font-weight: 700; margin-bottom: 8px; display: block; padding-left: 6px; }
+  .input-label { font-size:calc(13px * var(--font-scale)); color: var(--text-secondary); font-weight: 700; margin-bottom: 8px; display: block; padding-left: 6px; }
   .input-field { position: relative; margin-bottom: 20px; }
   .input-field input {
     width: 100%; border: 2.5px solid #E9EDF0; border-radius: 18px; padding: 16px 16px 16px 50px;
-    font-size:calc(22px * var(--font-scale)); font-family: 'Quicksand'; font-weight: 700; outline: none; background: #FAFBFC; transition: 0.3s; color: var(--navy);
+    font-size:calc(22px * var(--font-scale)); font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight: 700; outline: none; background: #FAFBFC; transition: 0.3s; color: var(--navy);
   }
   .input-field input:focus { border-color: var(--teal); background: #fff; }
   .input-field .pre { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 700; font-size:calc(22px * var(--font-scale)); }
@@ -85,15 +86,15 @@
   .smart-stepper { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
   .step-btn { width: 46px; height: 46px; border-radius: 16px; border: none; background: #E2E7EC; color: var(--navy); cursor: pointer; font-size:calc(20px * var(--font-scale)); font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .step-input-box { flex: 1; position: relative; }
-  .step-input-box input { width: 100%; border: 2.5px solid #E9EDF0; border-radius: 16px; padding: 10px; text-align: center; font-family: 'Quicksand'; font-weight: 700; font-size:calc(18px * var(--font-scale)); outline: none; }
+  .step-input-box input { width: 100%; border: 2.5px solid #E9EDF0; border-radius: 16px; padding: 10px; text-align: center; font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight: 700; font-size:calc(18px * var(--font-scale)); outline: none; }
   
   .final-res-card { background: var(--navy); color: #fff; border-radius: 36px; padding: 30px 20px; text-align: center; box-shadow: 0 15px 35px rgba(26,43,60,0.15); border: 1px solid rgba(255,255,255,0.05); }
-  .final-res-card .twd { font-family: 'Quicksand'; font-size:calc(42px * var(--font-scale)); font-weight: 700; color: var(--coral); margin: 6px 0; }
-  .final-res-card .krw { font-family: 'Quicksand'; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
+  .final-res-card .twd { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(42px * var(--font-scale)); font-weight: 700; color: var(--coral); margin: 6px 0; }
+  .final-res-card .krw { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
   .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
   body.tablet-view .bottom-nav { max-width: 800px; }
-  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: #A0ACB6; border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 700; cursor: pointer; transition: 0.3s; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: var(--gray); border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 600; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
   .nav-btn i { font-size:calc(20px * var(--font-scale)); margin-bottom: 4px; transition: 0.3s; }
   .nav-btn.active i { transform: translateY(-4px) scale(1.1); }
@@ -101,7 +102,7 @@
   .panel.active { display: block; }
   
   .countdown-chip { background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 16px; padding: 8px 14px; text-align:center; border: 1px solid rgba(255,255,255,0.25); }
-  .countdown-chip .cd-num { display:block; font-family:'Quicksand'; font-size:calc(20px * var(--font-scale)); font-weight:800; color: var(--coral); line-height:1; }
+  .countdown-chip .cd-num { display:block; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(20px * var(--font-scale)); font-weight:800; color: var(--coral); line-height:1; }
   .countdown-chip .cd-label { display:block; font-size:calc(10px * var(--font-scale)); opacity: 0.9; margin-top:2px; }
   
   .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size:calc(13px * var(--font-scale)); background: #FAFBFC; padding: 12px; border-radius: 16px; }
@@ -111,13 +112,13 @@
 
   .dual-card-row { display:flex; gap: 12px; margin-bottom: 6px; }
   .mini-card { flex:1; padding: 16px; margin-bottom:0; text-align:center; }
-  .mini-label { font-size:calc(12px * var(--font-scale)); color: var(--gray); font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:4px; }
-  .mini-value { font-family:'Quicksand'; font-size:calc(18px * var(--font-scale)); font-weight:700; color: var(--teal); }
+  .mini-label { font-size:calc(12px * var(--font-scale)); color: var(--text-secondary); font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:4px; }
+  .mini-value { font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(18px * var(--font-scale)); font-weight:700; color: var(--teal); }
   .mini-sub { font-size:calc(10px * var(--font-scale)); color: var(--gray); margin-top: 3px; font-weight:600; }
   .climate-note { background: #EBF2F3; border-radius: 16px; padding: 12px 16px; font-size:calc(13px * var(--font-scale)); color: #4A6B6C; margin: 12px 0 18px; display:flex; align-items:center; gap:8px; }
 
   .edit-pill { margin-left:auto; background:#E2E7EC; border:none; width:28px; height:28px; border-radius:50%; color:var(--navy); cursor:pointer; font-size:calc(11px * var(--font-scale)); display: inline-flex; align-items: center; justify-content: center; }
-  .ghost-btn { width:100%; background:none; border:2px solid var(--navy); color:var(--navy); padding:12px; border-radius:18px; font-weight:700; font-size:calc(14px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Noto Sans TC'; }
+  .ghost-btn { width:100%; background:none; border:2px solid var(--navy); color:var(--navy); padding:12px; border-radius:18px; font-weight:700; font-size:calc(14px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; }
 
   .day-pill-row::-webkit-scrollbar, .day-tab-row::-webkit-scrollbar { height: 4px; }
   .day-pill-row::-webkit-scrollbar-thumb, .day-tab-row::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
@@ -141,7 +142,7 @@
   
   .contact-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1.5px solid var(--line); font-size:calc(14.5px * var(--font-scale)); }
   .contact-row:last-child { border-bottom:none; padding-bottom:0; }
-  .contact-row a { color:var(--coral); font-family:'Quicksand'; font-weight:700; text-decoration:none; font-size:calc(15px * var(--font-scale)); background: #FFF1F0; padding: 4px 10px; border-radius: 8px; }
+  .contact-row a { color:var(--coral); font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:700; text-decoration:none; font-size:calc(15px * var(--font-scale)); background: #FFF1F0; padding: 4px 10px; border-radius: 8px; }
 
   .timeline-container { position: relative; padding-left: 20px; margin: 15px 5px; }
   .timeline-container::before { content: ''; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-left: 2px dashed #CBD5E1; }
@@ -149,9 +150,9 @@
   .timeline-dot { position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); border: 2px solid white; box-shadow: 0 0 0 3px rgba(91,158,162,0.2); }
   .timeline-card { background: white; border-radius: 20px; border: 1px solid var(--line); padding: 16px; cursor: pointer; transition: 0.3s; position: relative; }
   .timeline-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.03); }
-  .timeline-time { font-family: 'Quicksand'; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: var(--teal); margin-bottom: 4px; }
+  .timeline-time { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight: 700; font-size:calc(14px * var(--font-scale)); color: var(--teal); margin-bottom: 4px; }
   .timeline-title { font-weight: 700; font-size:calc(16px * var(--font-scale)); color: var(--navy); }
-  .timeline-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size:calc(13.5px * var(--font-scale)); color: #555; }
+  .timeline-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size:calc(13.5px * var(--font-scale)); color: var(--text-general); }
   .timeline-detail.active { display: block; }
   .detail-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .detail-row i { color: var(--gold); width: 16px; text-align: center; }
@@ -185,7 +186,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    font-family: 'Noto Sans TC';
+    font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
     box-shadow: 0 4px 12px rgba(255,142,126,0.2);
     transition: all 0.2s ease;
   }
@@ -231,6 +232,27 @@
         <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 8px;">釜山行旅</h1>
         <p class="hero-sub" id="display-trip-sub" style="margin:6px 0 0; opacity:0.9; font-size:calc(15px * var(--font-scale)); font-weight:700;">11.10(二) - 11.14(六)・5天4夜</p>
       </div>
+    </div>
+
+    <!-- 旅程即時總覽 Dashboard：今日行程進度、目前花費，即時反映目前資料 -->
+    <div class="card full-width" style="margin-top:18px;">
+        <div class="section-title"><i class="fa-solid fa-gauge-high"></i> 旅程即時總覽</div>
+        <div class="bp-grid">
+          <div class="bp-grid-item">
+            <span>今日行程進度</span>
+            <b id="dash-today-progress">0 / 0 項</b>
+          </div>
+          <div class="bp-grid-item">
+            <span>目前已花費</span>
+            <b id="dash-total-spent">NT$ 0</b>
+          </div>
+        </div>
+    </div>
+
+    <!-- 釜山行 Siri 精選建議：依倒數天數、行前準備進度、當日行程完成狀態計算出當下最相關的一則提醒 -->
+    <div class="card full-width" id="siri-suggestion-card" style="margin-top:18px; background:linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border-color:#DDD6FE;">
+        <div class="section-title" style="color:#6D28D9;"><i class="fa-solid fa-wand-magic-sparkles"></i> 釜山行 Siri 精選建議</div>
+        <div id="siri-suggestion-body" style="font-size:calc(14px * var(--font-scale)); color:#5B21B6; line-height:1.6; font-weight:600;">載入最新今日建議中...</div>
     </div>
 
     <!-- 航班摘要（精簡版，完整資訊在準備頁的憑證資訊） -->
@@ -297,7 +319,7 @@
             <li><b>行動電源/鋰電池：</b>只能放隨身行李,不可託運。</li>
             <li><b>肉類製品：</b>肉乾、肉鬆、香腸、火腿等一律禁止攜帶入境。</li>
         </ul>
-        <p class="warn-footnote" style="font-size:calc(11.5px * var(--font-scale)); color:#943126; margin-top:10px; border-top:1px dashed rgba(228,87,46,0.25); padding-top:6px; font-weight: bold;">※ 法規隨時異動，出發前請再次確認各官網最新公告。</p>
+        <p class="warn-footnote" style="font-size:calc(11.5px * var(--font-scale)); color:#943126; margin-top:10px; border-top:1px dashed rgba(228,87,46,0.25); padding-top:6px; font-weight: 400;">※ 法規隨時異動，出發前請再次確認各官網最新公告。</p>
     </div>
 
     <div class="calc-tabs" id="prep-main-tabs" style="margin-bottom:16px;">
@@ -480,7 +502,8 @@ Day2 12:00 outlet購物，預計逛一小時
 <!-- 齒輪控制面板 Modal -->
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
-    <h3 style="margin-top: 0; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
+    <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-08-09</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -653,23 +676,35 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="receipt-review-overlay">
   <div class="guide-content" style="max-height:88vh; overflow-y:auto; text-align:left; max-width:400px;">
     <h3 style="margin-top:0; color:var(--navy);"><i class="fa-solid fa-receipt"></i> AI 收據辨識結果</h3>
-    <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.6;">以下欄位套用到全部項目，各項的名稱／數量／類別／金額可個別編輯或刪除，確認後點下方按鈕匯入</p>
+    <p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:14px; line-height:1.6;">一張收據會建立成一筆消費紀錄，下方商品明細可展開編輯（原文＋中文翻譯、單價、數量），確認後點下方按鈕匯入</p>
 
+    <div class="input-label">消費名稱</div>
+    <input type="text" id="rr-item-name" placeholder="店家名稱或消費摘要" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+    <div class="input-label">類別</div>
+    <div class="chip-row" id="rr-cat-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
     <div class="input-label">付款人</div>
     <div class="chip-row" id="rr-payer-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
     <div class="input-label">付款方式</div>
     <div class="chip-row" id="rr-method-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
-    <div class="input-label">幣別</div>
-    <div id="rr-currency-toggle" style="display:flex; border-radius:12px; overflow:hidden; margin-bottom:12px; width:fit-content;">
-      <button type="button" data-cur="KRW" onclick="setRrCurrency('KRW')" style="padding:9px 14px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">₩ 韓元</button>
-      <button type="button" data-cur="TWD" onclick="setRrCurrency('TWD')" style="padding:9px 14px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">NT$ 台幣</button>
+    <div class="input-label">總金額</div>
+    <div id="rr-currency-toggle" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+      <button type="button" data-cur="KRW" onclick="setRrCurrency('KRW')" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">₩ 韓元</button>
+      <button type="button" data-cur="TWD" onclick="setRrCurrency('TWD')" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">NT$ 台幣</button>
+      <button type="button" data-cur="JPY" onclick="setRrCurrency('JPY')" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">¥ 日圓</button>
+      <button type="button" data-cur="USD" onclick="setRrCurrency('USD')" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">$ 美元</button>
+      <button type="button" data-cur="EUR" onclick="setRrCurrency('EUR')" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer;">€ 歐元</button>
     </div>
+    <input type="number" id="rr-amount" inputmode="decimal" placeholder="總金額" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
     <div class="input-label">日期</div>
     <input type="date" id="rr-date" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
     <div class="input-label">消費地點</div>
-    <input type="text" id="rr-location" placeholder="店家或地點名稱" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:16px;">
+    <input type="text" id="rr-location" placeholder="店家或地點名稱" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+    <div class="input-label">備註</div>
+    <textarea id="rr-note" placeholder="其他補充說明（選填）" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:16px;"></textarea>
 
-    <div id="receipt-review-list"></div>
+    <div class="input-label">商品明細（原文＋中文翻譯）</div>
+    <div id="receipt-items-list"></div>
+    <button type="button" class="ghost-btn" style="margin-bottom:16px; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="addReceiptItemRow()"><i class="fa-solid fa-plus"></i> 新增品項</button>
 
     <button class="save-btn" id="receipt-review-confirm-btn" onclick="confirmReceiptImport()">確認匯入</button>
     <button class="ghost-btn" style="margin-top:8px;" onclick="closeReceiptReview()">取消</button>
@@ -718,6 +753,7 @@ Day2 12:00 outlet購物，預計逛一小時
   };
 
   let rateTWD = 42.8;
+  let rateJPY = 4.7, rateUSD = 0.031, rateEUR = 0.029; // TWD兌JPY/USD/EUR的初始預估值，頁面載入後會被 fetchRates() 抓到的即時匯率覆蓋
   let shopMode = 'fixed';
   let masterPin = '1234'; 
   let isMasterMode = false; 
@@ -942,6 +978,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem('master-pin-code', pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
     await saveTripSettings(); closeSettingsModal(); alert('所有配置已儲存完成！');
+    renderDashboard(); renderSiriSuggestion(true);
   }
 
   function openNoteEdit() {
@@ -973,7 +1010,13 @@ Day2 12:00 outlet購物，預計逛一小時
   async function fetchRates() {
     try {
       const res = await fetch("https://open.er-api.com/v6/latest/TWD"); const data = await res.json();
-      if(data.result === "success") { rateTWD = data.rates.KRW; const msg = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`; document.getElementById('overview-rate').innerText = msg; document.getElementById('rate-msg').innerText = msg; }
+      if(data.result === "success") {
+        rateTWD = data.rates.KRW;
+        if (data.rates.JPY) rateJPY = data.rates.JPY;
+        if (data.rates.USD) rateUSD = data.rates.USD;
+        if (data.rates.EUR) rateEUR = data.rates.EUR;
+        const msg = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`; document.getElementById('overview-rate').innerText = msg; document.getElementById('rate-msg').innerText = msg;
+      }
     } catch(e) { document.getElementById('overview-rate').innerText = "1 TWD ≈ 42.8 KRW (離線)"; }
   }
 
@@ -1035,14 +1078,29 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s === null || s === undefined ? '' : String(s); return div.innerHTML; }
-  // 從AI回應中穩健地取出JSON（就算AI在前後多加了說明文字或不同大小寫的code fence也能正確擷取）
+  // 從AI回應中穩健地取出JSON（就算AI在前後多加了說明文字或不同大小寫的code fence也能正確擷取）。
+  // 用括號配對深度掃描，而非單純貪婪正則：正則會從文字中第一個[比對到最後一個]，
+  // 遇到「物件包陣列」（例如收據格式 {"item":...,"items":[...]}）會誤判成只擷取內層陣列，
+  // 若該陣列剛好是空的（AI覺得不需要逐項列出時）還會被誤判成「內容是空的」而報錯。
   function extractJsonBlock(text) {
     let cleaned = (text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    const arrMatch = cleaned.match(/\[[\s\S]*\]/);
-    if (arrMatch) return arrMatch[0];
-    const objMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (objMatch) return objMatch[0];
-    return cleaned;
+    let startIdx = -1, openChar = '', closeChar = '';
+    for (let i = 0; i < cleaned.length; i++) {
+      if (cleaned[i] === '[' || cleaned[i] === '{') { startIdx = i; openChar = cleaned[i]; closeChar = (openChar === '[') ? ']' : '}'; break; }
+    }
+    if (startIdx === -1) return cleaned;
+
+    let depth = 0, inString = false, escapeNext = false;
+    for (let i = startIdx; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (escapeNext) { escapeNext = false; continue; }
+      if (ch === '\\' && inString) { escapeNext = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === openChar) depth++;
+      else if (ch === closeChar) { depth--; if (depth === 0) return cleaned.substring(startIdx, i + 1); }
+    }
+    return cleaned.substring(startIdx);
   }
   function todayOrTripDate() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
 
@@ -1072,6 +1130,66 @@ Day2 12:00 outlet購物，預計逛一小時
     else { numEl.innerText = '✓'; labelEl.innerText = '旅程結束'; }
   }
 
+  // ===== 旅程即時總覽 Dashboard：今日行程完成度與目前總花費，隨行程/記帳資料異動即時更新 =====
+  function renderDashboard() {
+    const progressEl = document.getElementById('dash-today-progress');
+    const spentEl = document.getElementById('dash-total-spent');
+    if (!progressEl || !spentEl) return;
+
+    const todayKey = todayOrTripDate();
+    const todayItems = itinData[todayKey] || [];
+    const doneCount = todayItems.filter(it => it.done).length;
+    progressEl.innerText = `${doneCount} / ${todayItems.length} 項`;
+
+    const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
+    spentEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
+  }
+
+  // ===== 釜山行 Siri 精選建議：規則式判斷（非呼叫外部AI），依倒數天數、行前準備完成度、
+  // 當日行程完成狀態，計算出當下最相關的一則提醒，模擬 iOS Siri 建議依情境即時浮現的體驗 =====
+  function computeSiriSuggestion() {
+    if (!tripSettings || !tripSettings.startDate) return '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！';
+    const parts = tripSettings.startDate.split('-');
+    if (parts.length !== 3) return '尚未設定啟航日期，快去設定頁填寫，才能開始倒數囉！';
+    const tripStart = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+    const today = new Date(); today.setHours(0,0,0,0);
+    const daysLeft = Math.round((tripStart - today) / 86400000);
+
+    let prepTotal = 0, prepDone = 0;
+    Object.values(prepData || {}).forEach(arr => { (arr||[]).forEach(it => { prepTotal++; if (it.checked) prepDone++; }); });
+
+    const todayKey = todayOrTripDate();
+    const todayItems = itinData[todayKey] || [];
+    const todayUndone = todayItems.filter(it => !it.done);
+
+    if (daysLeft < -4) {
+      return '旅程已經結束囉，希望這趟釜山行玩得盡興！記得回來把 Excel 紀錄匯出留作紀念 📖';
+    }
+    if (daysLeft <= 0) {
+      if (todayUndone.length > 0) {
+        return `今天還有 ${todayUndone.length} 項行程尚未完成，點「行程」頁查看細節，別錯過精彩的部分！`;
+      }
+      return '祝旅途愉快！記得隨時到「支出」頁追蹤花費，回國前別忘了辦理退稅 🧳';
+    }
+    if (daysLeft <= 3) {
+      return `倒數 ${daysLeft} 天就出發了！記得確認護照效期、充飽行動電源，行李也該收得差不多了`;
+    }
+    if (daysLeft <= 7) {
+      return `只剩 ${daysLeft} 天！建議先把「行程」頁的每日安排排好，出發前比較不手忙腳亂`;
+    }
+    if (prepTotal > 0 && prepDone < prepTotal) {
+      return `行前準備目前完成 ${prepDone} / ${prepTotal} 項，還有 ${daysLeft} 天可以慢慢準備，別忘了「準備」頁還有清單等你打勾 ✅`;
+    }
+    return `距離出發還有 ${daysLeft} 天，記得先把機票、住宿等憑證資訊填進「準備」頁，出國時查詢比較方便`;
+  }
+  function renderSiriSuggestion(skipLoadingFlash) {
+    const bodyEl = document.getElementById('siri-suggestion-body');
+    if (!bodyEl) return;
+    if (skipLoadingFlash) { bodyEl.innerText = computeSiriSuggestion(); return; }
+    bodyEl.innerText = '載入最新今日建議中...';
+    setTimeout(() => { if (bodyEl) bodyEl.innerText = computeSiriSuggestion(); }, 400);
+  }
+
   async function fetchWeather() {
     try {
       const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.18&longitude=129.08&current=temperature_2m,weather_code&timezone=Asia%2FSeoul');
@@ -1091,7 +1209,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const row = document.getElementById('day-pill-row'); if (!row) return;
     row.innerHTML = ITIN_DAYS.map(d => `
       <div class="day-pill" onclick="goToItinerary('${d.key}')" style="flex:0 0 auto; background:#fff; border:1px solid var(--line); border-radius:16px; padding:10px 14px; text-align:center; min-width:68px; cursor:pointer;">
-        <span class="dp-date" style="display:block; font-family:'Quicksand'; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span class="dp-wd" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--gray); margin:2px 0;">週${d.wd}</span><span class="dp-status" id="dp-status-${d.key}" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--teal); font-weight:700;">--</span>
+        <span class="dp-date" style="display:block; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span class="dp-wd" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--gray); margin:2px 0;">週${d.wd}</span><span class="dp-status" id="dp-status-${d.key}" style="display:block; font-size:calc(10px * var(--font-scale)); color:var(--teal); font-weight:700;">--</span>
       </div>
     `).join('');
     updateDayPillStatuses();
@@ -1247,7 +1365,7 @@ Day2 12:00 outlet購物，預計逛一小時
       headline = `${escapeHtml(entry.name || '票券')}${entry.durationHours ? ' · '+escapeHtml(String(entry.durationHours))+'小時方案' : ''}`;
       const expiryMs = calcPassExpiry(entry);
       sub = expiryMs ? `到期：${formatKoreaDateTime(expiryMs)} (韓國時間)` : '尚未設定啟用時間';
-      extra = `<div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-family:'Quicksand'; font-weight:800; font-size:calc(16px * var(--font-scale)); color:var(--teal); margin-top:8px;">計算中...</div>`;
+      extra = `<div class="pass-countdown" data-expiry="${expiryMs||''}" style="font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:800; font-size:calc(16px * var(--font-scale)); color:var(--teal); margin-top:8px;">計算中...</div>`;
     }
 
     const detailRows = schema.fields
@@ -1305,7 +1423,7 @@ Day2 12:00 outlet購物，預計逛一小時
     wrap.innerHTML = flights.map(f => `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line);">
         <div>
-          <b style="font-family:'Quicksand'; font-size:calc(16px * var(--font-scale)); color:var(--navy);">${escapeHtml(f.depCode||'?')} → ${escapeHtml(f.arrCode||'?')}</b>
+          <b style="font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); color:var(--navy);">${escapeHtml(f.depCode||'?')} → ${escapeHtml(f.arrCode||'?')}</b>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:2px;">${escapeHtml(f.label||'')} ${escapeHtml(f.flightNo||'')}</div>
         </div>
         <div style="text-align:right; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;">${f.date?formatMDLabel(f.date):'未填'} ${escapeHtml(f.time||'')}</div>
@@ -1342,6 +1460,7 @@ Day2 12:00 outlet購物，預計逛一小時
       await storage.set('prep-checklist', JSON.stringify(prepData)); 
       await autoUploadIfEnabled();
     } catch(e) {} 
+    renderSiriSuggestion(true);
   }
   function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
 
@@ -1402,7 +1521,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function renderDayTabs() {
     const wrap = document.getElementById('itin-day-tabs'); if(!wrap) return;
-    wrap.innerHTML = ITIN_DAYS.map(d => `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-family:'Quicksand'; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px;">週${d.wd}</span></div>`).join('');
+    wrap.innerHTML = ITIN_DAYS.map(d => `<div class="day-tab ${d.key===activeDay?'active':''}" onclick="selectDay('${d.key}')" style="flex:0 0 auto; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px 12px; text-align:center; min-width:64px; cursor:pointer;"><span style="display:block; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-weight:700; font-size:calc(13px * var(--font-scale));">${d.date}</span><span style="display:block; font-size:calc(10px * var(--font-scale)); margin-top:2px;">週${d.wd}</span></div>`).join('');
     wrap.querySelectorAll('.day-tab').forEach(tab => { if(tab.classList.contains('active')) { tab.style.background = 'var(--navy)'; tab.style.color = '#fff'; } });
   }
   function selectDay(key) { activeDay = key; renderDayTabs(); renderDayContent(); }
@@ -1424,7 +1543,11 @@ Day2 12:00 outlet購物，預計逛一小時
         const extraRows = ITIN_EXTRA_FIELDS.map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
         const companionsRow = companionNames.length ? `<div class="detail-row"><i class="fa-solid fa-user-group"></i><span><b>同行人：</b>${escapeHtml(companionNames.join('、'))}</span></div>` : '';
         const notesRow = it.notes ? `<div class="detail-row"><i class="fa-solid fa-message"></i><span><b>備註：</b>${escapeHtml(it.notes)}</span></div>` : '';
-        const allDetailRows = extraRows + companionsRow + notesRow;
+        const actionRow = `<div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button onclick="event.stopPropagation(); openItinMap(${it.id})" style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:8px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> 開啟地圖</button>
+          <button id="copy-name-btn-${it.id}" onclick="copyItinName(${it.id}, event)" style="flex:1; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); padding:8px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-copy"></i> 複製名稱</button>
+        </div>`;
+        const allDetailRows = actionRow + extraRows + companionsRow + notesRow;
 
         return `<div class="timeline-node">
           <div class="timeline-dot" style="${it.done ? 'background:var(--gold);' : ''}"></div>
@@ -1442,7 +1565,7 @@ Day2 12:00 outlet購物，預計逛一小時
               </div>
             </div>
             <div class="timeline-detail ${isDetailActive ? 'active' : ''}">
-              ${allDetailRows || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節，點右上角編輯新增</span>`}
+              ${allDetailRows}
             </div>
           </div>
         </div>`;
@@ -1467,6 +1590,38 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!it) return;
     it.done = !it.done;
     saveItin(); renderDayContent();
+    renderDashboard(); renderSiriSuggestion(true);
+  }
+  function openItinMap(id) {
+    const it = ensureDayArray(activeDay).find(i => i.id === id);
+    if (!it) return;
+    let url = '';
+    if (it.mapLink && /^https?:\/\//i.test(it.mapLink.trim())) {
+      url = it.mapLink.trim();
+    } else {
+      const query = (it.place || it.address || it.title || '').trim();
+      if (!query) { alert('沒有可用的地點資訊，請先在編輯裡填寫地點或地址'); return; }
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+    window.open(url, '_blank');
+  }
+  async function copyItinName(id, event) {
+    if (event) event.stopPropagation();
+    const it = ensureDayArray(activeDay).find(i => i.id === id);
+    if (!it) return;
+    const name = (it.place || it.title || '').trim();
+    if (!name) return;
+    try {
+      await navigator.clipboard.writeText(name);
+      const btn = document.getElementById(`copy-name-btn-${id}`);
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製';
+        setTimeout(() => { if (btn) btn.innerHTML = original; }, 1500);
+      }
+    } catch (e) {
+      alert('複製失敗，請手動選取文字複製');
+    }
   }
 
   function renderAddForm(editId) {
@@ -1626,7 +1781,6 @@ Day2 12:00 outlet購物，預計逛一小時
     openAiReview(okItems.length, flaggedItems);
   }
 
-  // ===== AI 行程文字解析（真的呼叫 Claude 理解自然語言，而非關鍵字比對） =====
   // ===== AI 行程智慧匯入（支援文字／圖片／PDF／Word，真的呼叫 Claude 理解內容，而非關鍵字比對） =====
   function switchItinAiMode(mode, btn) {
     itinAiMode = mode;
@@ -1726,17 +1880,25 @@ ${dayContextLines}
   function parseItinAiResponse() {
     const raw = document.getElementById('itin-ai-response-paste').value.trim();
     if (!raw) { alert('請先貼上 AI 的回答！'); return; }
+    let items;
     try {
       const cleaned = extractJsonBlock(raw);
-      const items = JSON.parse(cleaned);
-      if (!Array.isArray(items) || items.length === 0) throw new Error('empty');
+      items = JSON.parse(cleaned);
+      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 回答中沒有偵測到有效的行程項目陣列');
+    } catch (e) {
+      console.error('行程AI回答解析失敗:', e, '\n原始內容:', raw);
+      alert(`無法解析這段內容，請確認是否完整貼上 AI 回答的 JSON 陣列（應該是用 [ 開頭、] 結尾的內容）。\n\n技術訊息：${e.message}`);
+      return;
+    }
+    try {
       document.getElementById('itin-ai-response-paste').value = '';
       const statusEl = document.getElementById('itin-ai-status');
       if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
       resetItinAiInputs();
       finalizeParsedItems(items);
     } catch (e) {
-      alert('無法解析這段內容，請確認是否完整貼上 AI 回答的 JSON 陣列（應該是用 [ 開頭、] 結尾的內容）。');
+      console.error('行程項目匯入失敗:', e);
+      alert(`JSON 已成功解析，但匯入行程時發生錯誤，請截圖此訊息並回報。\n\n技術訊息：${e.message}`);
     }
   }
 
@@ -1884,6 +2046,7 @@ ${dayContextLines}
   // ===== 記帳與消費功能 =====
   const EXP_CATS = ['飲食','交通','購物','門票景點','住宿','其他'];
   const CAT_ICON = {'飲食':'🍜','交通':'🚕','購物':'🛍️','門票景點':'🎫','住宿':'🏨','其他':'📎'};
+  const CURRENCY_SYMBOL = { KRW: '₩', TWD: 'NT$', JPY: '¥', USD: '$', EUR: '€' };
   
   async function loadExpense() {
     try { 
@@ -1929,7 +2092,7 @@ ${dayContextLines}
   function renderHeroSyncStatus() {
     const wrap = document.getElementById('hero-sync-status'); if (!wrap) return;
     wrap.innerHTML = syncRoomId
-      ? `<i class="fa-solid fa-cloud" style="font-size:calc(15px * var(--font-scale)); opacity:0.9;"></i><span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;"><span style="font-size:calc(9.5px * var(--font-scale)); opacity:0.85; font-weight:600;">房號</span><span style="font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:0.5px; font-family:'Quicksand';">${escapeHtml(syncRoomId)}</span></span>`
+      ? `<i class="fa-solid fa-cloud" style="font-size:calc(15px * var(--font-scale)); opacity:0.9;"></i><span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;"><span style="font-size:calc(9.5px * var(--font-scale)); opacity:0.85; font-weight:600;">房號</span><span style="font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:0.5px; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;">${escapeHtml(syncRoomId)}</span></span>`
       : `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(14px * var(--font-scale));"></i><span style="font-size:calc(12px * var(--font-scale)); font-weight:700;">尚未雲端同步</span>`;
   }
   function addMemberFromSettings() {
@@ -1994,13 +2157,14 @@ ${dayContextLines}
         <div class="input-label">付款方式</div>
         <div class="chip-row" id="qa-method-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         <div class="input-label">金額</div>
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <div style="display:flex; border-radius:12px; overflow:hidden; flex:0 0 auto;">
-            <button type="button" onclick="setQaCurrency('KRW', this)" style="padding:10px 12px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='KRW'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='KRW'?'#fff':'var(--gray)'};">₩ 韓元</button>
-            <button type="button" onclick="setQaCurrency('TWD', this)" style="padding:10px 12px; border:none; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='TWD'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='TWD'?'#fff':'var(--gray)'};">NT$ 台幣</button>
-          </div>
-          <input type="number" id="qa-amount" inputmode="decimal" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="flex:1; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+          <button type="button" onclick="setQaCurrency('KRW', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='KRW'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='KRW'?'#fff':'var(--gray)'};">₩ 韓元</button>
+          <button type="button" onclick="setQaCurrency('TWD', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='TWD'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='TWD'?'#fff':'var(--gray)'};">NT$ 台幣</button>
+          <button type="button" onclick="setQaCurrency('JPY', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='JPY'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='JPY'?'#fff':'var(--gray)'};">¥ 日圓</button>
+          <button type="button" onclick="setQaCurrency('USD', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='USD'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='USD'?'#fff':'var(--gray)'};">$ 美元</button>
+          <button type="button" onclick="setQaCurrency('EUR', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='EUR'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='EUR'?'#fff':'var(--gray)'};">€ 歐元</button>
         </div>
+        <input type="number" id="qa-amount" inputmode="decimal" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
         <div style="display:flex; gap:8px; margin-bottom:12px;">
           <div style="flex:1; min-width:0;">
             <div class="input-label">品項名稱</div>
@@ -2044,7 +2208,7 @@ ${dayContextLines}
     const coupon = document.getElementById('qa-coupon').value.trim();
     const taxRefund = document.getElementById('qa-taxrefund').value.trim();
     const note = document.getElementById('qa-note').value.trim();
-    expenseRecords.push({ id: expItemSeq++, amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: rateTWD, quantity, location, coupon, taxRefund, note });
+    expenseRecords.push({ id: expItemSeq++, amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: currentRateForCurrency(qaCurrency), quantity, location, coupon, taxRefund, note });
     saveExpense(); document.getElementById('quick-add-box').style.display = 'none'; renderExpenseSummary();
   }
 
@@ -2063,12 +2227,12 @@ ${dayContextLines}
 
 
   // ===== AI 拍照辨識收據 =====
-  const RECEIPT_AI_PROMPT = `請閱讀這張收據或發票圖片。如果收據上清楚列出多項個別商品且金額分開，請將每項商品拆成獨立一筆；如果是單一消費（如單張門票、單筆服務費）或商品不易拆分，回傳一筆總額即可。
+  const RECEIPT_AI_PROMPT = `請閱讀這張收據或發票圖片，將整張收據整理成「一筆」消費紀錄（不要拆成多筆），但請列出收據上每一項個別商品的明細。
 
-只回傳一個 JSON 陣列，不要有任何其他文字、說明或 markdown 標記（不要加 \`\`\`json）。格式為：
-[{"item": "商品或消費名稱", "amount": 數字, "currency": "KRW 或 TWD 或其他幣別代碼", "category": "從飲食、交通、購物、門票景點、住宿、其他這六個選項中選一個最符合的", "date": "YYYY-MM-DD 格式，若圖片上看不出日期則回傳空字串", "location": "店家或地點名稱，若圖片上有的話"}]
+只回傳一個 JSON 物件，不要有任何其他文字、說明或 markdown 標記（不要加 \`\`\`json）。格式為：
+{"item": "店家名稱或消費摘要；若原文非中文，請保留原文，可用「原文（中文）」格式一併附上中文，例如「세븐일레븐（7-ELEVEN）」", "amount": 數字（收據上的總金額）, "currency": "從 KRW、TWD、JPY、USD、EUR 中選一個最符合的幣別代碼，都不符合則填其他標準三字幣別代碼", "category": "從飲食、交通、購物、門票景點、住宿、其他這六個選項中選一個最符合整張收據的", "date": "YYYY-MM-DD 格式，若圖片上看不出日期則回傳空字串", "location": "店家或地點名稱，若圖片上有的話", "note": "其他補充說明（例如折扣、特殊狀況），若無則空字串", "items": [{"nameOriginal": "商品原文名稱（收據上的原始語言，例如韓文）", "nameZh": "商品的繁體中文翻譯", "price": 數字（該項單價或小計，與外層amount同幣別）, "quantity": 數字}]}
 
-若整張圖片看起來不像收據、或完全無法辨識出金額，回傳空陣列 []。金額請取每項實際金額，不要把收據上的服務費/稅金/總計欄位重複列成另一項（除非那就是唯一能辨識的項目）。`;
+若整張圖片看起來不像收據、或完全無法辨識出金額，amount 請回傳 0，items 回傳空陣列 []。`;
 
   function triggerReceiptCapture() {
     const input = document.getElementById('receipt-file-input');
@@ -2093,7 +2257,7 @@ ${dayContextLines}
         <button class="save-btn" style="background:#4A6FA1;" onclick="copyReceiptAiPrompt()"><i class="fa-solid fa-copy"></i> 複製提示詞</button>
         <div id="receipt-ai-status" style="display:none; margin-top:10px;"></div>
         <div class="input-label" style="margin-top:12px;">貼上 AI 的回答</div>
-        <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 [ 開頭、] 結尾的 JSON 陣列）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
+        <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 { 開頭、} 結尾的 JSON 物件）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
         <button class="save-btn" style="background:var(--teal);" onclick="parseReceiptAiResponse()"><i class="fa-solid fa-check"></i> 解析並確認明細</button>
       </div>
     `;
@@ -2115,43 +2279,82 @@ ${dayContextLines}
   function parseReceiptAiResponse() {
     const raw = document.getElementById('receipt-ai-response-paste').value.trim();
     if (!raw) { alert('請先貼上 AI 的回答！'); return; }
+    let parsed;
     try {
       const cleaned = extractJsonBlock(raw);
-      const items = JSON.parse(cleaned);
-      if (!Array.isArray(items) || items.length === 0) throw new Error('empty');
+      parsed = JSON.parse(cleaned);
+      const isEmpty = Array.isArray(parsed) ? parsed.length === 0 : !parsed || Object.keys(parsed).length === 0;
+      if (isEmpty) throw new Error('AI 回答中沒有偵測到有效的收據內容');
+    } catch (e) {
+      console.error('收據AI回答解析失敗:', e, '\n原始內容:', raw);
+      alert(`無法解析這段內容，請確認是否完整貼上 AI 回答的內容。\n\n技術訊息：${e.message}`);
+      return;
+    }
+    try {
       const panel = document.getElementById('receipt-ai-panel');
       if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
       receiptSelectedFile = null;
-      openReceiptReview(items);
+      openReceiptReview(parsed);
     } catch (e) {
-      alert('無法解析這段內容，請確認是否完整貼上 AI 回答的 JSON 陣列（應該是用 [ 開頭、] 結尾的內容）。');
+      console.error('收據明細顯示失敗:', e);
+      alert(`JSON 已成功解析，但顯示明細時發生錯誤，請截圖此訊息並回報。\n\n技術訊息：${e.message}`);
     }
   }
 
-  // ===== AI 收據辨識結果確認（可多筆，共用付款人/方式/日期/地點，逐筆可編輯名稱/數量/類別/金額） =====
-  let receiptReviewItems = [];
+  // ===== AI 收據辨識結果確認：一張收據＝一筆消費紀錄，商品明細可展開編輯（原文＋中文、單價、數量） =====
+  let receiptReviewItemsState = [];
   let rrCurrency = 'KRW';
+  let rrCategory = '其他';
+  let rrItemSeq = 0;
 
-  function openReceiptReview(items) {
-    receiptReviewItems = items.map((it, i) => ({
-      _ridx: i,
-      item: it.item || '未命名項目',
-      amount: it.amount || 0,
-      category: (it.category && EXP_CATS.includes(it.category)) ? it.category : '其他',
-      quantity: 1
-    }));
-    rrCurrency = (items[0] && (items[0].currency === 'TWD' || items[0].currency === 'KRW')) ? items[0].currency : 'KRW';
+  const RR_SUPPORTED_CURRENCIES = ['KRW','TWD','JPY','USD','EUR'];
+  function openReceiptReview(data) {
+    // 兼容舊格式（AI若不小心回傳陣列）：自動合併成一筆收據＋品項明細
+    let normalized;
+    if (Array.isArray(data)) {
+      const totalAmount = data.reduce((s, it) => s + (it.amount || it.price || 0), 0);
+      const dateGuess = data.find(it => it.date && /^\d{4}-\d{2}-\d{2}$/.test(it.date));
+      const locationGuess = data.find(it => it.location);
+      normalized = {
+        item: (locationGuess && locationGuess.location) || '收據消費',
+        amount: totalAmount,
+        currency: (data[0] && RR_SUPPORTED_CURRENCIES.includes(data[0].currency)) ? data[0].currency : 'KRW',
+        category: (data[0] && EXP_CATS.includes(data[0].category)) ? data[0].category : '其他',
+        date: dateGuess ? dateGuess.date : '',
+        location: locationGuess ? locationGuess.location : '',
+        note: '',
+        items: data.map(it => ({ nameOriginal: it.item || '', nameZh: '', price: it.amount || 0, quantity: 1 }))
+      };
+    } else {
+      normalized = {
+        item: data.item || data.location || '收據消費',
+        amount: data.amount || 0,
+        currency: RR_SUPPORTED_CURRENCIES.includes(data.currency) ? data.currency : 'KRW',
+        category: (data.category && EXP_CATS.includes(data.category)) ? data.category : '其他',
+        date: data.date || '',
+        location: data.location || '',
+        note: data.note || '',
+        items: Array.isArray(data.items) ? data.items : []
+      };
+    }
+
+    rrItemSeq = 0;
+    receiptReviewItemsState = normalized.items.map(it => ({ _ridx: rrItemSeq++, nameOriginal: it.nameOriginal || '', nameZh: it.nameZh || '', price: it.price || 0, quantity: it.quantity || 1 }));
+    rrCurrency = normalized.currency;
+    rrCategory = normalized.category;
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
 
-    const dateGuess = items.find(it => it.date && /^\d{4}-\d{2}-\d{2}$/.test(it.date));
-    document.getElementById('rr-date').value = dateGuess ? dateGuess.date : todayOrTripDate();
-    const locationGuess = items.find(it => it.location);
-    document.getElementById('rr-location').value = locationGuess ? locationGuess.location : '';
+    document.getElementById('rr-item-name').value = normalized.item;
+    document.getElementById('rr-amount').value = normalized.amount || '';
+    document.getElementById('rr-date').value = (normalized.date && /^\d{4}-\d{2}-\d{2}$/.test(normalized.date)) ? normalized.date : todayOrTripDate();
+    document.getElementById('rr-location').value = normalized.location;
+    document.getElementById('rr-note').value = normalized.note || '';
 
+    renderChipRow('rr-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(rrCategory), (i)=>{rrCategory=EXP_CATS[i];});
     renderChipRow('rr-payer-row', travelers, travelers.indexOf(qaPayer), (i)=>{qaPayer=travelers[i];});
     renderChipRow('rr-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
     syncRrCurrencyUI();
-    renderReceiptReviewList();
+    renderReceiptItemsList();
     document.getElementById('receipt-review-overlay').style.display = 'flex';
   }
 
@@ -2164,67 +2367,89 @@ ${dayContextLines}
     });
   }
 
-  function renderReceiptReviewList() {
-    const wrap = document.getElementById('receipt-review-list'); if (!wrap) return;
-    wrap.innerHTML = receiptReviewItems.map(it => `
-      <div class="card" id="rr-item-${it._ridx}" style="border:1.5px solid var(--line); padding:12px; margin-bottom:10px;">
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input type="text" id="rr-name-${it._ridx}" value="${escapeHtml(it.item)}" placeholder="品項名稱" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
-          <input type="number" id="rr-qty-${it._ridx}" min="1" value="${it.quantity}" style="flex:0 0 56px; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
-          <button onclick="removeReceiptReviewItem(${it._ridx})" style="flex:0 0 auto; background:#F1F5F9; border:none; width:36px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+  function renderReceiptItemsList() {
+    const wrap = document.getElementById('receipt-items-list'); if (!wrap) return;
+    if (!receiptReviewItemsState.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">尚無商品明細，可按下方按鈕手動新增</p>`; return; }
+    wrap.innerHTML = receiptReviewItemsState.map(it => `
+      <div class="card" id="rr-item-${it._ridx}" style="border:1px solid var(--line); padding:10px; margin-bottom:8px;">
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <input type="text" id="rr-orig-${it._ridx}" value="${escapeHtml(it.nameOriginal)}" placeholder="原文名稱" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
+          <input type="text" id="rr-zh-${it._ridx}" value="${escapeHtml(it.nameZh)}" placeholder="中文翻譯" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
         </div>
-        <div class="chip-row" id="rr-cat-${it._ridx}" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;"></div>
-        <input type="number" id="rr-amount-${it._ridx}" inputmode="decimal" value="${it.amount}" placeholder="金額" style="width:100%; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box;">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input type="number" id="rr-price-${it._ridx}" inputmode="decimal" value="${it.price}" placeholder="價格" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
+          <input type="number" id="rr-qty-${it._ridx}" min="1" value="${it.quantity}" placeholder="數量" style="width:56px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale)); text-align:center;">
+          <button onclick="removeReceiptItemRow(${it._ridx})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+        </div>
       </div>
     `).join('');
-    receiptReviewItems.forEach(it => {
-      renderChipRow(`rr-cat-${it._ridx}`, EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(it.category), (i)=>{ it.category = EXP_CATS[i]; });
-    });
-    const btn = document.getElementById('receipt-review-confirm-btn');
-    if (btn) btn.innerText = `確認匯入 ${receiptReviewItems.length} 筆`;
   }
 
-  function removeReceiptReviewItem(ridx) {
-    receiptReviewItems = receiptReviewItems.filter(it => it._ridx !== ridx);
-    if (receiptReviewItems.length === 0) { closeReceiptReview(); return; }
-    renderReceiptReviewList();
+  function addReceiptItemRow() {
+    receiptReviewItemsState.push({ _ridx: rrItemSeq++, nameOriginal: '', nameZh: '', price: 0, quantity: 1 });
+    renderReceiptItemsList();
+  }
+
+  function removeReceiptItemRow(ridx) {
+    receiptReviewItemsState = receiptReviewItemsState.filter(it => it._ridx !== ridx);
+    renderReceiptItemsList();
   }
 
   function confirmReceiptImport() {
-    const sharedDate = document.getElementById('rr-date').value || todayOrTripDate();
-    const sharedLocation = document.getElementById('rr-location').value.trim();
-    let count = 0;
-    receiptReviewItems.forEach(it => {
-      const nameEl = document.getElementById(`rr-name-${it._ridx}`);
+    const name = document.getElementById('rr-item-name').value.trim();
+    const amt = p(document.getElementById('rr-amount').value);
+    if (!name || !amt) { alert('請確認消費名稱與總金額都已填寫！'); return; }
+    const date = document.getElementById('rr-date').value || todayOrTripDate();
+    const location = document.getElementById('rr-location').value.trim();
+    const noteEl = document.getElementById('rr-note');
+    const note = noteEl ? noteEl.value.trim() : '';
+
+    const items = receiptReviewItemsState.map(it => {
+      const origEl = document.getElementById(`rr-orig-${it._ridx}`);
+      const zhEl = document.getElementById(`rr-zh-${it._ridx}`);
+      const priceEl = document.getElementById(`rr-price-${it._ridx}`);
       const qtyEl = document.getElementById(`rr-qty-${it._ridx}`);
-      const amtEl = document.getElementById(`rr-amount-${it._ridx}`);
-      const name = nameEl ? nameEl.value.trim() : it.item;
-      const amt = amtEl ? p(amtEl.value) : it.amount;
-      if (!name || !amt) return; // 略過沒填名稱或金額的項目，不強制匯入不完整資料
-      const qty = (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1;
-      expenseRecords.push({
-        id: expItemSeq++, amount: amt, currency: rrCurrency, category: it.category,
-        payer: qaPayer, method: qaMethod, date: sharedDate, item: name,
-        rateAtTime: rateTWD, quantity: qty, location: sharedLocation, coupon: '', taxRefund: '', note: ''
-      });
-      count++;
+      return {
+        nameOriginal: origEl ? origEl.value.trim() : it.nameOriginal,
+        nameZh: zhEl ? zhEl.value.trim() : it.nameZh,
+        price: priceEl ? p(priceEl.value) : it.price,
+        quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1
+      };
+    }).filter(it => it.nameOriginal || it.nameZh);
+
+    expenseRecords.push({
+      id: expItemSeq++, amount: amt, currency: rrCurrency, category: rrCategory,
+      payer: qaPayer, method: qaMethod, date: date, item: name,
+      rateAtTime: currentRateForCurrency(rrCurrency), quantity: 1, location: location, coupon: '', taxRefund: '', note: note,
+      items: items
     });
     saveExpense(); renderExpenseSummary();
     closeReceiptReview();
-    if (count > 0) alert(`已成功匯入 ${count} 筆消費紀錄！`);
-    else alert('沒有可匯入的項目，請確認每筆都已填寫名稱與金額。');
+    alert('已成功匯入這筆收據消費紀錄！');
   }
 
   function closeReceiptReview() {
     document.getElementById('receipt-review-overlay').style.display = 'none';
-    receiptReviewItems = [];
+    receiptReviewItemsState = [];
   }
 
-  // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示
-  function recordToKRW(r) { return (r.currency === 'TWD') ? Math.round((r.amount||0) * (r.rateAtTime || rateTWD)) : Math.round(r.amount||0); }
-  function recordToTWD(r) { return (r.currency === 'TWD') ? Math.round(r.amount||0) : Math.round((r.amount||0) / (r.rateAtTime || rateTWD)); }
+  // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示（支援 KRW/TWD/JPY/USD/EUR；rateAtTime 代表「該筆幣別」兌 1 TWD 的匯率，未知幣別則比照 KRW 處理避免出錯）
+  function getCurrencyRate(cur) { if (cur === 'JPY') return rateJPY; if (cur === 'USD') return rateUSD; if (cur === 'EUR') return rateEUR; return null; }
+  function currentRateForCurrency(cur) { if (!cur || cur === 'KRW') return rateTWD; if (cur === 'TWD') return 1; return getCurrencyRate(cur) || rateTWD; }
+  function recordToKRW(r) {
+    if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
+    if (r.currency === 'TWD') return Math.round((r.amount||0) * (r.rateAtTime || rateTWD));
+    return Math.round(recordToTWD(r) * rateTWD);
+  }
+  function recordToTWD(r) {
+    if (r.currency === 'TWD') return Math.round(r.amount||0);
+    if (!r.currency || r.currency === 'KRW') return Math.round((r.amount||0) / (r.rateAtTime || rateTWD));
+    const rate = r.rateAtTime || getCurrencyRate(r.currency);
+    return rate ? Math.round((r.amount||0) / rate) : Math.round((r.amount||0) / rateTWD);
+  }
 
   function renderExpenseSummary() {
+    renderDashboard();
     const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
     
     // 防禦性檢查
@@ -2277,20 +2502,37 @@ ${dayContextLines}
   }
 
   function renderExpenseCard(r) {
-    const isTwd = r.currency === 'TWD';
-    const primary = isTwd ? `NT$ ${f(r.amount)}` : `₩ ${f(r.amount)}`;
+    const cur = r.currency || 'KRW';
+    const isTwd = cur === 'TWD';
+    const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
+    const primary = `${symbol} ${f(r.amount)}`;
     const secondary = isTwd ? `≈ ₩ ${f(recordToKRW(r))}` : `≈ NT$ ${f(recordToTWD(r))}`;
     const isExpanded = expandedExpenseIds.has(r.id);
     const metaBits = [`數量 ×${r.quantity||1}`, r.payer, r.method].filter(Boolean).map(escapeHtml).join(' · ');
+
+    const itemsBlock = (Array.isArray(r.items) && r.items.length) ? `
+      <div style="margin-top:8px; padding-top:10px; border-top:1px dashed var(--line);">
+        <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ul"></i> 商品明細</div>
+        ${r.items.map(it => {
+          const itemRecord = { amount: it.price, currency: cur, rateAtTime: r.rateAtTime };
+          const itemSecondary = isTwd ? `≈ ₩${f(recordToKRW(itemRecord))}` : `≈ NT$${f(recordToTWD(itemRecord))}`;
+          const nameDisplay = it.nameZh ? `${escapeHtml(it.nameOriginal||'')}${it.nameOriginal?' ':''}(${escapeHtml(it.nameZh)})` : escapeHtml(it.nameOriginal || '未命名商品');
+          return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:calc(12px * var(--font-scale)); margin-bottom:6px;">
+            <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}</span>
+            <span style="flex-shrink:0; text-align:right;"><b style="color:var(--navy);">${symbol}${f(it.price||0)}</b><br><small style="color:var(--gray);">${itemSecondary}</small></span>
+          </div>`;
+        }).join('')}
+      </div>
+    ` : '';
 
     const detailRows = [
       r.date ? `<div class="detail-row"><i class="fa-solid fa-calendar-day"></i><span><b>日期：</b>${escapeHtml(r.date)}</span></div>` : '',
       r.location ? `<div class="detail-row"><i class="fa-solid fa-location-dot"></i><span><b>消費地點：</b>${escapeHtml(r.location)}</span></div>` : '',
       r.coupon ? `<div class="detail-row"><i class="fa-solid fa-tag"></i><span><b>優惠券/折扣：</b>${escapeHtml(r.coupon)}</span></div>` : '',
       r.taxRefund ? `<div class="detail-row"><i class="fa-solid fa-receipt"></i><span><b>退稅金額：</b>${escapeHtml(r.taxRefund)}</span></div>` : '',
-      r.rateAtTime ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>當下匯率：</b>1 TWD ≈ ${Number(r.rateAtTime).toFixed(2)} KRW</span></div>` : '',
+      (r.rateAtTime && cur !== 'TWD') ? `<div class="detail-row"><i class="fa-solid fa-money-bill-transfer"></i><span><b>當下匯率：</b>1 TWD ≈ ${Number(r.rateAtTime).toFixed(2)} ${cur}</span></div>` : '',
       r.note ? `<div class="detail-row"><i class="fa-solid fa-note-sticky"></i><span><b>備註：</b>${escapeHtml(r.note)}</span></div>` : ''
-    ].filter(Boolean).join('');
+    ].filter(Boolean).join('') + itemsBlock;
 
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
       <div class="only-master" style="position:absolute; top:10px; right:10px;">
@@ -2302,7 +2544,7 @@ ${dayContextLines}
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
         </div>
         <div style="text-align:right; flex-shrink:0;">
-          <b style="color:var(--coral); font-family:'Quicksand'; font-size:calc(16px * var(--font-scale));">${primary}</b><br>
+          <b style="color:var(--coral); font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale));">${primary}</b><br>
           <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
         </div>
       </div>
@@ -2343,6 +2585,7 @@ ${dayContextLines}
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
     renderExpenseSummary(); renderDayPills(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
+    renderSiriSuggestion(true);
   }
 
   async function syncUpload() {
@@ -2632,14 +2875,17 @@ ${dayContextLines}
     XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
 
     const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
-    const expRows = [['日期','類別','品項','數量','原始金額','幣別','約當KRW','約當TWD','付款人','付款方式','消費地點','優惠券/折扣','退稅金額','備註']];
+    const expRows = [['日期','類別','品項','數量','原始金額','幣別','約當KRW','約當TWD','付款人','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
     expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
-      expRows.push([r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', r.note||'']);
+      const itemsStr = Array.isArray(r.items) && r.items.length
+        ? r.items.map(it => `${it.nameOriginal||''}${it.nameZh?`(${it.nameZh})`:''} x${it.quantity||1} ${it.price||0}`).join('; ')
+        : '';
+      expRows.push([r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
     });
     expRows.push([]);
-    expRows.push(['', '', '總計', '', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '', '', '', '', '']);
+    expRows.push(['', '', '總計', '', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '', '', '', '', '', '']);
     const wsExp = XLSX.utils.aoa_to_sheet(expRows);
-    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:10},{wch:16},{wch:14},{wch:12},{wch:20}];
+    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
     XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
 
     const memberTotals = {};
@@ -2678,6 +2924,7 @@ ${dayContextLines}
     await storage.set('app-initialized', 'true');
 
     fetchRates(); fetchWeather(); updateKoreaTime(); setInterval(updateKoreaTime, 30000); renderDayPills();
+    renderDashboard(); renderSiriSuggestion();
     setInterval(updatePassCountdowns, 1000);
 
     const savedRoom = localStorage.getItem('sync-room-id');
