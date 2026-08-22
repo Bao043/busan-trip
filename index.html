@@ -2103,7 +2103,7 @@ ${dayContextLines}
       const responseText = await callGeminiVision(promptText, fileObj);
       const cleaned = extractJsonBlock(responseText);
       const items = JSON.parse(cleaned);
-      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 回答中沒有偵測到有效的行程項目陣列');
+      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 沒有在這段內容裡找到可以匯入的行程活動，請確認貼上/附上的是包含時間、活動安排的行程本身（不是心得、比較、結論等其他文字）');
 
       statusEl.style.display = 'none'; statusEl.innerHTML = '';
       resetItinAiInputs();
@@ -2122,7 +2122,7 @@ ${dayContextLines}
     try {
       const cleaned = extractJsonBlock(raw);
       items = JSON.parse(cleaned);
-      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 回答中沒有偵測到有效的行程項目陣列');
+      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 沒有在這段內容裡找到可以匯入的行程活動，請確認貼上的是包含時間、活動安排的行程本身（不是心得、比較、結論等其他文字）');
     } catch (e) {
       console.error('行程AI回答解析失敗:', e, '\n原始內容:', raw);
       alert(`無法解析這段內容，請確認是否完整貼上 AI 回答的 JSON 陣列（應該是用 [ 開頭、] 結尾的內容）。\n\n技術訊息：${e.message}`);
