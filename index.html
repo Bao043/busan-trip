@@ -1166,24 +1166,63 @@ Day2 12:00 outlet購物，預計逛一小時
       const base64 = await fileToBase64(fileObj);
       parts.push({ inline_data: { mime_type: fileObj.type || 'application/octet-stream', data: base64 } });
     }
-    let res;
+    const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } });
+
+    const attempt = async (modelName) => {
+      let res;
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body
+        });
+      } catch (networkErr) {
+        throw new Error('無法連線到 Google，請檢查網路連線');
+      }
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
+        const err = new Error(msg);
+        err.isModelIssue = /no longer available|not found|not supported|NOT_FOUND|deprecated/i.test(msg);
+        throw err;
+      }
+      const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+      if (!text) throw new Error('AI 沒有回傳可用的內容，請稍後再試一次');
+      return text;
+    };
+
     try {
-      res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } })
-      });
-    } catch (networkErr) {
-      throw new Error('無法連線到 Google，請檢查網路連線');
+      return await attempt(getGeminiModelName());
+    } catch (firstErr) {
+      if (!firstErr.isModelIssue) throw firstErr; // 額度用完、網路問題等其他錯誤不重試，直接往外丟給呼叫端處理
+      let discoveredModel;
+      try {
+        discoveredModel = await discoverWorkingGeminiModel(apiKey);
+      } catch (discoverErr) {
+        throw firstErr; // 查清單也失敗，還是回報原本那個比較有參考價值的錯誤
+      }
+      return await attempt(discoveredModel);
     }
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      const msg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
-      throw new Error(msg);
-    }
-    const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-    if (!text) throw new Error('AI 沒有回傳可用的內容，請稍後再試一次');
-    return text;
+  }
+  // 模型名稱不寫死在程式碼裡：預設用 Google 官方維護、會自動指向「目前最新 Flash 模型」的別名 gemini-flash-latest。
+  // 萬一哪天連這個別名都失效，callGeminiVision 會自動呼叫下面這個函式，向 Google 即時查詢目前這組金鑰實際可用的模型清單，
+  // 挑一個支援 generateContent 的 Flash 系列模型，並快取到這台裝置，之後的呼叫就直接用快取結果、不用每次都重新查
+  const GEMINI_MODEL_CACHE_KEY = 'gemini-model-override';
+  const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
+  function getGeminiModelName() {
+    try { const cached = localStorage.getItem(GEMINI_MODEL_CACHE_KEY); if (cached) return cached; } catch(e) {}
+    return GEMINI_DEFAULT_MODEL;
+  }
+  async function discoverWorkingGeminiModel(apiKey) {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } });
+    if (!res.ok) throw new Error(`無法取得可用模型清單 (HTTP ${res.status})`);
+    const data = await res.json();
+    const usable = ((data && data.models) || []).filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'));
+    if (!usable.length) throw new Error('這組金鑰目前沒有可用的模型');
+    const flashPick = usable.find(m => /flash/i.test(m.name) && !/image|tts|live|audio|embed/i.test(m.name));
+    const picked = (flashPick || usable[0]).name.replace(/^models\//, '');
+    try { localStorage.setItem(GEMINI_MODEL_CACHE_KEY, picked); } catch(e) {}
+    return picked;
   }
 
   // 從AI回應中穩健地取出JSON（就算AI在前後多加了說明文字或不同大小寫的code fence也能正確擷取）。
