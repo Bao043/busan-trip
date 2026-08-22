@@ -382,6 +382,10 @@ Day2 12:00 outlet購物，預計逛一小時
         <div id="itin-ai-word-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:8px; text-align:center;"></div>
       </div>
 
+      <button id="itin-auto-btn" style="display:none; width:100%; align-items:center; justify-content:center; gap:6px; background:linear-gradient(135deg, #60A5FA 0%, #2563EB 100%); color:#fff; border:none; padding:12px; border-radius:14px; font-weight:700; font-size:calc(13.5px * var(--font-scale)); cursor:pointer; margin-top:4px; font-family:inherit;" onclick="autoRecognizeItinerary()"><i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵 AI 辨識</button>
+
+      <p style="font-size:calc(10.5px * var(--font-scale)); color:#1E3A8A; text-align:center; margin:12px 0 10px; line-height:1.5; opacity:0.75;">一鍵辨識的免費額度用完了，或還沒填金鑰？下面的手動複製貼上隨時都能用，貼到任何一個你有的 AI 對話裡都可以</p>
+
       <div style="display:flex; align-items:center; gap:8px; margin:14px 0 6px;">
         <div style="width:20px; height:20px; border-radius:50%; background:#2563EB; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
         <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
@@ -428,10 +432,37 @@ Day2 12:00 outlet購物，預計逛一小時
 
       <div class="dual-card-row only-master" style="margin-bottom:15px;">
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
-        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="triggerReceiptCapture()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
+        <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="toggleReceiptPanel()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
       </div>
       <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptFile(event)">
-      <div id="receipt-ai-panel" style="display:none; margin-bottom:15px;"></div>
+      <div id="receipt-ai-panel" style="display:none; margin-bottom:15px;">
+        <div class="card" style="border:2px solid #4A6FA1;">
+          <div class="section-title" style="color:#1E3A8A; font-size:calc(15px * var(--font-scale));"><i class="fa-solid fa-receipt"></i> AI 收據辨識</div>
+          <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:12px; line-height:1.6;">這個頁面部署在外部網站，無法直接連線 AI，請把提示詞連同收據照片一起貼到你常用的 ChatGPT／Claude／Gemini 對話中，再把 AI 的完整回答貼回這裡。</p>
+
+          <div class="input-label" style="margin-bottom:6px;">收據照片</div>
+          <button type="button" class="ghost-btn" onclick="document.getElementById('receipt-file-input').click()"><i class="fa-solid fa-image"></i> 選擇或拍攝收據照片</button>
+          <div id="receipt-selected-filename" style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:8px; margin-bottom:4px; text-align:center;"></div>
+
+          <button id="receipt-auto-btn" style="display:none; width:100%; align-items:center; justify-content:center; gap:6px; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); color:#fff; border:none; padding:12px; border-radius:14px; font-weight:700; font-size:calc(13.5px * var(--font-scale)); cursor:pointer; margin-top:12px; font-family:inherit;" onclick="autoRecognizeReceipt()"><i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵 AI 辨識</button>
+          <div id="receipt-ai-status" style="display:none; margin-top:10px;"></div>
+
+          <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); text-align:center; margin:14px 0 10px; line-height:1.5;">一鍵辨識的免費額度用完了，或還沒填金鑰？下面的手動複製貼上隨時都能用，貼到任何一個你有的 AI 對話裡都可以</p>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
+            <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
+          </div>
+          <button class="save-btn" style="background:#4A6FA1; font-size:calc(13px * var(--font-scale));" onclick="copyReceiptAiPrompt()"><i class="fa-solid fa-copy"></i> 複製提示詞</button>
+
+          <div style="display:flex; align-items:center; gap:8px; margin:16px 0 8px;">
+            <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
+            <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">把 AI 的完整回答貼回這裡</span>
+          </div>
+          <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 { 開頭、} 結尾的 JSON 物件）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
+          <button class="save-btn" style="background:var(--teal);" onclick="parseReceiptAiResponse()"><i class="fa-solid fa-check"></i> 解析並確認明細</button>
+        </div>
+      </div>
       <div id="quick-add-box" style="display:none;"></div>
     </div>
   </section>
@@ -582,6 +613,13 @@ Day2 12:00 outlet購物，預計逛一小時
           <input type="checkbox" id="sync-auto-check" onchange="toggleAutoSync(this.checked)"> 開啟 Firebase 雲端即時同步 (自動更新)
         </label>
       </div>
+    </div>
+
+    <!-- AI 自動辨識設定：串接個人 Gemini API 金鑰後，收據辨識與行程匯入可以一鍵完成，不用再手動複製貼上到外部 AI；金鑰跟著 tripSettings 用既有 Firebase 同步機制一起同步給旅伴 -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 自動辨識（選填）</h4>
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px; line-height:1.6;">填入你自己的 Google Gemini API 金鑰後，收據辨識與行程匯入會多一顆「一鍵AI辨識」按鈕，不用再手動複製貼上到外部 AI。金鑰會跟其他設定一起透過上面的 Firebase 同步給旅伴；辨識時是瀏覽器直接呼叫 Google，不會經過其他伺服器。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2563EB;">前往 Google AI Studio 免費申請</a>，有免費額度，旅行時偶爾用用通常夠。</p>
+      <input type="password" id="setting-gemini-key" placeholder="貼上你的 Gemini API 金鑰（不填就維持手動複製貼上）" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box;">
     </div>
 
     <!-- 主操作者密碼設定 -->
@@ -952,6 +990,15 @@ Day2 12:00 outlet購物，預計逛一小時
     const warnsEl = document.getElementById('display-warn-list');
     if (warnsEl && tripSettings.warns) { warnsEl.innerHTML = tripSettings.warns.map(w => `<li>${w}</li>`).join(''); }
     updateCountdown();
+    refreshAiAutoButtons();
+  }
+  // 依是否已設定 Gemini API 金鑰，切換「一鍵AI辨識」按鈕的顯示；沒有金鑰時完全不顯示，只保留原本複製提示詞的手動流程
+  function refreshAiAutoButtons() {
+    const hasKey = !!(tripSettings && tripSettings.geminiApiKey && tripSettings.geminiApiKey.trim());
+    const receiptBtn = document.getElementById('receipt-auto-btn');
+    if (receiptBtn) receiptBtn.style.display = hasKey ? 'flex' : 'none';
+    const itinBtn = document.getElementById('itin-auto-btn');
+    if (itinBtn) itinBtn.style.display = hasKey ? 'flex' : 'none';
   }
 
   function openSettingsModal() {
@@ -967,6 +1014,7 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function openAdvancedSettings() {
     document.getElementById('setting-master-pin').value = masterPin;
+    const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
   }
   function closeAdvancedSettings() { document.getElementById('advanced-settings-overlay').style.display = 'none'; }
@@ -975,6 +1023,8 @@ Day2 12:00 outlet購物，預計逛一小時
     tripSettings.title = document.getElementById('setting-trip-title').value.trim();
     tripSettings.sub = document.getElementById('setting-trip-sub').value.trim();
     tripSettings.startDate = document.getElementById('setting-trip-startdate').value;
+    const keyEl = document.getElementById('setting-gemini-key');
+    if (keyEl) tripSettings.geminiApiKey = keyEl.value.trim();
     const pin = document.getElementById('setting-master-pin').value.trim();
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem('master-pin-code', pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
@@ -1079,6 +1129,48 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s === null || s === undefined ? '' : String(s); return div.innerHTML; }
+
+  // ===== 一鍵 AI 辨識：直接呼叫使用者自己填的 Gemini API 金鑰，免去複製貼上外部 AI 的步驟。
+  // 只有在設定頁填了金鑰才會顯示對應按鈕；沒有金鑰或呼叫失敗時，原本的手動複製貼上流程都還在，可以隨時改用 =====
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = (reader.result || '').toString();
+        resolve(result.split(',')[1] || '');
+      };
+      reader.onerror = () => reject(new Error('讀取檔案失敗'));
+      reader.readAsDataURL(file);
+    });
+  }
+  async function callGeminiVision(promptText, fileObj) {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey) throw new Error('尚未設定 Gemini API 金鑰');
+    const parts = [{ text: promptText }];
+    if (fileObj) {
+      const base64 = await fileToBase64(fileObj);
+      parts.push({ inline_data: { mime_type: fileObj.type || 'application/octet-stream', data: base64 } });
+    }
+    let res;
+    try {
+      res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } })
+      });
+    } catch (networkErr) {
+      throw new Error('無法連線到 Google，請檢查網路連線');
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+    if (!text) throw new Error('AI 沒有回傳可用的內容，請稍後再試一次');
+    return text;
+  }
+
   // 從AI回應中穩健地取出JSON（就算AI在前後多加了說明文字或不同大小寫的code fence也能正確擷取）。
   // 用括號配對深度掃描，而非單純貪婪正則：正則會從文字中第一個[比對到最後一個]，
   // 遇到「物件包陣列」（例如收據格式 {"item":...,"items":[...]}）會誤判成只擷取內層陣列，
@@ -1556,7 +1648,7 @@ Day2 12:00 outlet購物，預計逛一小時
     let html = '';
     if (items.length===0) { html += `<div class="card" style="text-align:center; padding:25px; color:var(--gray);">暫無行程</div>`; }
     else {
-      html += items.map(it => {
+      html += items.map((it, idx) => {
         const isDetailActive = (activeDetailId === it.id);
         const catIcon = ITIN_CAT_ICON[it.category] || '';
         const metaBits = [];
@@ -1567,9 +1659,12 @@ Day2 12:00 outlet購物，預計逛一小時
         const extraRows = ITIN_EXTRA_FIELDS.map(f => it[f.key] ? `<div class="detail-row"><i class="fa-solid ${f.icon}"></i><span><b>${f.label}：</b>${escapeHtml(it[f.key])}</span></div>` : '').join('');
         const companionsRow = companionNames.length ? `<div class="detail-row"><i class="fa-solid fa-user-group"></i><span><b>同行人：</b>${escapeHtml(companionNames.join('、'))}</span></div>` : '';
         const notesRow = it.notes ? `<div class="detail-row"><i class="fa-solid fa-message"></i><span><b>備註：</b>${escapeHtml(it.notes)}</span></div>` : '';
-        const actionRow = `<div style="display:flex; gap:8px; margin-bottom:10px;">
-          <button onclick="event.stopPropagation(); openItinMap(${it.id})" style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:8px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-map-location-dot"></i> 開啟地圖</button>
-          <button id="copy-name-btn-${it.id}" onclick="copyItinName(${it.id}, event)" style="flex:1; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); padding:8px; border-radius:10px; font-size:calc(12px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fa-solid fa-copy"></i> 複製名稱</button>
+        const hasNext = idx < items.length - 1;
+        const nextClick = hasNext ? `openItinDirectionsToNext(${it.id})` : `alert('這是今天最後一項行程，沒有下一站可以導航')`;
+        const actionRow = `<div style="display:flex; gap:6px; margin-bottom:10px;">
+          <button onclick="event.stopPropagation(); openItinMap(${it.id})" style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; color:#1E40AF; padding:8px 4px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;"><i class="fa-solid fa-map-location-dot"></i> 開啟地圖</button>
+          <button onclick="event.stopPropagation(); ${nextClick}" style="flex:1; background:${hasNext?'#EFF6FF':'#F1F5F9'}; border:1px solid ${hasNext?'#BFDBFE':'var(--line)'}; color:${hasNext?'#1E40AF':'var(--gray)'}; padding:8px 4px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;"><i class="fa-solid fa-route"></i> 下一站</button>
+          <button id="copy-name-btn-${it.id}" onclick="copyItinName(${it.id}, event)" style="flex:1; background:#F1F5F9; border:1px solid var(--line); color:var(--navy); padding:8px 4px; border-radius:10px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;"><i class="fa-solid fa-copy"></i> 複製名稱</button>
         </div>`;
         const allDetailRows = actionRow + extraRows + companionsRow + notesRow;
 
@@ -1627,6 +1722,19 @@ Day2 12:00 outlet購物，預計逛一小時
       if (!query) { alert('沒有可用的地點資訊，請先在編輯裡填寫地點或地址'); return; }
       url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     }
+    window.open(url, '_blank');
+  }
+  // 從這一站導航到當天下一站（依時間排序抓下一筆），origin/destination 皆優先用地點/地址，缺資料則退回用行程名稱
+  function openItinDirectionsToNext(id) {
+    const items = (itinData[activeDay]||[]).slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1 || idx === items.length - 1) { alert('這是今天最後一項行程，沒有下一站可以導航'); return; }
+    const current = items[idx];
+    const next = items[idx + 1];
+    const originQuery = (current.place || current.address || current.title || '').trim();
+    const destQuery = (next.place || next.address || next.title || '').trim();
+    if (!originQuery || !destQuery) { alert('這一站或下一站缺少地點資訊，請先在編輯裡填寫地點或地址'); return; }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originQuery)}&destination=${encodeURIComponent(destQuery)}`;
     window.open(url, '_blank');
   }
   async function copyItinName(id, event) {
@@ -1881,12 +1989,10 @@ ${dayContextLines}
         promptText = buildItinAiInstructions(true, wordText);
       } else if (itinAiMode === 'image') {
         const file = itinSelectedFiles.image;
-        if (!file) { alert('請先選擇圖片！'); return; }
-        promptText = buildItinAiInstructions(false, '') + `\n\n（請將你選擇的圖片「${file.name}」一併附加到這則訊息中再送出）`;
+        promptText = buildItinAiInstructions(false, '') + (file ? `\n\n（請將你選擇的圖片「${file.name}」一併附加到這則訊息中再送出）` : `\n\n（請將你要匯入的行程圖片一併附加到這則訊息中再送出）`);
       } else if (itinAiMode === 'pdf') {
         const file = itinSelectedFiles.pdf;
-        if (!file) { alert('請先選擇 PDF 檔案！'); return; }
-        promptText = buildItinAiInstructions(false, '') + `\n\n（請將你選擇的 PDF「${file.name}」一併附加到這則訊息中再送出）`;
+        promptText = buildItinAiInstructions(false, '') + (file ? `\n\n（請將你選擇的 PDF「${file.name}」一併附加到這則訊息中再送出）` : `\n\n（請將你要匯入的 PDF 檔案一併附加到這則訊息中再送出）`);
       } else {
         return;
       }
@@ -1897,6 +2003,60 @@ ${dayContextLines}
     } catch (err) {
       console.error('複製提示詞失敗:', err);
       showErr('複製失敗，可能是瀏覽器權限限制，請改為手動選取文字後自行複製。');
+    }
+  }
+
+  // 一鍵 AI 辨識：用使用者自己填的 Gemini 金鑰直接呼叫，免去複製貼上外部 AI 的步驟；
+  // 沿用 buildItinAiInstructions 組出的同一套提示詞，結果也走 finalizeParsedItems 同一套分類/衝突檢查流程
+  async function autoRecognizeItinerary() {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey) { alert('請先在設定裡填入 Gemini API 金鑰'); return; }
+    const statusEl = document.getElementById('itin-ai-status');
+    const showStatus = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
+    const showLoading = (msg) => showStatus(`<div class="card" style="text-align:center; padding:18px; border:2px solid #2563EB; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#2563EB;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">${escapeHtml(msg)}</p></div>`);
+    const showErr = (msg) => showStatus(`<div class="card" style="text-align:center; padding:16px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:#943126;">${escapeHtml(msg)}</p></div>`);
+
+    let promptText = '', fileObj = null;
+    try {
+      if (itinAiMode === 'text') {
+        const rawText = document.getElementById('ai-raw-itin-text').value.trim();
+        if (!rawText) { alert('請先貼上行程文字！'); return; }
+        promptText = buildItinAiInstructions(true, rawText);
+      } else if (itinAiMode === 'word') {
+        const file = itinSelectedFiles.word;
+        if (!file) { alert('請先選擇 Word 檔案！'); return; }
+        if (typeof mammoth === 'undefined') { alert('Word 讀取工具載入失敗，請確認網路連線後再試一次'); return; }
+        showLoading('正在讀取 Word 文件內容...');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        const wordText = (result.value || '').trim();
+        if (!wordText) { showErr('無法從此 Word 檔案讀取到文字內容。'); return; }
+        itinLastRawTextForFallback = wordText;
+        promptText = buildItinAiInstructions(true, wordText);
+      } else if (itinAiMode === 'image') {
+        fileObj = itinSelectedFiles.image;
+        if (!fileObj) { alert('請先選擇圖片！'); return; }
+        promptText = buildItinAiInstructions(false, '');
+      } else if (itinAiMode === 'pdf') {
+        fileObj = itinSelectedFiles.pdf;
+        if (!fileObj) { alert('請先選擇 PDF 檔案！'); return; }
+        promptText = buildItinAiInstructions(false, '');
+      } else {
+        return;
+      }
+
+      showLoading('AI 辨識中，請稍候...');
+      const responseText = await callGeminiVision(promptText, fileObj);
+      const cleaned = extractJsonBlock(responseText);
+      const items = JSON.parse(cleaned);
+      if (!Array.isArray(items) || items.length === 0) throw new Error('AI 回答中沒有偵測到有效的行程項目陣列');
+
+      statusEl.style.display = 'none'; statusEl.innerHTML = '';
+      resetItinAiInputs();
+      finalizeParsedItems(items);
+    } catch (err) {
+      console.error('行程 AI 自動辨識失敗:', err);
+      showErr(`AI 辨識失敗：${err.message}。可以改用下方手動複製貼上的方式試試。`);
     }
   }
 
@@ -2258,9 +2418,10 @@ ${dayContextLines}
 
 若整張圖片看起來不像收據、或完全無法辨識出金額，amount 請回傳 0，items 回傳空陣列 []。`;
 
-  function triggerReceiptCapture() {
-    const input = document.getElementById('receipt-file-input');
-    if (input) input.click();
+  function toggleReceiptPanel() {
+    const panel = document.getElementById('receipt-ai-panel');
+    if (!panel) return;
+    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
   }
 
   let receiptSelectedFile = null;
@@ -2270,33 +2431,53 @@ ${dayContextLines}
     event.target.value = ''; // 清空以便下次可重新選同一張圖
     if (!file) return;
     receiptSelectedFile = file;
+    const nameEl = document.getElementById('receipt-selected-filename');
+    if (nameEl) nameEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}`;
+  }
 
-    const panel = document.getElementById('receipt-ai-panel');
-    if (!panel) return;
-    panel.style.display = 'block';
-    panel.innerHTML = `
-      <div class="card" style="border:2px solid #4A6FA1;">
-        <div style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; margin-bottom:10px;"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已選擇：${escapeHtml(file.name)}</div>
-        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px; line-height:1.6;">這個頁面部署在外部網站，無法直接連線 AI，請複製下方提示詞，連同這張照片一起貼到你常用的 ChatGPT／Claude／Gemini 對話中，再把 AI 的完整回答貼回這裡。</p>
-        <button class="save-btn" style="background:#4A6FA1;" onclick="copyReceiptAiPrompt()"><i class="fa-solid fa-copy"></i> 複製提示詞</button>
-        <div id="receipt-ai-status" style="display:none; margin-top:10px;"></div>
-        <div class="input-label" style="margin-top:12px;">貼上 AI 的回答</div>
-        <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 { 開頭、} 結尾的 JSON 物件）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
-        <button class="save-btn" style="background:var(--teal);" onclick="parseReceiptAiResponse()"><i class="fa-solid fa-check"></i> 解析並確認明細</button>
-      </div>
-    `;
+  function resetReceiptAiInputs() {
+    const ta = document.getElementById('receipt-ai-response-paste'); if (ta) ta.value = '';
+    const nameEl = document.getElementById('receipt-selected-filename'); if (nameEl) nameEl.innerHTML = '';
+    const statusEl = document.getElementById('receipt-ai-status'); if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
+    receiptSelectedFile = null;
   }
 
   async function copyReceiptAiPrompt() {
     const statusEl = document.getElementById('receipt-ai-status');
     const showMsg = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
-    if (!receiptSelectedFile) { alert('請先選擇收據照片！'); return; }
     try {
       await navigator.clipboard.writeText(RECEIPT_AI_PROMPT);
-      showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--teal); background:#ECFDF5; margin-bottom:0;"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#065F46; line-height:1.6;">已複製提示詞！請貼到你的 AI 對話中，記得一併附上「${escapeHtml(receiptSelectedFile.name)}」這張照片，再把回答貼回下方欄位。</p></div>`);
+      const fileNote = receiptSelectedFile ? `，記得一併附上「${escapeHtml(receiptSelectedFile.name)}」這張照片` : '，記得一併附上收據照片';
+      showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--teal); background:#ECFDF5; margin-bottom:0;"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#065F46; line-height:1.6;">已複製提示詞！請貼到你的 AI 對話中${fileNote}，再把回答貼回下方欄位。</p></div>`);
     } catch (err) {
       console.error('複製提示詞失敗:', err);
       showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#943126;">複製失敗，請手動選取提示詞文字後自行複製。</p></div>`);
+    }
+  }
+
+  // 一鍵 AI 辨識：用使用者自己填的 Gemini 金鑰直接呼叫，免去複製貼上外部 AI 的步驟；
+  // 沿用同一份 RECEIPT_AI_PROMPT，結果也走 openReceiptReview 同一套確認畫面，不會跳過確認直接匯入
+  async function autoRecognizeReceipt() {
+    const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
+    if (!apiKey) { alert('請先在設定裡填入 Gemini API 金鑰'); return; }
+    if (!receiptSelectedFile) { alert('請先選擇收據照片！'); return; }
+    const statusEl = document.getElementById('receipt-ai-status');
+    const showMsg = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
+    showMsg(`<div class="card" style="text-align:center; padding:18px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">AI 辨識中，請稍候...</p></div>`);
+    try {
+      const responseText = await callGeminiVision(RECEIPT_AI_PROMPT, receiptSelectedFile);
+      const cleaned = extractJsonBlock(responseText);
+      const parsed = JSON.parse(cleaned);
+      const isEmpty = Array.isArray(parsed) ? parsed.length === 0 : !parsed || Object.keys(parsed).length === 0;
+      if (isEmpty) throw new Error('AI 回答中沒有偵測到有效的收據內容');
+
+      const panel = document.getElementById('receipt-ai-panel');
+      if (panel) panel.style.display = 'none';
+      resetReceiptAiInputs();
+      openReceiptReview(parsed);
+    } catch (err) {
+      console.error('收據 AI 自動辨識失敗:', err);
+      showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#943126;">AI 辨識失敗：${escapeHtml(err.message)}。可以改用下方手動複製貼上的方式試試。</p></div>`);
     }
   }
 
@@ -2316,8 +2497,8 @@ ${dayContextLines}
     }
     try {
       const panel = document.getElementById('receipt-ai-panel');
-      if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
-      receiptSelectedFile = null;
+      if (panel) panel.style.display = 'none';
+      resetReceiptAiInputs();
       openReceiptReview(parsed);
     } catch (e) {
       console.error('收據明細顯示失敗:', e);
