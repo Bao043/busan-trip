@@ -620,6 +620,7 @@ Day2 12:00 outlet購物，預計逛一小時
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 自動辨識（選填）</h4>
       <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px; line-height:1.6;">填入你自己的 Google Gemini API 金鑰後，收據辨識與行程匯入會多一顆「一鍵AI辨識」按鈕，不用再手動複製貼上到外部 AI。金鑰會跟其他設定一起透過上面的 Firebase 同步給旅伴；辨識時是瀏覽器直接呼叫 Google，不會經過其他伺服器。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2563EB;">前往 Google AI Studio 免費申請</a>，有免費額度，旅行時偶爾用用通常夠。</p>
       <input type="password" id="setting-gemini-key" placeholder="貼上你的 Gemini API 金鑰（不填就維持手動複製貼上）" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box;">
+      <div id="gemini-key-status" style="font-size:calc(11px * var(--font-scale)); margin-top:6px; font-weight:700;"></div>
     </div>
 
     <!-- 主操作者密碼設定 -->
@@ -999,6 +1000,17 @@ Day2 12:00 outlet購物，預計逛一小時
     if (receiptBtn) receiptBtn.style.display = hasKey ? 'flex' : 'none';
     const itinBtn = document.getElementById('itin-auto-btn');
     if (itinBtn) itinBtn.style.display = hasKey ? 'flex' : 'none';
+    const statusEl = document.getElementById('gemini-key-status');
+    if (statusEl) statusEl.innerHTML = hasKey ? '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> 已設定金鑰' : '<i class="fa-solid fa-circle-info" style="color:var(--gray);"></i> 尚未設定金鑰';
+  }
+  // 把 Google 回傳的原始錯誤（通常是英文、對一般使用者不易理解）翻成可以直接照著做的中文提示，
+  // 只在看起來像「金鑰/驗證」相關的錯誤時才加註，其餘錯誤（例如額度用完、網路問題）原樣顯示即可
+  function friendlyAiErrorMessage(err) {
+    const msg = (err && err.message) ? err.message : String(err);
+    if (/auth|credential|oauth|unauthenticated|api key not valid|permission/i.test(msg)) {
+      return `金鑰可能沒有存成功，或這組金鑰被 Google 拒絕。可以檢查：1) 設定頁金鑰欄位下方是否顯示「已設定金鑰」，沒有的話重新貼一次並存檔；2) 如果這組金鑰是舊的，去 aistudio.google.com/apikey 重新建立一組新的貼上（新建立的金鑰會自動符合 Google 最新的安全規定）。原始訊息：${msg}`;
+    }
+    return msg;
   }
 
   function openSettingsModal() {
@@ -1013,6 +1025,9 @@ Day2 12:00 outlet購物，預計逛一小時
   function closeSettingsModal() { document.getElementById('settings-drawer-overlay').style.display = 'none'; }
 
   function openAdvancedSettings() {
+    document.getElementById('setting-trip-title').value = tripSettings.title || '';
+    document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
+    document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
@@ -2056,7 +2071,7 @@ ${dayContextLines}
       finalizeParsedItems(items);
     } catch (err) {
       console.error('行程 AI 自動辨識失敗:', err);
-      showErr(`AI 辨識失敗：${err.message}。可以改用下方手動複製貼上的方式試試。`);
+      showErr(`AI 辨識失敗：${friendlyAiErrorMessage(err)}。可以改用下方手動複製貼上的方式試試。`);
     }
   }
 
@@ -2477,7 +2492,7 @@ ${dayContextLines}
       openReceiptReview(parsed);
     } catch (err) {
       console.error('收據 AI 自動辨識失敗:', err);
-      showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#943126;">AI 辨識失敗：${escapeHtml(err.message)}。可以改用下方手動複製貼上的方式試試。</p></div>`);
+      showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#943126;">AI 辨識失敗：${escapeHtml(friendlyAiErrorMessage(err))}。可以改用下方手動複製貼上的方式試試。</p></div>`);
     }
   }
 
