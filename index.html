@@ -923,8 +923,28 @@ Day2 12:00 outlet購物，預計逛一小時
       ]}
   };
 
+  // 依目前房號把儲存 key 加上房號後綴，讓不同房號的行程資料在本機各自獨立存放，不會互相覆蓋／污染；
+  // 沒有設定房號時（純本機單機使用，從未同步過）維持原本不加後綴的 key，向下相容
+  function roomScopedKey(baseKey) {
+    return syncRoomId ? `${baseKey}:${syncRoomId}` : baseKey;
+  }
+  // 從舊版「不分房號、全站共用」的 key 一次性搬到新版「依房號獨立」的 key：
+  // 如果目前房號的獨立 key 還沒有資料、但舊的共用 key 有資料，就複製一份過去，
+  // 這樣既有使用者（例如原本的 111 房號）升級後不會覺得資料憑空消失
+  async function migrateToRoomScopedStorage(baseKey) {
+    if (!syncRoomId) return;
+    try {
+      const scopedRes = await storage.get(roomScopedKey(baseKey));
+      if (scopedRes && scopedRes.value) return;
+    } catch(e) {}
+    try {
+      const oldRes = await storage.get(baseKey);
+      if (oldRes && oldRes.value) { await storage.set(roomScopedKey(baseKey), oldRes.value); }
+    } catch(e) {}
+  }
   async function checkInitialization() {
-    const res = await storage.get('app-initialized');
+    await migrateToRoomScopedStorage('app-initialized');
+    const res = await storage.get(roomScopedKey('app-initialized'));
     return res && res.value === 'true';
   }
 
@@ -970,14 +990,15 @@ Day2 12:00 outlet購物，預計逛一小時
 
   async function saveTripSettings() {
     try { 
-      await storage.set('trip-settings', JSON.stringify(tripSettings)); 
+      await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings)); 
       renderTripSettingsUI(); 
       await autoUploadIfEnabled();
     } catch(e) { console.error(e); }
   }
 
   async function loadTripSettings() {
-    try { const res = await storage.get('trip-settings'); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
+    await migrateToRoomScopedStorage('trip-settings');
+    try { const res = await storage.get(roomScopedKey('trip-settings')); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
     renderTripSettingsUI();
   }
 
@@ -1057,7 +1078,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const keyEl = document.getElementById('setting-gemini-key');
     if (keyEl) tripSettings.geminiApiKey = keyEl.value.trim();
     const pin = document.getElementById('setting-master-pin').value.trim();
-    if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem('master-pin-code', pin); }
+    if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
     await saveTripSettings(); closeSettingsModal(); alert('所有配置已儲存完成！');
     renderDashboard(); renderReminder(true);
@@ -1511,9 +1532,10 @@ Day2 12:00 outlet購物，預計逛一小時
 
   // ===== 憑證資訊（機票／租車／住宿／票券）載入與遷移 =====
   async function loadTravelDocs() {
+    await migrateToRoomScopedStorage('travel-docs');
     let hasLocal = false;
     try {
-      const res = await storage.get('travel-docs');
+      const res = await storage.get(roomScopedKey('travel-docs'));
       if (res && res.value) { travelDocs = JSON.parse(res.value); hasLocal = true; }
     } catch(e) {}
 
@@ -1535,7 +1557,7 @@ Day2 12:00 outlet購物，預計逛一小時
           }
         }
       } catch(e) {}
-      await storage.set('travel-docs', JSON.stringify(travelDocs));
+      await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs));
     }
 
     ['flights','cars','hotels','passes'].forEach(k => { if(!travelDocs[k]) travelDocs[k]=[]; });
@@ -1544,7 +1566,7 @@ Day2 12:00 outlet購物，預計逛一小時
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
   }
   async function saveTravelDocs() {
-    try { await storage.set('travel-docs', JSON.stringify(travelDocs)); await autoUploadIfEnabled(); } catch(e) {}
+    try { await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs)); await autoUploadIfEnabled(); } catch(e) {}
   }
 
   function renderDocTypeNav() {
@@ -1668,9 +1690,10 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   async function loadPrep() {
+    await migrateToRoomScopedStorage('prep-checklist');
     let hasLocal = false;
     try { 
-      const res = await storage.get('prep-checklist'); 
+      const res = await storage.get(roomScopedKey('prep-checklist')); 
       if (res && res.value) { 
         prepData = JSON.parse(res.value); 
         hasLocal = true;
@@ -1683,7 +1706,7 @@ Day2 12:00 outlet購物，預計逛一小時
       Object.keys(PREP_DEFAULT).forEach(cat => { 
         prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); 
       });
-      await storage.set('prep-checklist', JSON.stringify(prepData));
+      await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData));
     } else if (!prepData) {
       prepData = {};
     }
@@ -1693,7 +1716,7 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   async function savePrep() { 
     try { 
-      await storage.set('prep-checklist', JSON.stringify(prepData)); 
+      await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData)); 
       await autoUploadIfEnabled();
     } catch(e) {} 
     renderReminder(true);
@@ -1726,9 +1749,10 @@ Day2 12:00 outlet購物，預計逛一小時
   function addCategory() { const name = prompt('新分類名稱?'); if (name && name.trim()) { prepData[name.trim()] = []; savePrep(); renderPrep(); } }
 
   async function loadItin() {
+    await migrateToRoomScopedStorage('itinerary');
     let hasLocal = false;
     try { 
-      const res = await storage.get('itinerary'); 
+      const res = await storage.get(roomScopedKey('itinerary')); 
       if (res && res.value) { 
         itinData = JSON.parse(res.value); 
         hasLocal = true;
@@ -1738,7 +1762,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const initialized = await checkInitialization();
     if (!hasLocal && !initialized) {
       itinData = JSON.parse(JSON.stringify(ITIN_DEFAULT));
-      await storage.set('itinerary', JSON.stringify(itinData));
+      await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData));
     } else if (!itinData) {
       itinData = {};
     }
@@ -1749,7 +1773,7 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   async function saveItin() { 
     try { 
-      await storage.set('itinerary', JSON.stringify(itinData)); 
+      await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData)); 
       updateDayPillStatuses(); 
       await autoUploadIfEnabled();
     } catch(e) {} 
@@ -2353,8 +2377,9 @@ ${dayContextLines}
   const CURRENCY_SYMBOL = { KRW: '₩', TWD: 'NT$', JPY: '¥', USD: '$', EUR: '€' };
   
   async function loadExpense() {
+    await migrateToRoomScopedStorage('expense-data');
     try { 
-      const res = await storage.get('expense-data'); 
+      const res = await storage.get(roomScopedKey('expense-data')); 
       if (res && res.value) { 
         const d = JSON.parse(res.value); 
         expenseRecords = d.records || []; 
@@ -2367,7 +2392,7 @@ ${dayContextLines}
   }
   async function saveExpense() { 
     try { 
-      await storage.set('expense-data', JSON.stringify({records:expenseRecords, travelers})); 
+      await storage.set(roomScopedKey('expense-data'), JSON.stringify({records:expenseRecords, travelers})); 
       await autoUploadIfEnabled();
     } catch(e) {} 
   }
@@ -2899,13 +2924,13 @@ ${dayContextLines}
     if (data.travelDocs) travelDocs = data.travelDocs;
     if (data.travelers && data.travelers.length) travelers = data.travelers;
 
-    await storage.set('trip-settings', JSON.stringify(tripSettings));
-    await storage.set('prep-checklist', JSON.stringify(prepData));
-    await storage.set('itinerary', JSON.stringify(itinData));
-    await storage.set('expense-data', JSON.stringify({records: expenseRecords, travelers}));
-    await storage.set('travel-docs', JSON.stringify(travelDocs));
+    await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings));
+    await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData));
+    await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData));
+    await storage.set(roomScopedKey('expense-data'), JSON.stringify({records: expenseRecords, travelers}));
+    await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs));
     
-    await storage.set('app-initialized', 'true');
+    await storage.set(roomScopedKey('app-initialized'), 'true');
 
     renderTripSettingsUI(); renderPrep(); renderDayTabs();
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
@@ -2965,10 +2990,35 @@ ${dayContextLines}
     }
   }
 
+  // 把「監聽某個房號、一有更新就 updateLocalData」的邏輯獨立出來，toggleAutoSync 開啟監聽、
+  // 以及 syncDownload 切換房號時都會用到，確保任何時候「正在監聽的房號」都跟 syncRoomId 一致，不會兩邊對不上
+  function attachAutoSyncListener(roomId) {
+    if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+    activeSyncListener = db.ref('rooms/' + roomId);
+    activeSyncListener.on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        updateLocalData(snapshot.val());
+        renderHeroSyncStatus();
+        
+        const syncStatus = document.getElementById('sync-status');
+        if (syncStatus) {
+          syncStatus.style.display = 'flex';
+          syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
+          setTimeout(() => {
+             if (syncStatus) {
+               syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 即時監聽連線中...</span>`;
+             }
+          }, 2000);
+        }
+      }
+    });
+  }
+
   async function syncDownload() {
     const roomInput = document.getElementById('sync-room-input').value.trim();
     if (!roomInput) { alert('請先輸入有效的 Room ID！'); return; }
     
+    const previousRoomId = syncRoomId;
     syncRoomId = roomInput;
     localStorage.setItem('sync-room-id', roomInput);
     const syncStatus = document.getElementById('sync-status');
@@ -2981,6 +3031,11 @@ ${dayContextLines}
       const snapshot = await db.ref('rooms/' + roomInput).once('value');
       if (snapshot.exists()) {
         await updateLocalData(snapshot.val());
+        // 如果先前就已經開啟即時同步監聽，換房號後要讓監聽跟著換過去，不然背景還在聽舊房號，
+        // 舊房號一有更新就會把這裡剛換過來的新房號資料蓋掉——這是造成不同房號互相污染最主要的原因
+        if (activeSyncListener && previousRoomId !== roomInput) {
+          attachAutoSyncListener(roomInput);
+        }
         renderHeroSyncStatus();
 
         if (syncStatus) {
@@ -3022,25 +3077,7 @@ ${dayContextLines}
       syncRoomId = roomInput;
       localStorage.setItem('sync-room-id', roomInput);
       localStorage.setItem('sync-auto-enabled', 'true');
-
-      activeSyncListener = db.ref('rooms/' + roomInput);
-      activeSyncListener.on('value', (snapshot) => {
-        if (snapshot.exists()) {
-          updateLocalData(snapshot.val());
-          renderHeroSyncStatus();
-          
-          const syncStatus = document.getElementById('sync-status');
-          if (syncStatus) {
-            syncStatus.style.display = 'flex';
-            syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 畫面已即時同步更新</span>`;
-            setTimeout(() => {
-               if (syncStatus) {
-                 syncStatus.innerHTML = `<span><i class="fa-solid fa-bolt" style="color:#F59E0B;"></i> 即時監聽連線中...</span>`;
-               }
-            }, 2000);
-          }
-        }
-      });
+      attachAutoSyncListener(roomInput);
     } else {
       localStorage.setItem('sync-auto-enabled', 'false');
       if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
@@ -3238,8 +3275,17 @@ ${dayContextLines}
 
   // ===== 全域初始化入口 =====
   window.onload = async () => {
-    const savedPin = localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
     await loadFontScale();
+
+    // 先取出目前房號，讓接下來的 loadTripSettings 等函式從一開始就依房號讀取各自獨立的本機資料，
+    // 不然這幾個 load 函式會先用「沒有房號」的共用 key 讀一次，等一下才知道房號、資料就對不上
+    const savedRoom = localStorage.getItem('sync-room-id');
+    if (savedRoom) {
+      const roomInp = document.getElementById('sync-room-input');
+      if (roomInp) roomInp.value = savedRoom;
+      syncRoomId = savedRoom;
+    }
+    const savedPin = localStorage.getItem(roomScopedKey('master-pin-code')) || localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
 
     await loadTripSettings(); 
     await loadTravelDocs(); 
@@ -3247,27 +3293,20 @@ ${dayContextLines}
     await loadItin(); 
     await loadExpense();
 
-    await storage.set('app-initialized', 'true');
+    await storage.set(roomScopedKey('app-initialized'), 'true');
 
     fetchRates(); fetchWeather(); updateKoreaTime(); setInterval(updateKoreaTime, 30000); renderDayPills();
     renderDashboard(); renderReminder();
     setInterval(updatePassCountdowns, 1000);
 
-    const savedRoom = localStorage.getItem('sync-room-id');
+    renderHeroSyncStatus();
     if (savedRoom) {
-      const roomInp = document.getElementById('sync-room-input');
-      if (roomInp) roomInp.value = savedRoom;
-      syncRoomId = savedRoom;
-      renderHeroSyncStatus();
-      
       const autoEnable = localStorage.getItem('sync-auto-enabled');
       if (autoEnable === 'true') {
         const checkEl = document.getElementById('sync-auto-check');
         if (checkEl) checkEl.checked = true;
         toggleAutoSync(true);
       }
-    } else {
-      renderHeroSyncStatus();
     }
 
     await maybeShowOnboarding();
