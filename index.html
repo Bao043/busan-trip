@@ -1003,15 +1003,31 @@ Day2 12:00 outlet購物，預計逛一小時
     const statusEl = document.getElementById('gemini-key-status');
     if (statusEl) statusEl.innerHTML = hasKey ? '<i class="fa-solid fa-circle-check" style="color:var(--success);"></i> 已設定金鑰' : '<i class="fa-solid fa-circle-info" style="color:var(--gray);"></i> 尚未設定金鑰';
   }
-  // 把 Google 回傳的原始錯誤（通常是英文、對一般使用者不易理解）翻成可以直接照著做的中文提示，
-  // 只在看起來像「金鑰/驗證」相關的錯誤時才加註，其餘錯誤（例如額度用完、網路問題）原樣顯示即可
-  function friendlyAiErrorMessage(err) {
-    const msg = (err && err.message) ? err.message : String(err);
-    if (/auth|credential|oauth|unauthenticated|api key not valid|permission/i.test(msg)) {
-      return `金鑰可能沒有存成功，或這組金鑰被 Google 拒絕。可以檢查：1) 設定頁金鑰欄位下方是否顯示「已設定金鑰」，沒有的話重新貼一次並存檔；2) 如果這組金鑰是舊的，去 aistudio.google.com/apikey 重新建立一組新的貼上（新建立的金鑰會自動符合 Google 最新的安全規定）。原始訊息：${msg}`;
-    }
-    return msg;
+  // 把 Google 回傳的原始錯誤（通常是英文、對一般使用者不易理解）分類、翻成可以直接照著做的中文提示。
+  // classifyGeminiError 依 HTTP 狀態碼＋錯誤文字判斷類別；callGeminiVision 會用這個類別決定要不要自動重試、要不要切換模型。
+  function classifyGeminiError(httpStatus, msg) {
+    const m = msg || '';
+    if (httpStatus === 401 || httpStatus === 403 || /auth|credential|oauth|api key not valid|permission/i.test(m)) return 'auth';
+    if (httpStatus === 429 || /quota|rate limit|resource_exhausted/i.test(m)) return 'quota';
+    if (httpStatus === 503 || /overloaded|high demand|unavailable/i.test(m)) return 'overloaded';
+    if (/no longer available|not found|not supported|not_found|deprecated/i.test(m)) return 'model_issue';
+    return 'unknown';
   }
+  const GEMINI_ERROR_MESSAGES = {
+    auth: (msg) => `金鑰可能沒有存成功，或這組金鑰被 Google 拒絕。可以檢查：1) 設定頁金鑰欄位下方是否顯示「已設定金鑰」，沒有的話重新貼一次並存檔；2) 如果這組金鑰是舊的，去 aistudio.google.com/apikey 重新建立一組新的貼上。原始訊息：${msg}`,
+    quota: () => `AI 使用額度已達上限，通常隔一段時間或隔天會恢復。`,
+    overloaded: () => `AI 目前忙碌中（Google 那邊流量大），已自動重試幾次仍沒成功，可以稍等一下再按一次。`,
+    model_issue: (msg) => `AI 模型暫時無法使用，已嘗試自動切換模型但仍失敗。原始訊息：${msg}`,
+    network: () => `網路連線異常，請確認網路連線後再試一次。`,
+    unknown: (msg) => msg
+  };
+  function friendlyAiErrorMessage(err) {
+    const category = (err && err.category) || 'unknown';
+    const msg = (err && err.message) ? err.message : String(err);
+    const fn = GEMINI_ERROR_MESSAGES[category] || GEMINI_ERROR_MESSAGES.unknown;
+    return fn(msg);
+  }
+  function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   function openSettingsModal() {
     document.getElementById('setting-trip-title').value = tripSettings.title || '';
@@ -1158,50 +1174,100 @@ Day2 12:00 outlet購物，預計逛一小時
       reader.readAsDataURL(file);
     });
   }
-  async function callGeminiVision(promptText, fileObj) {
+  // 把照片等比例縮到長邊最多 1600px 再轉成 JPEG，減少檔案大小、加快傳輸、降低逾時／過載機率，但不會讓文字模糊到看不清楚；
+  // 只處理圖片檔（PDF 原樣送出）。瀏覽器解不開的檔案（極少數 HEIC 情況）就直接退回用原始檔案，不會卡住整個流程
+  function resizeImageIfNeeded(file) {
+    return new Promise((resolve) => {
+      if (!file || !file.type || !file.type.startsWith('image/')) { resolve(file); return; }
+      const MAX_EDGE = 1600;
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      const cleanup = () => URL.revokeObjectURL(url);
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+          if (scale >= 1) { cleanup(); resolve(file); return; }
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            cleanup();
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], (file.name || 'photo') + '.jpg', { type: 'image/jpeg' }));
+          }, 'image/jpeg', 0.85);
+        } catch (e) { cleanup(); resolve(file); }
+      };
+      img.onerror = () => { cleanup(); resolve(file); };
+      img.src = url;
+    });
+  }
+  const GEMINI_RETRY_DELAYS_MS = [1000, 2000]; // 遇到「AI忙碌中」這類暫時性錯誤時的重試間隔：第1次重試等1秒、第2次等2秒，總共最多嘗試3次
+  // onStatus(attemptNo) 會在每次因過載而重試前被呼叫一次，讓畫面可以顯示「正在重試（第N次）」，不會讓使用者以為卡住了
+  async function callGeminiVision(promptText, fileObj, onStatus) {
     const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
     if (!apiKey) throw new Error('尚未設定 Gemini API 金鑰');
-    const parts = [{ text: promptText }];
+
+    let filePart = null;
     if (fileObj) {
-      const base64 = await fileToBase64(fileObj);
-      parts.push({ inline_data: { mime_type: fileObj.type || 'application/octet-stream', data: base64 } });
+      const resized = await resizeImageIfNeeded(fileObj);
+      const base64 = await fileToBase64(resized);
+      filePart = { inline_data: { mime_type: resized.type || fileObj.type || 'application/octet-stream', data: base64 } };
     }
+    const parts = filePart ? [{ text: promptText }, filePart] : [{ text: promptText }];
     const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } });
 
-    const attempt = async (modelName) => {
+    const attemptOnce = async (modelName) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       let res;
       try {
         res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body
+          body,
+          signal: controller.signal
         });
       } catch (networkErr) {
-        throw new Error('無法連線到 Google，請檢查網路連線');
+        const err = new Error(networkErr.name === 'AbortError' ? 'AI 這次回應時間過長' : '無法連線到 Google，請檢查網路連線');
+        err.category = networkErr.name === 'AbortError' ? 'overloaded' : 'network';
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
       }
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         const msg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
         const err = new Error(msg);
-        err.isModelIssue = /no longer available|not found|not supported|NOT_FOUND|deprecated/i.test(msg);
+        err.category = classifyGeminiError(res.status, msg);
         throw err;
       }
       const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-      if (!text) throw new Error('AI 沒有回傳可用的內容，請稍後再試一次');
+      if (!text) { const err = new Error('AI 沒有回傳可用的內容，請稍後再試一次'); err.category = 'unknown'; throw err; }
       return text;
     };
 
-    try {
-      return await attempt(getGeminiModelName());
-    } catch (firstErr) {
-      if (!firstErr.isModelIssue) throw firstErr; // 額度用完、網路問題等其他錯誤不重試，直接往外丟給呼叫端處理
-      let discoveredModel;
+    let modelName = getGeminiModelName();
+    let retriesLeft = GEMINI_RETRY_DELAYS_MS.length;
+    let allowModelSwitch = true;
+    for (;;) {
       try {
-        discoveredModel = await discoverWorkingGeminiModel(apiKey);
-      } catch (discoverErr) {
-        throw firstErr; // 查清單也失敗，還是回報原本那個比較有參考價值的錯誤
+        return await attemptOnce(modelName);
+      } catch (err) {
+        if (err.category === 'model_issue' && allowModelSwitch) {
+          allowModelSwitch = false; // 只切換一次，避免一直繞圈
+          try { modelName = await discoverWorkingGeminiModel(apiKey); continue; } catch (discoverErr) { throw err; }
+        }
+        if (err.category === 'overloaded' && retriesLeft > 0) {
+          const attemptNo = GEMINI_RETRY_DELAYS_MS.length - retriesLeft + 1;
+          if (onStatus) onStatus(attemptNo);
+          await sleep(GEMINI_RETRY_DELAYS_MS[GEMINI_RETRY_DELAYS_MS.length - retriesLeft]);
+          retriesLeft--;
+          continue;
+        }
+        throw err; // 金鑰、額度等其他類型的錯誤不重試，直接往外丟給呼叫端處理
       }
-      return await attempt(discoveredModel);
     }
   }
   // 模型名稱不寫死在程式碼裡：預設用 Google 官方維護、會自動指向「目前最新 Flash 模型」的別名 gemini-flash-latest。
@@ -2099,8 +2165,8 @@ ${dayContextLines}
         return;
       }
 
-      showLoading('AI 辨識中，請稍候...');
-      const responseText = await callGeminiVision(promptText, fileObj);
+      showLoading('正在處理內容並辨識中，請稍候...');
+      const responseText = await callGeminiVision(promptText, fileObj, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`));
       const cleaned = extractJsonBlock(responseText);
       const items = JSON.parse(cleaned);
       if (!Array.isArray(items) || items.length === 0) throw new Error('AI 沒有在這段內容裡找到可以匯入的行程活動，請確認貼上/附上的是包含時間、活動安排的行程本身（不是心得、比較、結論等其他文字）');
@@ -2517,13 +2583,14 @@ ${dayContextLines}
     if (!receiptSelectedFile) { alert('請先選擇收據照片！'); return; }
     const statusEl = document.getElementById('receipt-ai-status');
     const showMsg = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
-    showMsg(`<div class="card" style="text-align:center; padding:18px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">AI 辨識中，請稍候...</p></div>`);
+    const showLoading = (msg) => showMsg(`<div class="card" style="text-align:center; padding:18px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">${escapeHtml(msg)}</p></div>`);
+    showLoading('正在處理照片並辨識中，請稍候...');
     try {
-      const responseText = await callGeminiVision(RECEIPT_AI_PROMPT, receiptSelectedFile);
+      const responseText = await callGeminiVision(RECEIPT_AI_PROMPT, receiptSelectedFile, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`));
       const cleaned = extractJsonBlock(responseText);
       const parsed = JSON.parse(cleaned);
       const isEmpty = Array.isArray(parsed) ? parsed.length === 0 : !parsed || Object.keys(parsed).length === 0;
-      if (isEmpty) throw new Error('AI 回答中沒有偵測到有效的收據內容');
+      if (isEmpty) throw new Error('AI 沒有在這張照片裡辨識出收據內容，請確認照片有清楚拍到金額與品項');
 
       const panel = document.getElementById('receipt-ai-panel');
       if (panel) panel.style.display = 'none';
