@@ -2643,7 +2643,7 @@ ${dayContextLines}
     }
     try {
       const panel = document.getElementById('receipt-ai-panel');
-      if (panel) panel.style.display = 'none';
+      if (panel) { panel.style.display = 'none'; }
       resetReceiptAiInputs();
       openReceiptReview(parsed);
     } catch (e) {
@@ -2941,14 +2941,43 @@ ${dayContextLines}
 
   async function syncUpload() {
     let roomInput = document.getElementById('sync-room-input').value.trim();
+    // 判斷這次是「新建一個房號」還是「重新發布目前正在編輯的這個房間」：
+    // 欄位空白，或跟目前 syncRoomId 不同，都代表對方想要的是一個新房號，這時才需要檢查是否已被使用；
+    // 跟目前房號相同就是單純更新，不用檢查（不然自己每次發布更新都會被擋下來）
+    const isClaimingNewRoomId = !roomInput || roomInput !== syncRoomId;
     if (!roomInput) { 
       roomInput = generateRoomId(); 
       document.getElementById('sync-room-input').value = roomInput;
     }
+
+    const syncStatus = document.getElementById('sync-status');
+    if (isClaimingNewRoomId) {
+      if (syncStatus) {
+        syncStatus.style.display = 'flex';
+        syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在確認房號是否可用...</span>`;
+      }
+      try {
+        const existing = await db.ref('rooms/' + roomInput).once('value');
+        if (existing.exists()) {
+          if (syncStatus) {
+            syncStatus.style.background = '#FEF2F2';
+            syncStatus.style.color = '#991B1B';
+            syncStatus.style.borderColor = '#FCA5A5';
+            syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 房號已存在</span>`;
+          }
+          alert(`房號「${roomInput}」已經被使用了，換一個房號再試一次。\n\n如果這其實是你自己之前建立的房間，請先按「讀取此房號資料」載入，之後再編輯發布就不會被擋。`);
+          return;
+        }
+      } catch (error) {
+        console.error(error);
+        alert(`檢查房號時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：` + error.message);
+        return;
+      }
+    }
+
     syncRoomId = roomInput;
     localStorage.setItem('sync-room-id', roomInput);
     
-    const syncStatus = document.getElementById('sync-status');
     if (syncStatus) {
       syncStatus.style.display = 'flex';
       syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在安全上傳雲端...</span>`;
