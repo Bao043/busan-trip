@@ -434,7 +434,7 @@ Day2 12:00 outlet購物，預計逛一小時
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="toggleReceiptPanel()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
       </div>
-      <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptFile(event)">
+      <input type="file" id="receipt-file-input" accept="image/*" style="display:none;" onchange="handleReceiptFile(event)">
       <div id="receipt-ai-panel" style="display:none; margin-bottom:15px;">
         <div class="card" style="border:2px solid #4A6FA1;">
           <div class="section-title" style="color:#1E3A8A; font-size:calc(15px * var(--font-scale));"><i class="fa-solid fa-receipt"></i> AI 收據辨識</div>
@@ -1224,7 +1224,7 @@ Day2 12:00 outlet購物，預計逛一小時
       img.src = url;
     });
   }
-  const GEMINI_RETRY_DELAYS_MS = [1000, 2000]; // 遇到「AI忙碌中」這類暫時性錯誤時的重試間隔：第1次重試等1秒、第2次等2秒，總共最多嘗試3次
+  const GEMINI_RETRY_DELAYS_MS = [1500, 3000, 5000]; // 遇到「AI忙碌中」這類暫時性錯誤時的重試間隔：依序等1.5秒、3秒、5秒，總共最多嘗試4次
   // onStatus(attemptNo) 會在每次因過載而重試前被呼叫一次，讓畫面可以顯示「正在重試（第N次）」，不會讓使用者以為卡住了
   async function callGeminiVision(promptText, fileObj, onStatus) {
     const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
@@ -2789,7 +2789,9 @@ ${dayContextLines}
   function currentRateForCurrency(cur) { if (!cur || cur === 'KRW') return rateTWD; if (cur === 'TWD') return 1; return getCurrencyRate(cur) || rateTWD; }
   function recordToKRW(r) {
     if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
-    if (r.currency === 'TWD') return Math.round((r.amount||0) * (r.rateAtTime || rateTWD));
+    // TWD 記錄的 rateAtTime 語意固定是「1」（代表換成TWD不用另外查匯率），不是「兌韓元的匯率」，
+    // 這裡一律要用目前即時的 rateTWD 換算，不能誤用 rateAtTime，否則會出現金額原封不動沒換算的 bug
+    if (r.currency === 'TWD') return Math.round((r.amount||0) * rateTWD);
     return Math.round(recordToTWD(r) * rateTWD);
   }
   function recordToTWD(r) {
