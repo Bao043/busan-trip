@@ -556,7 +556,9 @@ Day2 12:00 outlet購物，預計逛一小時
       <div class="input-label">日期與天數標題</div>
       <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
       <div class="input-label">啟航日期 (用於計算精確倒數天數)</div>
-      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit; margin-bottom:8px;">
+      <div class="input-label">回程日期 (用於自動產生每日行程天數)</div>
+      <input type="date" id="setting-trip-enddate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit;">
     </div>
 
     <!-- 旅伴成員名單：緊接在啟航日期設定之後，方便一開始就建立好成員 -->
@@ -800,7 +802,7 @@ Day2 12:00 outlet購物，預計逛一小時
   let syncRoomId = '';
 
   let tripSettings = {
-    title: '釜山行旅', tag: 'BUSAN · 2026', sub: '11.10(二) - 11.14(六)・5天4夜', startDate: '2026-11-10',
+    title: '釜山行旅', tag: 'BUSAN · 2026', sub: '11.10(二) - 11.14(六)・5天4夜', startDate: '2026-11-10', endDate: '2026-11-14',
     depCode: 'TPE', arrCode: 'PUS', flightNo1: 'IT606', flightTime1: '11/10(二) 16:50',
     flightNo2: 'IT607', flightTime2: '11/14(六) 20:50', flightGate: 'A3 / Gate 5',
     flightBaggage: 'Carousel 4', flightStatus: '● 準點 On Time',
@@ -838,10 +840,36 @@ Day2 12:00 outlet購物，預計逛一小時
   let travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
   let docItemSeq = 1; let activeDocType = 'flight'; let expandedDocIds = new Set();
 
-  const ITIN_DAYS = [
-    {key:'2026-11-10', date:'11/10', wd:'二'}, {key:'2026-11-11', date:'11/11', wd:'三'},
-    {key:'2026-11-12', date:'11/12', wd:'四'}, {key:'2026-11-13', date:'11/13', wd:'五'}, {key:'2026-11-14', date:'11/14', wd:'六'}
-  ];
+  // 行程天數不再寫死，改成依 tripSettings.startDate ~ endDate 動態產生，這樣旅程日期改變（甚至日後開新房號用不同天數的行程）都能正確反映
+  const WD_CHARS = ['日','一','二','三','四','五','六']; // 對應 Date.getDay()：0=週日...6=週六
+  function computeItinDays() {
+    const startStr = tripSettings && tripSettings.startDate;
+    if (!startStr) return [{ key: todayOrTripDate(), date: '', wd: '' }]; // 保底：完全沒設定日期時至少給一天，避免行程頁空白
+    const start = new Date(startStr + 'T00:00:00');
+    const endStr = tripSettings && tripSettings.endDate;
+    let end = endStr ? new Date(endStr + 'T00:00:00') : start;
+    if (isNaN(start.getTime())) return [{ key: todayOrTripDate(), date: '', wd: '' }];
+    if (isNaN(end.getTime()) || end < start) end = start;
+    const MAX_DAYS = 60; // 安全上限，避免日期打錯（例如年份輸入錯誤）產生過多天數卡住畫面
+    const days = [];
+    let cur = new Date(start);
+    let guard = 0;
+    while (cur <= end && guard < MAX_DAYS) {
+      const y = cur.getFullYear(), m = cur.getMonth() + 1, d = cur.getDate();
+      days.push({ key: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, date: `${m}/${d}`, wd: WD_CHARS[cur.getDay()] });
+      cur.setDate(cur.getDate() + 1);
+      guard++;
+    }
+    return days.length ? days : [{ key: todayOrTripDate(), date: '', wd: '' }];
+  }
+  // 旅程日期變更（載入、儲存設定、Firebase同步）後呼叫：重新計算天數清單，確保新產生的每一天在 itinData 裡都有陣列可寫，
+  // 目前選取的頁籤如果落在新範圍外就改選第一天；日期縮短時被排除在外的那幾天資料不會被刪除，只是暫時不顯示，之後把日期改回去還會出現
+  function refreshItinDays() {
+    ITIN_DAYS = computeItinDays();
+    ITIN_DAYS.forEach(d => { if (!itinData[d.key]) itinData[d.key] = []; });
+    if (!ITIN_DAYS.find(d => d.key === activeDay)) { activeDay = ITIN_DAYS[0].key; }
+  }
+  let ITIN_DAYS = computeItinDays();
 
   // 行程項目分類與圖示
   const ITIN_CATS = ['餐飲','購物','景點','住宿','交通','活動','其他'];
@@ -999,6 +1027,7 @@ Day2 12:00 outlet購物，預計逛一小時
   async function loadTripSettings() {
     await migrateToRoomScopedStorage('trip-settings');
     try { const res = await storage.get(roomScopedKey('trip-settings')); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
+    refreshItinDays();
     renderTripSettingsUI();
   }
 
@@ -1054,6 +1083,7 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-title').value = tripSettings.title || '';
     document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
     document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
+    document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     renderMembersSettingsList();
     syncFontScaleTabsUI();
@@ -1065,6 +1095,7 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-title').value = tripSettings.title || '';
     document.getElementById('setting-trip-sub').value = tripSettings.sub || '';
     document.getElementById('setting-trip-startdate').value = tripSettings.startDate || '';
+    document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
@@ -1075,12 +1106,15 @@ Day2 12:00 outlet購物，預計逛一小時
     tripSettings.title = document.getElementById('setting-trip-title').value.trim();
     tripSettings.sub = document.getElementById('setting-trip-sub').value.trim();
     tripSettings.startDate = document.getElementById('setting-trip-startdate').value;
+    tripSettings.endDate = document.getElementById('setting-trip-enddate').value;
     const keyEl = document.getElementById('setting-gemini-key');
     if (keyEl) tripSettings.geminiApiKey = keyEl.value.trim();
     const pin = document.getElementById('setting-master-pin').value.trim();
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
+    refreshItinDays();
     await saveTripSettings(); closeSettingsModal(); alert('所有配置已儲存完成！');
+    renderDayPills(); renderDayTabs(); renderDayContent();
     renderDashboard(); renderReminder(true);
   }
 
@@ -2920,11 +2954,12 @@ ${dayContextLines}
     if (!data) return;
     if (data.tripSettings) tripSettings = data.tripSettings;
     if (data.prepData) prepData = data.prepData;
-    if (data.itinData) { itinData = data.itinData; ITIN_DAYS.forEach(d => { if(!itinData[d.key]) itinData[d.key] = []; }); }
+    if (data.itinData) { itinData = data.itinData; }
     if (data.expenseRecords) expenseRecords = data.expenseRecords;
     if (data.masterPin) masterPin = data.masterPin;
     if (data.travelDocs) travelDocs = data.travelDocs;
     if (data.travelers && data.travelers.length) travelers = data.travelers;
+    refreshItinDays(); // 依同步進來的 tripSettings 日期重新產生天數清單，並確保每一天在 itinData 裡都有陣列可寫
 
     await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings));
     await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData));
