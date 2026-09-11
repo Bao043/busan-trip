@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版 (Firebase 雲端同步版)</title>
+<title>釜山行 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -3264,7 +3264,9 @@ ${dayContextLines}
 
   async function updateLocalData(data) {
     if (!data) return;
-    if (data.tripSettings) tripSettings = data.tripSettings;
+    const prevGeminiKey = tripSettings && tripSettings.geminiApiKey; // 先記住目前本機的金鑰：如果金鑰當初只存在本機、還沒同步上雲端，雲端這份資料就不會有它，
+    if (data.tripSettings) tripSettings = data.tripSettings;         // 這裡整包覆蓋 tripSettings 時絕對不能把它弄丟——這正是「AI辨識按鈕突然消失」的真正原因
+    if (tripSettings && !tripSettings.geminiApiKey && prevGeminiKey) { tripSettings.geminiApiKey = prevGeminiKey; }
     if (data.prepData) prepData = data.prepData;
     if (data.itinData) { itinData = data.itinData; }
     if (data.expenseRecords) expenseRecords = data.expenseRecords;
