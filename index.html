@@ -269,13 +269,14 @@
             <div id="overview-rate" class="mini-value">讀取中...</div>
         </div>
         <div class="card mini-card">
-            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> 釜山天氣</div>
+            <div class="mini-label"><i class="fa-solid fa-cloud-sun"></i> <span id="weather-city-label">釜山天氣</span></div>
             <div id="overview-weather" class="mini-value">讀取中...</div>
             <div class="mini-sub" id="korea-time">當地時間 --:--</div>
         </div>
     </div>
-    <div class="climate-note full-width">
-        <i class="fa-solid fa-temperature-half"></i> <span>11月釜山約 15-17°C (日)、8-9°C (夜),日夜溫差大,建議洋蔥式穿法多帶件外套</span>
+    <div class="climate-note full-width" id="climate-note-card">
+        <i class="fa-solid fa-temperature-half"></i> <span id="climate-note-text">11月釜山約 15-17°C (日)、8-9°C (夜),日夜溫差大,建議洋蔥式穿法多帶件外套</span>
+        <button class="edit-pill only-master" onclick="openClimateNoteEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
     </div>
 
     <!-- 行程大綱 -->
@@ -285,16 +286,12 @@
         <button class="ghost-btn" onclick="goToItinerary()">前往每日行程規劃 <i class="fa-solid fa-arrow-right"></i></button>
     </div>
 
-    <!-- 緊急聯絡功能卡片 -->
+    <!-- 緊急聯絡功能卡片：標準號碼依旅程國家自動帶入，其他聯絡資訊（如駐外辦事處）可自行編輯 -->
     <div class="card">
         <div class="section-title"><i class="fa-solid fa-phone-volume"></i> 緊急聯絡</div>
-        <div class="contact-row"><span>警察 Police</span><a href="tel:112">112</a></div>
-        <div class="contact-row"><span>消防／救護／醫學諮詢</span><a href="tel:119">119</a></div>
-        <div class="contact-row"><span>觀光諮詢熱線(多語服務)</span><a href="tel:1330">1330</a></div>
-        <div class="contact-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
-          <div style="display:flex; justify-content:space-between; width:100%;"><span>駐釜山辦事處急難救助專線</span><a href="tel:010-4537-7961">010-4537-7961</a></div>
-          <small style="color:var(--gray); font-size:calc(12px * var(--font-scale));">※ 僅限急難救助事件・中文溝通服務</small>
-        </div>
+        <div id="emergency-standard-contacts"></div>
+        <div id="emergency-extra-contacts"></div>
+        <button class="ghost-btn only-master" style="margin-top:8px; font-size:calc(12.5px * var(--font-scale)); padding:8px;" onclick="openExtraContactsEdit()"><i class="fa-solid fa-pen"></i> 編輯其他聯絡資訊</button>
     </div>
 
     <div class="alert-warning-card">
@@ -888,6 +885,8 @@ Day2 12:00 outlet購物，預計逛一小時
   let isMasterMode = false; 
   let syncRoomId = '';
 
+  let rateTHB = 1.1, rateSGD = 0.042, rateHKD = 0.24; // 補充泰銖/新幣/港幣，讓總覽頁的即時匯率卡能依旅程國家顯示對應幣別（不影響原本以KRW為主的支出/購物換算邏輯）
+
   let tripSettings = {
     title: '釜山行旅', tag: 'BUSAN · 2026', sub: '11.10(二) - 11.14(六)・5天4夜', startDate: '2026-11-10', endDate: '2026-11-14',
     depCode: 'TPE', arrCode: 'PUS', flightNo1: 'IT606', flightTime1: '11/10(二) 16:50',
@@ -896,6 +895,23 @@ Day2 12:00 outlet購物，預計逛一小時
     notes: ['時差：韓國比台灣快 1 小時', '插座為 Type C/F、電壓 220V,記得帶轉接頭', '建議儲值 T-money 卡搭地鐵、公車較方便', '韓國沒有給小費的習慣'],
     warns: ['<b>止痛/感冒藥：</b>日本 EVE 系列止痛藥已被韓國禁止入境;含可待因、右美沙芬、偽麻黃鹼成分的止咳藥也可能被攔查。', '<b>慢性病處方藥：</b>安眠藥、精神科用藥務必攜帶英文診斷證明+處方箋並保留原包裝。', '<b>行動電源/鋰電池：</b>只能放隨身行李,不可託運。', '<b>肉類製品：</b>肉乾、肉鬆、香腸、火腿等一律禁止攜帶入境。']
   };
+
+  // 依「建立新旅程」下拉選單提供的國家，對應主要幣別、代表城市天氣座標、與當地標準緊急電話（數字本身很穩定，不需要即時查詢）。
+  // 沒有設定國家的舊房間（例如原本的111）會 fallback 回韓國/釜山，維持既有使用者原本看到的內容不變
+  const COUNTRY_INFO = {
+    '🇰🇷 韓國': { currency: 'KRW', cityLabel: '釜山', lat: 35.18, lon: 129.08, emergency: [['警察 Police','112'],['消防／救護／醫學諮詢','119'],['觀光諮詢熱線(多語服務)','1330']] },
+    '🇯🇵 日本': { currency: 'JPY', cityLabel: '東京', lat: 35.68, lon: 139.69, emergency: [['警察 Police','110'],['消防／救護','119']] },
+    '🇹🇭 泰國': { currency: 'THB', cityLabel: '曼谷', lat: 13.75, lon: 100.50, emergency: [['觀光警察(英語) Tourist Police','1155'],['警察 Police','191'],['救護 Ambulance','1669']] },
+    '🇹🇼 台灣': { currency: 'TWD', cityLabel: '台北', lat: 25.03, lon: 121.56, emergency: [['警察 Police','110'],['消防／救護','119']] },
+    '🇸🇬 新加坡': { currency: 'SGD', cityLabel: '新加坡', lat: 1.35, lon: 103.82, emergency: [['警察 Police','999'],['救護／消防','995']] },
+    '🇭🇰 香港': { currency: 'HKD', cityLabel: '香港', lat: 22.30, lon: 114.17, emergency: [['報案／消防／救護','999']] },
+    '🇺🇸 美國': { currency: 'USD', cityLabel: '當地', lat: 34.05, lon: -118.24, emergency: [['報案／消防／救護','911']] },
+    '其他': { currency: 'USD', cityLabel: '當地', lat: 35.18, lon: 129.08, emergency: [] }
+  };
+  function getCountryInfo() {
+    const country = tripSettings && tripSettings.country;
+    return COUNTRY_INFO[country] || COUNTRY_INFO['🇰🇷 韓國'];
+  }
 
   const PREP_DEFAULT = {
     '證件與資金': ['護照正本 (效期大於6個月)','護照彩色影本 (備用)','小兩吋證件大頭照 (備用)','海外刷卡高回饋信用卡'],
@@ -1127,8 +1143,46 @@ Day2 12:00 outlet購物，預計逛一小時
     if (notesEl && tripSettings.notes) { notesEl.innerHTML = tripSettings.notes.map(n => `<li>${escapeHtml(n)}</li>`).join(''); }
     const warnsEl = document.getElementById('display-warn-list');
     if (warnsEl && tripSettings.warns) { warnsEl.innerHTML = tripSettings.warns.map(w => `<li>${w}</li>`).join(''); }
+    renderClimateNote();
+    renderEmergencyContacts();
+    renderOverviewRate();
     updateCountdown();
     refreshAiAutoButtons();
+  }
+  // 氣候提醒無法自動判斷（跟月份、城市都有關），改成可編輯欄位；沒設定過的舊房間（例如原本的111）預設維持原本釜山文字，
+  // 新建立的房間則顯示「尚未填寫」提示，不會誤把釜山的氣候資訊套用到別的國家
+  function renderClimateNote() {
+    const el = document.getElementById('climate-note-text'); if (!el) return;
+    if (tripSettings.climateNote === undefined) { el.innerText = '11月釜山約 15-17°C (日)、8-9°C (夜),日夜溫差大,建議洋蔥式穿法多帶件外套'; }
+    else if (tripSettings.climateNote) { el.innerText = tripSettings.climateNote; }
+    else { el.innerText = '尚未填寫氣候提醒，點右側鉛筆新增'; }
+  }
+  function openClimateNoteEdit() {
+    const fields = `<div class="input-label">氣候／穿搭提醒</div><textarea id="edf-climate" style="width:100%; height:90px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(tripSettings.climateNote || '')}</textarea>`;
+    setupGeneralEdit('編輯氣候提醒', fields, () => {
+      tripSettings.climateNote = document.getElementById('edf-climate').value.trim();
+      saveTripSettings(); renderClimateNote(); closeGeneralEdit();
+    });
+  }
+  // 標準緊急號碼依旅程國家自動帶入（不可編輯，避免打錯號碼）；其他聯絡資訊（駐外辦事處等）可自行編輯，
+  // 沒設定過的舊房間預設保留原本的駐釜山辦事處那筆，新房間則從空白開始
+  function renderEmergencyContacts() {
+    const info = getCountryInfo();
+    const stdWrap = document.getElementById('emergency-standard-contacts');
+    if (stdWrap) { stdWrap.innerHTML = info.emergency.map(([label, num]) => `<div class="contact-row"><span>${escapeHtml(label)}</span><a href="tel:${escapeHtml(num)}">${escapeHtml(num)}</a></div>`).join(''); }
+    const extraWrap = document.getElementById('emergency-extra-contacts');
+    if (extraWrap) {
+      const list = (tripSettings.extraContacts !== undefined) ? tripSettings.extraContacts : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+      extraWrap.innerHTML = list.map(c => `<div class="contact-row"><span style="font-size:calc(13px * var(--font-scale));">${escapeHtml(c)}</span></div>`).join('');
+    }
+  }
+  function openExtraContactsEdit() {
+    const list = (tripSettings.extraContacts !== undefined) ? tripSettings.extraContacts : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+    const fields = `<div class="input-label">其他聯絡資訊（每行一條，例如駐外辦事處電話）</div><textarea id="edf-extracontacts" style="width:100%; height:110px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(list.join('\n'))}</textarea>`;
+    setupGeneralEdit('編輯其他聯絡資訊', fields, () => {
+      tripSettings.extraContacts = document.getElementById('edf-extracontacts').value.split('\n').map(l => l.trim()).filter(Boolean);
+      saveTripSettings(); renderEmergencyContacts(); closeGeneralEdit();
+    });
   }
   // 依是否已設定 Gemini API 金鑰，切換「一鍵AI辨識」按鈕的顯示；沒有金鑰時完全不顯示，只保留原本複製提示詞的手動流程
   function refreshAiAutoButtons() {
@@ -1240,9 +1294,21 @@ Day2 12:00 outlet購物，預計逛一小時
         if (data.rates.JPY) rateJPY = data.rates.JPY;
         if (data.rates.USD) rateUSD = data.rates.USD;
         if (data.rates.EUR) rateEUR = data.rates.EUR;
-        const msg = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`; document.getElementById('overview-rate').innerText = msg; document.getElementById('rate-msg').innerText = msg;
+        if (data.rates.THB) rateTHB = data.rates.THB;
+        if (data.rates.SGD) rateSGD = data.rates.SGD;
+        if (data.rates.HKD) rateHKD = data.rates.HKD;
+        renderOverviewRate();
+        const rateMsgEl = document.getElementById('rate-msg'); if (rateMsgEl) rateMsgEl.innerText = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`;
       }
-    } catch(e) { document.getElementById('overview-rate').innerText = "1 TWD ≈ 42.8 KRW (離線)"; }
+    } catch(e) { const el = document.getElementById('overview-rate'); if (el) el.innerText = "暫時無法取得匯率"; }
+  }
+  // 總覽頁的即時匯率依旅程國家顯示對應幣別；購物算帳頁目前仍以韓元為主設計，維持原樣不受影響
+  function renderOverviewRate() {
+    const info = getCountryInfo();
+    const rateMap = { KRW: rateTWD, JPY: rateJPY, USD: rateUSD, EUR: rateEUR, THB: rateTHB, SGD: rateSGD, HKD: rateHKD, TWD: 1 };
+    const rate = rateMap[info.currency];
+    const el = document.getElementById('overview-rate'); if (!el) return;
+    el.innerText = (info.currency === 'TWD') ? '當地即為台幣' : `1 TWD ≈ ${(rate||0).toFixed(2)} ${info.currency}`;
   }
 
   function f(v) { return isNaN(v) ? "0" : Math.round(v).toLocaleString(); }
@@ -1617,8 +1683,10 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   async function fetchWeather() {
+    const info = getCountryInfo();
+    const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${info.cityLabel}天氣`;
     try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=35.18&longitude=129.08&current=temperature_2m,weather_code&timezone=Asia%2FSeoul');
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lon}&current=temperature_2m,weather_code&timezone=auto`);
       const data = await res.json(); document.getElementById('overview-weather').innerText = `${Math.round(data.current.temperature_2m)}°C ${weatherText(data.current.weather_code)}`;
     } catch(e) { document.getElementById('overview-weather').innerText = '暫時無法取得'; }
   }
@@ -3211,7 +3279,7 @@ ${dayContextLines}
 
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
-    tripSettings = { title, sub: '', startDate, endDate, country, notes: [], warns: [] };
+    tripSettings = { title, sub: '', startDate, endDate, country, notes: [], warns: [], climateNote: '', extraContacts: [] };
     prepData = {}; itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
@@ -3229,6 +3297,13 @@ ${dayContextLines}
     rememberRecentRoom(roomId, title, tripSettings.sub);
     if (btn) btn.disabled = false;
     closeCreateRoomForm();
+    // 重置後的資料雖然都存好了，但畫面上原本停留的是「上一個房間」渲染出來的內容，這裡要全部重新渲染一次，
+    // 不然航班摘要、準備清單、行程、支出等版面會繼續顯示舊房間的畫面，直到使用者手動切換頁籤才會更新——這正是本次回報的bug成因
+    renderTripSettingsUI();
+    renderPrep();
+    renderDayTabs(); renderDayContent();
+    renderExpenseSummary(); renderMembersSettingsList();
+    renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
     renderHeroSyncStatus(); fetchRates(); fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true);
     showMainApp();
     showP('p-overview', document.querySelectorAll('.nav-btn')[0]);
