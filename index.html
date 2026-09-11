@@ -625,6 +625,16 @@ Day2 12:00 outlet購物，預計逛一小時
       <div id="gemini-key-status" style="font-size:calc(11px * var(--font-scale)); margin-top:6px; font-weight:700;"></div>
     </div>
 
+    <!-- 診斷紀錄：自動記錄AI呼叫與雲端同步的關鍵事件，回報問題時複製貼上就有完整脈絡，不用再靠截圖或口述描述 -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-clipboard-list"></i> 診斷紀錄</h4>
+      <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px; line-height:1.6;">自動記錄最近的 AI 辨識與雲端同步事件（時間、情境、模型、結果、錯誤類別與原始訊息），最多保留 60 筆。遇到問題時複製這份紀錄貼給協助排查的人，比截圖更準確。</p>
+      <div style="display:flex; gap:8px;">
+        <button class="ghost-btn" style="flex:1; font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="copyDebugLog()"><i class="fa-solid fa-copy"></i> 複製診斷紀錄</button>
+        <button class="ghost-btn" style="flex:0 0 auto; font-size:calc(12.5px * var(--font-scale)); padding:10px 14px; border-color:var(--warn); color:var(--warn);" onclick="clearDebugLog()"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+
     <!-- 主操作者密碼設定 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-lock"></i> 主操作者解鎖密碼設定</h4>
@@ -1258,9 +1268,46 @@ Day2 12:00 outlet購物，預計逛一小時
       img.src = url;
     });
   }
-  const GEMINI_RETRY_DELAYS_MS = [1500, 3000, 5000]; // 遇到「AI忙碌中」這類暫時性錯誤時的重試間隔：依序等1.5秒、3秒、5秒，總共最多嘗試4次
-  // onStatus(attemptNo) 會在每次因過載而重試前被呼叫一次，讓畫面可以顯示「正在重試（第N次）」，不會讓使用者以為卡住了
-  async function callGeminiVision(promptText, fileObj, onStatus) {
+
+  // ===== 診斷紀錄：自動記錄每一次 AI 呼叫與雲端同步事件（時間、情境、模型、結果、錯誤類別與原始訊息），
+  // 最多留最近60筆。設定頁可以一鍵複製，回報問題時貼上就有完整脈絡，不用再靠截圖或口述描述 =====
+  const DEBUG_LOG_KEY = 'debug-log';
+  const DEBUG_LOG_MAX = 60;
+  function addDebugLog(type, detail) {
+    try {
+      const entry = Object.assign({ t: new Date().toISOString(), type, room: syncRoomId || '' }, detail || {});
+      let log = [];
+      try { const raw = localStorage.getItem(DEBUG_LOG_KEY); if (raw) log = JSON.parse(raw); } catch(e) {}
+      log.push(entry);
+      if (log.length > DEBUG_LOG_MAX) log = log.slice(log.length - DEBUG_LOG_MAX);
+      localStorage.setItem(DEBUG_LOG_KEY, JSON.stringify(log));
+    } catch(e) {}
+  }
+  function getDebugLogText() {
+    let log = [];
+    try { const raw = localStorage.getItem(DEBUG_LOG_KEY); if (raw) log = JSON.parse(raw); } catch(e) {}
+    if (!log.length) return '（目前沒有診斷紀錄）';
+    return log.map(e => JSON.stringify(e)).join('\n');
+  }
+  async function copyDebugLog() {
+    const text = getDebugLogText();
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('診斷紀錄已複製，貼給協助排查問題的人就可以直接對照。');
+    } catch(e) {
+      alert('複製失敗，請改用下方文字框手動選取複製。');
+    }
+  }
+  function clearDebugLog() {
+    if (!confirm('確定要清空診斷紀錄嗎？')) return;
+    try { localStorage.removeItem(DEBUG_LOG_KEY); } catch(e) {}
+    alert('已清空。');
+  }
+
+  const GEMINI_RETRY_DELAYS_MS = [2000]; // 遇到「AI忙碌中」這類暫時性錯誤時只自動重試1次（等2秒）：如果是Google端持續性壅塞而非瞬間卡頓，重試太多次只會更快把當天額度用完，幫助不大
+  // onStatus(attemptNo) 會在每次因過載而重試前被呼叫一次，讓畫面可以顯示「正在重試（第N次）」，不會讓使用者以為卡住了；
+  // context 是呼叫端傳入的簡短標籤（例如 'receipt' 或 'itinerary:image'），只用於寫入診斷紀錄，方便事後分辨是哪個功能呼叫的
+  async function callGeminiVision(promptText, fileObj, onStatus, context) {
     const apiKey = (tripSettings && tripSettings.geminiApiKey) ? tripSettings.geminiApiKey.trim() : '';
     if (!apiKey) throw new Error('尚未設定 Gemini API 金鑰');
 
@@ -1287,6 +1334,7 @@ Day2 12:00 outlet購物，預計逛一小時
       } catch (networkErr) {
         const err = new Error(networkErr.name === 'AbortError' ? 'AI 這次回應時間過長' : '無法連線到 Google，請檢查網路連線');
         err.category = networkErr.name === 'AbortError' ? 'overloaded' : 'network';
+        addDebugLog('ai_attempt', { context: context||'', model: modelName, hasFile: !!fileObj, result: 'fail', category: err.category, message: err.message });
         throw err;
       } finally {
         clearTimeout(timeoutId);
@@ -1296,10 +1344,16 @@ Day2 12:00 outlet購物，預計逛一小時
         const msg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
         const err = new Error(msg);
         err.category = classifyGeminiError(res.status, msg);
+        addDebugLog('ai_attempt', { context: context||'', model: modelName, hasFile: !!fileObj, result: 'fail', httpStatus: res.status, category: err.category, message: msg });
         throw err;
       }
       const text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-      if (!text) { const err = new Error('AI 沒有回傳可用的內容，請稍後再試一次'); err.category = 'unknown'; throw err; }
+      if (!text) {
+        const err = new Error('AI 沒有回傳可用的內容，請稍後再試一次'); err.category = 'unknown';
+        addDebugLog('ai_attempt', { context: context||'', model: modelName, hasFile: !!fileObj, result: 'fail', category: err.category, message: err.message, finishReason: data && data.candidates && data.candidates[0] && data.candidates[0].finishReason });
+        throw err;
+      }
+      addDebugLog('ai_attempt', { context: context||'', model: modelName, hasFile: !!fileObj, result: 'success' });
       return text;
     };
 
@@ -1312,7 +1366,7 @@ Day2 12:00 outlet購物，預計逛一小時
       } catch (err) {
         if (err.category === 'model_issue' && allowModelSwitch) {
           allowModelSwitch = false; // 只切換一次，避免一直繞圈
-          try { modelName = await discoverWorkingGeminiModel(apiKey); continue; } catch (discoverErr) { throw err; }
+          try { modelName = await discoverWorkingGeminiModel(apiKey); addDebugLog('ai_model_switch', { context: context||'', to: modelName }); continue; } catch (discoverErr) { throw err; }
         }
         if (err.category === 'overloaded' && retriesLeft > 0) {
           const attemptNo = GEMINI_RETRY_DELAYS_MS.length - retriesLeft + 1;
@@ -1325,11 +1379,13 @@ Day2 12:00 outlet購物，預計逛一小時
       }
     }
   }
-  // 模型名稱不寫死在程式碼裡：預設用 Google 官方維護、會自動指向「目前最新 Flash 模型」的別名 gemini-flash-latest。
+  // 模型名稱不寫死在程式碼裡：預設用 Google 官方維護、會自動指向「目前最新 Flash-Lite 模型」的別名 gemini-flash-lite-latest。
+  // Flash-Lite 跟一般 Flash 是兩個獨立的每日額度池，就算今天一般 Flash 額度被撐爆了，Flash-Lite 通常還有配額可用；
+  // 這個任務（收據/行程結構化擷取）本來就不需要最重的模型，用 Lite 也綽綽有餘。
   // 萬一哪天連這個別名都失效，callGeminiVision 會自動呼叫下面這個函式，向 Google 即時查詢目前這組金鑰實際可用的模型清單，
-  // 挑一個支援 generateContent 的 Flash 系列模型，並快取到這台裝置，之後的呼叫就直接用快取結果、不用每次都重新查
-  const GEMINI_MODEL_CACHE_KEY = 'gemini-model-override';
-  const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
+  // 優先挑一個支援 generateContent 的 Flash-Lite 系列模型，找不到才退而求其次挑一般 Flash，並快取到這台裝置，之後的呼叫就直接用快取結果、不用每次都重新查
+  const GEMINI_MODEL_CACHE_KEY = 'gemini-model-override-v2'; // 版本號往上加一格：確保舊版快取的模型（可能是先前踩到問題時自動切換存下的）不會蓋掉這次改的新預設值
+  const GEMINI_DEFAULT_MODEL = 'gemini-flash-lite-latest';
   function getGeminiModelName() {
     try { const cached = localStorage.getItem(GEMINI_MODEL_CACHE_KEY); if (cached) return cached; } catch(e) {}
     return GEMINI_DEFAULT_MODEL;
@@ -1340,7 +1396,8 @@ Day2 12:00 outlet購物，預計逛一小時
     const data = await res.json();
     const usable = ((data && data.models) || []).filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'));
     if (!usable.length) throw new Error('這組金鑰目前沒有可用的模型');
-    const flashPick = usable.find(m => /flash/i.test(m.name) && !/image|tts|live|audio|embed/i.test(m.name));
+    const litePick = usable.find(m => /flash.*lite/i.test(m.name) && !/image|tts|live|audio|embed/i.test(m.name));
+    const flashPick = litePick || usable.find(m => /flash/i.test(m.name) && !/image|tts|live|audio|embed/i.test(m.name));
     const picked = (flashPick || usable[0]).name.replace(/^models\//, '');
     try { localStorage.setItem(GEMINI_MODEL_CACHE_KEY, picked); } catch(e) {}
     return picked;
@@ -2224,7 +2281,7 @@ ${dayContextLines}
       }
 
       showLoading('正在處理內容並辨識中，請稍候...');
-      const responseText = await callGeminiVision(promptText, fileObj, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`));
+      const responseText = await callGeminiVision(promptText, fileObj, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`), 'itinerary:' + itinAiMode);
       const cleaned = extractJsonBlock(responseText);
       const items = JSON.parse(cleaned);
       if (!Array.isArray(items) || items.length === 0) throw new Error('AI 沒有在這段內容裡找到可以匯入的行程活動，請確認貼上/附上的是包含時間、活動安排的行程本身（不是心得、比較、結論等其他文字）');
@@ -2645,7 +2702,7 @@ ${dayContextLines}
     const showLoading = (msg) => showMsg(`<div class="card" style="text-align:center; padding:18px; border:2px solid #4A6FA1; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#4A6FA1;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">${escapeHtml(msg)}</p></div>`);
     showLoading('正在處理照片並辨識中，請稍候...');
     try {
-      const responseText = await callGeminiVision(RECEIPT_AI_PROMPT, receiptSelectedFile, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`));
+      const responseText = await callGeminiVision(RECEIPT_AI_PROMPT, receiptSelectedFile, (attemptNo) => showLoading(`AI 目前忙碌中，正在自動重試（第 ${attemptNo} 次）...`), 'receipt');
       const cleaned = extractJsonBlock(responseText);
       const parsed = JSON.parse(cleaned);
       const isEmpty = Array.isArray(parsed) ? parsed.length === 0 : !parsed || Object.keys(parsed).length === 0;
@@ -3035,6 +3092,7 @@ ${dayContextLines}
     try {
       await db.ref('rooms/' + roomInput).set(finalData);
       renderHeroSyncStatus();
+      addDebugLog('sync_upload', { room: roomInput, result: 'success' });
 
       if (syncStatus) {
         syncStatus.style.background = '#ECFDF5'; 
@@ -3046,6 +3104,7 @@ ${dayContextLines}
       alert(`雲端數據已成功建立！\n\n您的專屬房間號碼：${roomInput}\n\n旅伴只要輸入同一個房號並開啟「自動同步」，就能瞬間看到你排的行程囉！`);
     } catch (error) {
       console.error(error);
+      addDebugLog('sync_upload', { room: roomInput, result: 'fail', message: error.message });
       if (syncStatus) {
         syncStatus.style.background = '#FEF2F2'; 
         syncStatus.style.color = '#991B1B'; 
