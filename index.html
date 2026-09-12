@@ -364,7 +364,7 @@
     
     <div class="card only-master" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-color:#BFDBFE;">
       <div class="section-title" style="color: #1E40AF;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 行程智慧匯入</div>
-      <p style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">這個頁面部署在外部網站，無法直接連線 AI，所以分兩步：先複製提示詞貼到你常用的 ChatGPT／Claude／Gemini 對話中，再把 AI 的回答貼回這裡解析。支援貼上文字、圖片、PDF 或 Word。日期支援 11/12、Day2、11月12日、週三 等多種寫法；超出範圍或時間重複的項目會另外列出讓你確認。</p>
+      <p style="font-size:calc(12px * var(--font-scale)); color:#1E3A8A; margin-top:-10px; margin-bottom:12px; line-height:1.6;">支援貼上文字、圖片、PDF 或 Word。日期支援 11/12、Day2、11月12日、週三 等多種寫法；超出範圍或時間重複的項目會另外列出讓你確認。</p>
 
       <div class="calc-tabs" id="itin-ai-mode-tabs" style="margin-bottom:12px;">
         <button class="tab-btn-sub active" data-mode="text" onclick="switchItinAiMode('text', this)">貼上文字</button>
@@ -400,25 +400,26 @@ Day2 12:00 outlet購物，預計逛一小時
       </div>
 
       <button id="itin-auto-btn" style="display:none; width:100%; align-items:center; justify-content:center; gap:6px; background:linear-gradient(135deg, #60A5FA 0%, #2563EB 100%); color:#fff; border:none; padding:12px; border-radius:14px; font-weight:700; font-size:calc(13.5px * var(--font-scale)); cursor:pointer; margin-top:4px; font-family:inherit;" onclick="autoRecognizeItinerary()"><i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵 AI 辨識</button>
-
-      <p style="font-size:calc(10.5px * var(--font-scale)); color:#1E3A8A; text-align:center; margin:12px 0 10px; line-height:1.5; opacity:0.75;">一鍵辨識的免費額度用完了，或還沒填金鑰？下面的手動複製貼上隨時都能用，貼到任何一個你有的 AI 對話裡都可以</p>
-
-      <div style="display:flex; align-items:center; gap:8px; margin:14px 0 6px;">
-        <div style="width:20px; height:20px; border-radius:50%; background:#2563EB; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
-        <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
-      </div>
-      <button class="save-btn" style="background:#2563EB; font-size:calc(13px * var(--font-scale));" onclick="copyItinAiPrompt()"><i class="fa-solid fa-copy"></i> 複製 AI 提示詞</button>
       <div id="itin-ai-status" style="display:none; margin-top:10px;"></div>
 
-      <div style="display:flex; align-items:center; gap:8px; margin:16px 0 6px;">
-        <div style="width:20px; height:20px; border-radius:50%; background:#2563EB; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
-        <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">把 AI 的完整回答貼回這裡</span>
-      </div>
-      <textarea id="itin-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 [ 開頭、] 結尾的 JSON 陣列）" style="width:100%; height:80px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
-      <button class="save-btn" style="background:var(--teal);" onclick="parseItinAiResponse()"><i class="fa-solid fa-check"></i> 解析並排入行程</button>
+      <button type="button" onclick="toggleItinManualSection()" style="width:100%; background:rgba(255,255,255,0.6); border:none; border-radius:12px; padding:10px; color:#1E3A8A; font-weight:700; font-size:calc(12px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-top:14px;"><i class="fa-solid fa-chevron-down" id="itin-manual-chevron"></i> 免費額度用完或辨識失敗時，改用手動複製貼上</button>
+      <div id="itin-manual-section" style="display:none; margin-top:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <div style="width:20px; height:20px; border-radius:50%; background:#2563EB; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
+          <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
+        </div>
+        <button class="save-btn" style="background:#2563EB; font-size:calc(13px * var(--font-scale));" onclick="copyItinAiPrompt()"><i class="fa-solid fa-copy"></i> 複製 AI 提示詞</button>
 
-      <div style="text-align:center; margin-top:14px;">
-        <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:8px;" onclick="parseItinOfflineFallback()">或使用簡易離線解析（固定格式，不需要AI）</button>
+        <div style="display:flex; align-items:center; gap:8px; margin:16px 0 6px;">
+          <div style="width:20px; height:20px; border-radius:50%; background:#2563EB; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
+          <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">把 AI 的完整回答貼回這裡</span>
+        </div>
+        <textarea id="itin-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 [ 開頭、] 結尾的 JSON 陣列）" style="width:100%; height:80px; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
+        <button class="save-btn" style="background:var(--teal);" onclick="parseItinAiResponse()"><i class="fa-solid fa-check"></i> 解析並排入行程</button>
+
+        <div style="text-align:center; margin-top:14px;">
+          <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:8px;" onclick="parseItinOfflineFallback()">或使用簡易離線解析（固定格式，不需要AI）</button>
+        </div>
       </div>
     </div>
 
@@ -455,7 +456,6 @@ Day2 12:00 outlet購物，預計逛一小時
       <div id="receipt-ai-panel" style="display:none; margin-bottom:15px;">
         <div class="card" style="border:2px solid #4A6FA1;">
           <div class="section-title" style="color:#1E3A8A; font-size:calc(15px * var(--font-scale));"><i class="fa-solid fa-receipt"></i> AI 收據辨識</div>
-          <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:-6px; margin-bottom:12px; line-height:1.6;">這個頁面部署在外部網站，無法直接連線 AI，請把提示詞連同收據照片一起貼到你常用的 ChatGPT／Claude／Gemini 對話中，再把 AI 的完整回答貼回這裡。</p>
 
           <div class="input-label" style="margin-bottom:6px;">收據照片</div>
           <button type="button" class="ghost-btn" onclick="document.getElementById('receipt-file-input').click()"><i class="fa-solid fa-image"></i> 選擇或拍攝收據照片</button>
@@ -464,20 +464,21 @@ Day2 12:00 outlet購物，預計逛一小時
           <button id="receipt-auto-btn" style="display:none; width:100%; align-items:center; justify-content:center; gap:6px; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); color:#fff; border:none; padding:12px; border-radius:14px; font-weight:700; font-size:calc(13.5px * var(--font-scale)); cursor:pointer; margin-top:12px; font-family:inherit;" onclick="autoRecognizeReceipt()"><i class="fa-solid fa-wand-magic-sparkles"></i> 一鍵 AI 辨識</button>
           <div id="receipt-ai-status" style="display:none; margin-top:10px;"></div>
 
-          <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); text-align:center; margin:14px 0 10px; line-height:1.5;">一鍵辨識的免費額度用完了，或還沒填金鑰？下面的手動複製貼上隨時都能用，貼到任何一個你有的 AI 對話裡都可以</p>
+          <button type="button" onclick="toggleReceiptManualSection()" style="width:100%; background:#F1F5F9; border:none; border-radius:12px; padding:10px; color:var(--navy); font-weight:700; font-size:calc(12px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-top:14px;"><i class="fa-solid fa-chevron-down" id="receipt-manual-chevron"></i> 免費額度用完或辨識失敗時，改用手動複製貼上</button>
+          <div id="receipt-manual-section" style="display:none; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
+              <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
+            </div>
+            <button class="save-btn" style="background:#4A6FA1; font-size:calc(13px * var(--font-scale));" onclick="copyReceiptAiPrompt()"><i class="fa-solid fa-copy"></i> 複製提示詞</button>
 
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">1</div>
-            <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">複製提示詞，貼到你的 AI 對話中</span>
+            <div style="display:flex; align-items:center; gap:8px; margin:16px 0 8px;">
+              <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
+              <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">把 AI 的完整回答貼回這裡</span>
+            </div>
+            <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 { 開頭、} 結尾的 JSON 物件）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
+            <button class="save-btn" style="background:var(--teal);" onclick="parseReceiptAiResponse()"><i class="fa-solid fa-check"></i> 解析並確認明細</button>
           </div>
-          <button class="save-btn" style="background:#4A6FA1; font-size:calc(13px * var(--font-scale));" onclick="copyReceiptAiPrompt()"><i class="fa-solid fa-copy"></i> 複製提示詞</button>
-
-          <div style="display:flex; align-items:center; gap:8px; margin:16px 0 8px;">
-            <div style="width:20px; height:20px; border-radius:50%; background:#4A6FA1; color:#fff; font-size:calc(11px * var(--font-scale)); font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">2</div>
-            <span style="font-size:calc(12.5px * var(--font-scale)); color:#1E3A8A; font-weight:700;">把 AI 的完整回答貼回這裡</span>
-          </div>
-          <textarea id="receipt-ai-response-paste" placeholder="把 AI 回答的內容整段貼在這裡（應包含以 { 開頭、} 結尾的 JSON 物件）" style="width:100%; height:70px; border:1.5px solid #C7D6E8; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none; font-family:sans-serif; box-sizing:border-box; margin-bottom:10px;"></textarea>
-          <button class="save-btn" style="background:var(--teal);" onclick="parseReceiptAiResponse()"><i class="fa-solid fa-check"></i> 解析並確認明細</button>
         </div>
       </div>
       <div id="quick-add-box" style="display:none;"></div>
@@ -2712,7 +2713,11 @@ ${dayContextLines}
     const statusEl = document.getElementById('itin-ai-status');
     const showStatus = (html) => { if (statusEl) { statusEl.style.display = 'block'; statusEl.innerHTML = html; } };
     const showLoading = (msg) => showStatus(`<div class="card" style="text-align:center; padding:18px; border:2px solid #2563EB; margin-bottom:0;"><i class="fa-solid fa-spinner fa-spin" style="font-size:calc(20px * var(--font-scale)); color:#2563EB;"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:var(--gray);">${escapeHtml(msg)}</p></div>`);
-    const showErr = (msg) => showStatus(`<div class="card" style="text-align:center; padding:16px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:#943126;">${escapeHtml(msg)}</p></div>`);
+    const showErr = (msg) => {
+      showStatus(`<div class="card" style="text-align:center; padding:16px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:8px 0 0; font-size:calc(13px * var(--font-scale)); color:#943126;">${escapeHtml(msg)}</p></div>`);
+      const manualEl = document.getElementById('itin-manual-section'); const chevron = document.getElementById('itin-manual-chevron');
+      if (manualEl && manualEl.style.display === 'none') { manualEl.style.display = 'block'; if (chevron) chevron.className = 'fa-solid fa-chevron-up'; }
+    };
 
     let promptText = '', fileObj = null;
     try {
@@ -3146,6 +3151,20 @@ ${dayContextLines}
     if (!panel) return;
     panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
   }
+  function toggleReceiptManualSection() {
+    const el = document.getElementById('receipt-manual-section'); const chevron = document.getElementById('receipt-manual-chevron');
+    if (!el) return;
+    const opening = el.style.display === 'none';
+    el.style.display = opening ? 'block' : 'none';
+    if (chevron) chevron.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
+  function toggleItinManualSection() {
+    const el = document.getElementById('itin-manual-section'); const chevron = document.getElementById('itin-manual-chevron');
+    if (!el) return;
+    const opening = el.style.display === 'none';
+    el.style.display = opening ? 'block' : 'none';
+    if (chevron) chevron.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+  }
 
   let receiptSelectedFile = null;
 
@@ -3202,6 +3221,8 @@ ${dayContextLines}
     } catch (err) {
       console.error('收據 AI 自動辨識失敗:', err);
       showMsg(`<div class="card" style="text-align:center; padding:14px; border:2px solid var(--warn-border); background:var(--warn-bg); margin-bottom:0;"><i class="fa-solid fa-circle-exclamation" style="color:var(--warn);"></i><p style="margin:6px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#943126;">AI 辨識失敗：${escapeHtml(friendlyAiErrorMessage(err))}。可以改用下方手動複製貼上的方式試試。</p></div>`);
+      const manualEl = document.getElementById('receipt-manual-section'); const chevron = document.getElementById('receipt-manual-chevron');
+      if (manualEl && manualEl.style.display === 'none') { manualEl.style.display = 'block'; if (chevron) chevron.className = 'fa-solid fa-chevron-up'; }
     }
   }
 
@@ -3554,7 +3575,7 @@ ${dayContextLines}
     const now = Date.now();
     const expired = getTrashedRooms().filter(r => (now - r.deletedAt) > TRASH_RETENTION_DAYS * 86400000);
     for (const r of expired) {
-      try { await db.ref('trash/' + r.roomId).remove(); } catch(e) {}
+      try { await db.ref('rooms/_trash/' + r.roomId).remove(); } catch(e) {}
       forgetTrashedRoom(r.roomId);
     }
   }
@@ -3617,7 +3638,7 @@ ${dayContextLines}
     try {
       const snapshot = await db.ref('rooms/' + roomId).once('value');
       const roomData = snapshot.val();
-      if (roomData) { await db.ref('trash/' + roomId).set({ data: roomData, deletedAt: Date.now() }); }
+      if (roomData) { await db.ref('rooms/_trash/' + roomId).set({ data: roomData, deletedAt: Date.now() }); }
       await db.ref('rooms/' + roomId).remove();
     } catch (error) {
       alert('刪除時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
@@ -3640,11 +3661,11 @@ ${dayContextLines}
   }
   async function restoreRoomFromTrash(roomId) {
     try {
-      const snapshot = await db.ref('trash/' + roomId).once('value');
+      const snapshot = await db.ref('rooms/_trash/' + roomId).once('value');
       const trashEntry = snapshot.val();
       if (!trashEntry || !trashEntry.data) { alert('找不到這筆垃圾桶資料，可能已經過期被自動清空。'); forgetTrashedRoom(roomId); renderAdminTrashList(); return; }
       await db.ref('rooms/' + roomId).set(trashEntry.data);
-      await db.ref('trash/' + roomId).remove();
+      await db.ref('rooms/_trash/' + roomId).remove();
     } catch (error) {
       alert('還原時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
       return;
@@ -3655,7 +3676,7 @@ ${dayContextLines}
   }
   async function permanentlyDeleteFromTrash(roomId) {
     if (!confirm(`確定要從垃圾桶「永久刪除」房號「${roomId}」嗎？\n\n這個動作無法復原！`)) return;
-    try { await db.ref('trash/' + roomId).remove(); } catch (error) { alert('刪除時發生錯誤：' + error.message); return; }
+    try { await db.ref('rooms/_trash/' + roomId).remove(); } catch (error) { alert('刪除時發生錯誤：' + error.message); return; }
     forgetTrashedRoom(roomId);
     renderAdminTrashList();
   }
@@ -3731,6 +3752,7 @@ ${dayContextLines}
     const btn = document.getElementById('cr-submit-btn');
 
     if (!roomId) { alert('請輸入房號！'); return; }
+    if (roomId.toLowerCase() === '_trash') { alert('這個房號是系統保留字，請換一個。'); return; }
     if (!title) { alert('請輸入旅程名稱！'); return; }
     if (!startDate) { alert('請選擇開始日期！'); return; }
 
