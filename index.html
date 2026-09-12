@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -26,6 +26,10 @@
     --font-scale: 1;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* iOS Safari auto-zooms the whole page when a focused input's font-size is under 16px;
+     this floors every form control at 16px (or bigger, if the user's font-scale setting calls for it)
+     so focusing any field never triggers that jarring zoom */
+  input, select, textarea { font-size: max(16px, calc(13px * var(--font-scale))) !important; }
   body {
     font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
     background-color: #E9EDF0; color: var(--text-general); font-weight: 600;
@@ -40,6 +44,8 @@
   }
   body.tablet-view .app-container { max-width: 700px; padding-bottom: 130px; }
   body.tablet-view .hero-header { padding: 32px; }
+  body.tablet-view .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
+  body.tablet-view .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
   body.tablet-view .card { padding: 26px; }
   body.tablet-view .page-header { padding: 40px 12px 18px; }
   /* 修正平板 inactive 面板重疊問題 */
@@ -238,7 +244,7 @@
     </div>
 
     <!-- 旅程即時總覽 Dashboard：今日行程進度、目前花費，即時反映目前資料 -->
-    <div class="card full-width" style="margin-top:18px;">
+    <div class="card" style="margin-top:18px;">
         <div class="section-title"><i class="fa-solid fa-gauge-high"></i> 旅程即時總覽</div>
         <div class="bp-grid">
           <div class="bp-grid-item">
@@ -253,7 +259,7 @@
     </div>
 
     <!-- 待辦提醒卡：依倒數天數、行前準備進度、當日行程完成狀態計算出當下最相關的一項待辦，並附上可直接跳轉的按鈕 -->
-    <div class="card full-width" id="reminder-card" style="margin-top:18px; background:linear-gradient(135deg, #EAF7FA 0%, #DCF0F5 100%); border-color:#BFE3EC;">
+    <div class="card" id="reminder-card" style="margin-top:18px; background:linear-gradient(135deg, #EAF7FA 0%, #DCF0F5 100%); border-color:#BFE3EC;">
         <div class="section-title" style="color:#0E7A8F;"><i class="fa-solid fa-list-check"></i> 待辦提醒</div>
         <div id="reminder-body" style="font-size:calc(14px * var(--font-scale)); color:#0F6674; line-height:1.6; font-weight:600; margin-bottom:12px;">載入最新提醒中...</div>
         <button id="reminder-btn" style="display:none; align-items:center; gap:6px; background:var(--teal); color:#fff; border:none; padding:10px 16px; border-radius:14px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; font-family:inherit;"></button>
@@ -969,6 +975,39 @@ Day2 12:00 outlet購物，預計逛一小時
     const country = tripSettings && tripSettings.country;
     return COUNTRY_INFO[country] || COUNTRY_INFO['🇰🇷 韓國'];
   }
+
+  // 建立新旅程時，依選擇的國家帶入預設的「行程注意事項」與「行前攜帶限制提醒」，不用每個房間都從零開始寫
+  const COUNTRY_DEFAULTS = {
+    '🇰🇷 韓國': {
+      notes: ['時差：韓國比台灣快 1 小時', '插座為 Type C/F、電壓 220V，記得帶轉接頭', '建議儲值 T-money 卡搭地鐵、公車較方便', '韓國沒有給小費的習慣'],
+      warns: ['止痛/感冒藥：日本 EVE 系列止痛藥已被韓國禁止入境；含可待因、右美沙芬、偽麻黃鹼成分的止咳藥也可能被攔查。', '慢性病處方藥：安眠藥、精神科用藥務必攜帶英文診斷證明+處方箋並保留原包裝。', '行動電源/鋰電池：只能放隨身行李，不可託運。', '肉類製品：肉乾、肉鬆、香腸、火腿等一律禁止攜帶入境。']
+    },
+    '🇯🇵 日本': {
+      notes: ['時差：日本比台灣快 1 小時', '插座為 Type A、電壓 100V，台灣電器多半可直接使用但功率會較弱', '建議儲值 Suica 或 PASMO 交通卡搭電車、公車較方便', '日本沒有給小費的習慣，硬要給有時反而顯得失禮'],
+      warns: ['部分感冒藥/興奮劑成分藥品：含偽麻黃鹼、可待因等成分的藥品可能受管制，慢性病用藥建議攜帶英文診斷證明+處方箋。', '行動電源/鋰電池：只能放隨身行李，不可託運。', '肉類與部分農產品：香腸、肉乾等加工肉品及生鮮蔬果一律禁止攜帶入境。', '藥妝店常見的漢方/中藥成分產品：帶回台灣時也留意數量限制。']
+    },
+    '🇹🇭 泰國': {
+      notes: ['時差：泰國比台灣慢 1 小時', '插座為 Type A/C/O 皆可用、電壓 220V', '服務業有小費文化，飯店房務、按摩師會期待收到小費', '進入寺廟需穿著端莊（不可露肩、短褲），部分寺廟提供罩衫租借'],
+      warns: ['電子煙：泰國全面禁止攜帶及使用電子煙，查獲最重可罰款或拘留。', '行動電源/鋰電池：只能放隨身行李，不可託運。', '菸酒攜帶有免稅額度限制，超額需申報課稅。', '處方藥建議攜帶英文診斷證明，部分管制成分入境需特別留意。']
+    },
+    '🇹🇼 台灣': {
+      notes: ['本地旅遊：無時差、插座與電壓皆與平常相同', '大眾運輸可使用悠遊卡/一卡通', '部分餐廳會加收 10% 服務費，非強制小費文化'],
+      warns: ['行動電源/鋰電池：搭機時只能放隨身行李，不可託運。', '若安排離島或特殊行程，建議留意當地天氣與交通船班資訊。']
+    },
+    '🇸🇬 新加坡': {
+      notes: ['時差：新加坡與台灣無時差', '插座為 Type G（英式三孔）、電壓 230V，記得帶轉接頭', '建議儲值 EZ-Link 卡搭地鐵、公車較方便', '新加坡對隨地吐痰、亂丟垃圾、地鐵飲食等罰款嚴格，請多留意'],
+      warns: ['口香糖：新加坡禁止攜帶及販售一般口香糖入境（藥用口香糖除外）。', '電子煙：全面禁止攜帶及使用。', '行動電源/鋰電池：只能放隨身行李，不可託運。', '毒品相關法規極為嚴格，切勿以身試法。']
+    },
+    '🇭🇰 香港': {
+      notes: ['時差：香港與台灣無時差', '插座為 Type G（英式三孔）、電壓 220V，記得帶轉接頭', '建議儲值八達通卡搭地鐵、公車、電車都方便', '部分餐廳會加收 10% 服務費，小費文化不算普遍'],
+      warns: ['行動電源/鋰電池：只能放隨身行李，不可託運。', '部分中藥材、瀕危物種製品（如象牙、犀牛角製品）攜帶入出境有嚴格限制。']
+    },
+    '🇺🇸 美國': {
+      notes: ['時差：依所在州份不同，橫跨多個時區，出發前請確認目的地時區', '插座為 Type A/B、電壓 120V，部分台灣電器需要變壓器才能使用', '小費文化非常普遍：餐廳約 15-20%、計程車/接送約 10-15%、飯店房務每天 1-2 美元'],
+      warns: ['行動電源/鋰電池：只能放隨身行李，不可託運。', '肉類、新鮮蔬果、種子等農產品入境限制嚴格，申報表務必誠實填寫。', '處方藥建議攜帶英文診斷證明及原包裝，部分成分入境規定較嚴格。']
+    },
+    '其他': { notes: [], warns: [] }
+  };
 
   const PREP_DEFAULT = {
     '證件與資金': ['護照正本 (效期大於6個月)','護照彩色影本 (備用)','小兩吋證件大頭照 (備用)','海外刷卡高回饋信用卡'],
@@ -2385,12 +2424,12 @@ Day2 12:00 outlet購物，預計逛一小時
               ${allDetailRows}
             </div>
           </div>
-        </div>`;
+        </div>${(isMasterMode && formState[activeDay] === it.id) ? renderAddForm(it.id) : ''}`;
       }).join('');
     }
     if (isMasterMode) {
-      if (formState[activeDay] !== undefined) { html += renderAddForm(formState[activeDay]==='new'?null:formState[activeDay]); }
-      else { html += `<button class="ghost-btn only-master" onclick="openAddForm()"><i class="fa-solid fa-plus"></i> 新增行程項目</button>`; }
+      if (formState[activeDay] === 'new') { html += renderAddForm(null); }
+      else if (formState[activeDay] === undefined) { html += `<button class="ghost-btn only-master" onclick="openAddForm()"><i class="fa-solid fa-plus"></i> 新增行程項目</button>`; }
     }
     wrap.innerHTML = html;
     if (isMasterMode && formState[activeDay] !== undefined) {
@@ -2522,7 +2561,7 @@ Day2 12:00 outlet購物，預計逛一小時
     });
   }
   function openAddForm() { formState[activeDay] = 'new'; renderDayContent(); }
-  function editItinItem(id) { formState[activeDay] = id; renderDayContent(); }
+  function editItinItem(id) { formState[activeDay] = id; renderDayContent(); setTimeout(() => { const el = document.getElementById('af-title'); if (el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 50); }
   function closeAddForm() { delete formState[activeDay]; renderDayContent(); }
 
   function submitItinForm(editId) {
@@ -3556,37 +3595,53 @@ ${dayContextLines}
   // 刪除房間是「軟刪除」：整份資料先搬到 Firebase 的 trash/{roomId}，房間本身移除，30天內都能從垃圾桶還原；
   // 超過30天，或使用者在垃圾桶按「永久刪除」，才會真的從 trash 移掉、無法復原 =====
   const ADMIN_PIN_KEY = 'admin-pin';
-  const TRASHED_ROOMS_KEY = 'trashed-rooms';
   const TRASH_RETENTION_DAYS = 30;
   function getAdminPin() { try { return localStorage.getItem(ADMIN_PIN_KEY) || '0000'; } catch(e) { return '0000'; } }
-  function getTrashedRooms() { try { const raw = localStorage.getItem(TRASHED_ROOMS_KEY); if (raw) return JSON.parse(raw); } catch(e) {} return []; }
-  function rememberTrashedRoom(roomId, title, deletedAt) {
-    let list = getTrashedRooms().filter(r => r.roomId !== roomId);
-    list.unshift({ roomId, title: title || '', deletedAt });
-    try { localStorage.setItem(TRASHED_ROOMS_KEY, JSON.stringify(list)); } catch(e) {}
-  }
-  function forgetTrashedRoom(roomId) {
-    const list = getTrashedRooms().filter(r => r.roomId !== roomId);
-    try { localStorage.setItem(TRASHED_ROOMS_KEY, JSON.stringify(list)); } catch(e) {}
-  }
   function formatTrashDate(ts) { const d = new Date(ts); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; }
+
+  // 房間清單／垃圾桶都直接讀 Firebase 的 rooms/ 節點，不再只看本機記得的清單——這樣才不會因為「這台裝置沒建立過或沒加入過」
+  // 就看不到某個房間（例如很早以前建立、現在只能從 Firebase 後台才看得到的北海道房），垃圾桶也才能跨裝置同步一致
+  async function fetchAllRoomsFromFirebase() {
+    try {
+      const snapshot = await db.ref('rooms').once('value');
+      const all = snapshot.val() || {};
+      const rooms = [];
+      Object.keys(all).forEach(key => {
+        if (key === '_trash') return;
+        const data = all[key];
+        rooms.push({ roomId: key, title: (data && data.tripSettings && data.tripSettings.title) || '' });
+      });
+      return rooms;
+    } catch (e) { console.error('讀取所有房間失敗:', e); return null; }
+  }
+  async function fetchAllTrashFromFirebase() {
+    try {
+      const snapshot = await db.ref('rooms/_trash').once('value');
+      const all = snapshot.val() || {};
+      const items = [];
+      Object.keys(all).forEach(key => {
+        const entry = all[key];
+        items.push({ roomId: key, title: (entry && entry.data && entry.data.tripSettings && entry.data.tripSettings.title) || '', deletedAt: (entry && entry.deletedAt) || 0 });
+      });
+      return items;
+    } catch (e) { console.error('讀取垃圾桶失敗:', e); return null; }
+  }
   // 超過保留期限的垃圾桶項目，才真的從 Firebase 移除；在保留期限內的完全不動
   async function purgeExpiredTrash() {
+    const list = await fetchAllTrashFromFirebase();
+    if (!list) return;
     const now = Date.now();
-    const expired = getTrashedRooms().filter(r => (now - r.deletedAt) > TRASH_RETENTION_DAYS * 86400000);
-    for (const r of expired) {
-      try { await db.ref('rooms/_trash/' + r.roomId).remove(); } catch(e) {}
-      forgetTrashedRoom(r.roomId);
-    }
+    const expired = list.filter(r => (now - r.deletedAt) > TRASH_RETENTION_DAYS * 86400000);
+    for (const r of expired) { try { await db.ref('rooms/_trash/' + r.roomId).remove(); } catch(e) {} }
   }
 
   async function openAdminPanel() {
     const pin = prompt('請輸入管理員密碼：');
     if (pin === null) return;
     if (pin !== getAdminPin()) { alert('密碼錯誤'); return; }
+    document.getElementById('admin-panel-overlay').style.display = 'flex';
     await purgeExpiredTrash();
     renderAdminRoomList();
-    document.getElementById('admin-panel-overlay').style.display = 'flex';
   }
   function closeAdminPanel() { document.getElementById('admin-panel-overlay').style.display = 'none'; }
   function switchAdminPanelTab(tab, btn) {
@@ -3597,10 +3652,12 @@ ${dayContextLines}
     document.getElementById('admin-tab-trash').style.display = (tab === 'trash') ? 'block' : 'none';
     if (tab === 'trash') renderAdminTrashList();
   }
-  function renderAdminRoomList() {
+  async function renderAdminRoomList() {
     const wrap = document.getElementById('admin-room-list'); if (!wrap) return;
-    const list = getRecentRooms();
-    if (!list.length) { wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px; font-size:calc(13px * var(--font-scale));">目前沒有已知的房間紀錄</p>`; return; }
+    wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> 讀取中...</p>`;
+    const list = await fetchAllRoomsFromFirebase();
+    if (list === null) { wrap.innerHTML = `<p style="text-align:center; color:var(--warn); padding:20px; font-size:calc(13px * var(--font-scale));">讀取失敗，請確認網路連線後重新打開後台</p>`; return; }
+    if (!list.length) { wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px; font-size:calc(13px * var(--font-scale));">目前沒有任何房間</p>`; return; }
     wrap.innerHTML = list.map(r => `
       <div class="card" style="margin-bottom:10px; padding:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
@@ -3613,9 +3670,11 @@ ${dayContextLines}
       </div>
     `).join('');
   }
-  function renderAdminTrashList() {
+  async function renderAdminTrashList() {
     const wrap = document.getElementById('admin-trash-list'); if (!wrap) return;
-    const list = getTrashedRooms();
+    wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> 讀取中...</p>`;
+    const list = await fetchAllTrashFromFirebase();
+    if (list === null) { wrap.innerHTML = `<p style="text-align:center; color:var(--warn); padding:20px; font-size:calc(13px * var(--font-scale));">讀取失敗，請確認網路連線後重新打開後台</p>`; return; }
     if (!list.length) { wrap.innerHTML = `<p style="text-align:center; color:var(--gray); padding:20px; font-size:calc(13px * var(--font-scale));">垃圾桶是空的</p>`; return; }
     wrap.innerHTML = list.map(r => {
       const daysLeft = Math.max(0, TRASH_RETENTION_DAYS - Math.floor((Date.now() - r.deletedAt) / 86400000));
@@ -3633,7 +3692,6 @@ ${dayContextLines}
     `;}).join('');
   }
   async function adminDeleteRoom(roomId) {
-    const roomEntry = getRecentRooms().find(r => r.roomId === roomId);
     if (!confirm(`確定要刪除房號「${roomId}」嗎？\n\n會先移到垃圾桶，${TRASH_RETENTION_DAYS} 天內都可以復原。`)) return;
     try {
       const snapshot = await db.ref('rooms/' + roomId).once('value');
@@ -3644,7 +3702,6 @@ ${dayContextLines}
       alert('刪除時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
       return;
     }
-    rememberTrashedRoom(roomId, roomEntry ? roomEntry.title : '', Date.now());
     const list = getRecentRooms().filter(r => r.roomId !== roomId);
     try { localStorage.setItem(RECENT_ROOMS_KEY, JSON.stringify(list)); } catch(e) {}
     renderAdminRoomList();
@@ -3663,21 +3720,19 @@ ${dayContextLines}
     try {
       const snapshot = await db.ref('rooms/_trash/' + roomId).once('value');
       const trashEntry = snapshot.val();
-      if (!trashEntry || !trashEntry.data) { alert('找不到這筆垃圾桶資料，可能已經過期被自動清空。'); forgetTrashedRoom(roomId); renderAdminTrashList(); return; }
+      if (!trashEntry || !trashEntry.data) { alert('找不到這筆垃圾桶資料，可能已經過期被自動清空。'); renderAdminTrashList(); return; }
       await db.ref('rooms/' + roomId).set(trashEntry.data);
       await db.ref('rooms/_trash/' + roomId).remove();
     } catch (error) {
       alert('還原時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
       return;
     }
-    forgetTrashedRoom(roomId);
     renderAdminTrashList();
     alert(`房號「${roomId}」已還原，可以在「加入房間」重新輸入房號進入。`);
   }
   async function permanentlyDeleteFromTrash(roomId) {
     if (!confirm(`確定要從垃圾桶「永久刪除」房號「${roomId}」嗎？\n\n這個動作無法復原！`)) return;
     try { await db.ref('rooms/_trash/' + roomId).remove(); } catch (error) { alert('刪除時發生錯誤：' + error.message); return; }
-    forgetTrashedRoom(roomId);
     renderAdminTrashList();
   }
 
@@ -3774,8 +3829,11 @@ ${dayContextLines}
 
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
-    tripSettings = { title, sub: '', startDate, endDate, country, notes: [], warns: [], climateNote: '', extraContacts: [], hasCustomContacts: true };
-    prepData = {}; itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
+    const countryDefaults = COUNTRY_DEFAULTS[country] || COUNTRY_DEFAULTS['其他'];
+    tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true };
+    prepData = {};
+    Object.keys(PREP_DEFAULT).forEach(cat => { prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); }); // 新房間也要有預設打包清單，不能空白開始
+    itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
     wishlistData = []; foodListData = [];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
