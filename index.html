@@ -29,7 +29,7 @@
   /* iOS Safari auto-zooms the whole page when a focused input's font-size is under 16px;
      this floors every form control at 16px (or bigger, if the user's font-scale setting calls for it)
      so focusing any field never triggers that jarring zoom */
-  input, select, textarea { font-size: max(16px, calc(13px * var(--font-scale))) !important; }
+  input, select, textarea { font-size: max(16px, calc(13px * var(--font-scale))) !important; font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; }
   body {
     font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
     background-color: #E9EDF0; color: var(--text-general); font-weight: 600;
@@ -306,10 +306,6 @@
     <div class="alert-warning-card">
         <div class="section-title" style="color: #B7950B; font-weight: 800;"><i class="fa-solid fa-circle-info"></i> 行程注意事項 <button class="edit-pill only-master" onclick="openNoteEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
         <ul class="note-list" id="display-notes-list" style="margin:0; padding-left:18px; font-size:calc(14.5px * var(--font-scale)); line-height: 1.6; color:#7D6608; font-weight: 500;">
-            <li>時差：韓國比台灣快 1 小時</li>
-            <li>插座為 Type C/F、電壓 220V,記得帶轉接頭</li>
-            <li>建議儲值 T-money 卡搭地鐵、公車較方便</li>
-            <li>韓國沒有給小費的習慣</li>
         </ul>
     </div>
   </section>
@@ -321,10 +317,6 @@
     <div class="alert-danger-card">
         <div class="section-title" style="color:var(--warn); font-weight: 800; margin-bottom:10px;"><i class="fa-solid fa-triangle-exclamation"></i> 行前攜帶限制提醒 <button class="edit-pill only-master" onclick="openWarnEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
         <ul class="warn-list" id="display-warn-list" style="margin:0; padding-left:18px; font-size:calc(14px * var(--font-scale)); line-height:1.7; color:#78281F; font-weight: 500;">
-            <li><b>止痛/感冒藥：</b>日本 EVE 系列止痛藥已被韓國禁止入境;含可待因、右美沙芬、偽麻黃鹼成分的止咳藥也可能被攔查。</li>
-            <li><b>慢性病處方藥：</b>安眠藥、精神科用藥務必攜帶英文診斷證明+處方箋並保留原包裝。</li>
-            <li><b>行動電源/鋰電池：</b>只能放隨身行李,不可託運。</li>
-            <li><b>肉類製品：</b>肉乾、肉鬆、香腸、火腿等一律禁止攜帶入境。</li>
         </ul>
         <p class="warn-footnote" style="font-size:calc(11.5px * var(--font-scale)); color:#943126; margin-top:10px; border-top:1px dashed rgba(228,87,46,0.25); padding-top:6px; font-weight: 400;">※ 法規隨時異動，出發前請再次確認各官網最新公告。</p>
     </div>
@@ -666,7 +658,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-12 14:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 03:09</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -683,13 +675,13 @@ Day2 12:00 outlet購物，預計逛一小時
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
       <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-pen-nib"></i> 行程全域變數自訂</h4>
       <div class="input-label">主標題</div>
-      <input type="text" id="setting-trip-title" placeholder="釜山行旅" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="text" id="setting-trip-title" placeholder="釜山行旅" style="display:block; width:100%; height:46px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff;">
       <div class="input-label">日期與天數標題</div>
-      <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:42px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; font-size:calc(13px * var(--font-scale)); outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="text" id="setting-trip-sub" placeholder="11.10(二) - 11.14(六)・5天4夜" style="display:block; width:100%; height:46px; border:2px solid #E2E7EC; border-radius:12px; padding:8px 12px; outline:none; margin-bottom:8px; box-sizing:border-box; background:#fff;">
       <div class="input-label">啟航日期 (用於計算精確倒數天數)</div>
-      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit; margin-bottom:8px;">
+      <input type="date" id="setting-trip-startdate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; outline:none; box-sizing:border-box; background:#fff; margin-bottom:8px;">
       <div class="input-label">回程日期 (用於自動產生每日行程天數)</div>
-      <input type="date" id="setting-trip-enddate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; background:#fff; font-family:inherit;">
+      <input type="date" id="setting-trip-enddate" style="display:block; width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:11px 12px; outline:none; box-sizing:border-box; background:#fff;">
     </div>
 
     <!-- 旅伴成員名單：緊接在啟航日期設定之後，方便一開始就建立好成員 -->
@@ -1240,9 +1232,9 @@ Day2 12:00 outlet購物，預計逛一小時
     setT('display-trip-title', tripSettings.title); setT('display-trip-sub', tripSettings.sub);
 
     const notesEl = document.getElementById('display-notes-list');
-    if (notesEl && tripSettings.notes) { notesEl.innerHTML = tripSettings.notes.map(n => `<li>${escapeHtml(n)}</li>`).join(''); }
+    if (notesEl) { notesEl.innerHTML = (tripSettings.notes || []).map(n => `<li>${escapeHtml(n)}</li>`).join(''); }
     const warnsEl = document.getElementById('display-warn-list');
-    if (warnsEl && tripSettings.warns) { warnsEl.innerHTML = tripSettings.warns.map(w => `<li>${w}</li>`).join(''); }
+    if (warnsEl) { warnsEl.innerHTML = (tripSettings.warns || []).map(w => `<li>${w}</li>`).join(''); }
     renderClimateNote();
     renderEmergencyContacts();
     renderOverviewRate();
@@ -1400,7 +1392,7 @@ Day2 12:00 outlet購物，預計逛一小時
         if (data.rates.SGD) rateSGD = data.rates.SGD;
         if (data.rates.HKD) rateHKD = data.rates.HKD;
         renderOverviewRate();
-        const rateMsgEl = document.getElementById('rate-msg'); if (rateMsgEl) rateMsgEl.innerText = `1 TWD ≈ ${rateTWD.toFixed(2)} KRW`;
+        refreshCalcCurrencyUI();
       }
     } catch(e) { const el = document.getElementById('overview-rate'); if (el) el.innerText = "暫時無法取得匯率"; }
   }
@@ -1410,7 +1402,9 @@ Day2 12:00 outlet購物，預計逛一小時
     const rateMap = { KRW: rateTWD, JPY: rateJPY, USD: rateUSD, EUR: rateEUR, THB: rateTHB, SGD: rateSGD, HKD: rateHKD, TWD: 1 };
     const rate = rateMap[info.currency];
     const el = document.getElementById('overview-rate'); if (!el) return;
-    el.innerText = (info.currency === 'TWD') ? '當地即為台幣' : `1 TWD ≈ ${(rate||0).toFixed(2)} ${info.currency}`;
+    if (info.currency === 'TWD') { el.innerText = '當地即為台幣'; return; }
+    const twdPerUnit = rate ? (1 / rate) : 0;
+    el.innerText = `1 ${info.currency} ≈ NT$ ${twdPerUnit.toFixed(2)}`;
   }
 
   function f(v) { return isNaN(v) ? "0" : Math.round(v).toLocaleString(); }
@@ -1438,13 +1432,19 @@ Day2 12:00 outlet購物，預計逛一小時
     refreshCalcCurrencyUI();
     if (type === 'shop') { renderShopItems(); renderShopDiscounts(); runShop(); }
   }
-  // 算帳頁兩個功能原本都寫死用韓元，這裡統一依旅程國家換成對應幣別（符號、名稱、匯率都會跟著換）
+  // 算帳頁兩個功能原本都寫死用韓元，這裡統一依旅程國家換成對應幣別（符號、名稱、匯率都會跟著換），
+  // 匯率方向也統一改成「1外幣≈多少台幣」，比較符合平常看匯率的習慣
   function refreshCalcCurrencyUI() {
     const cur = getCountryInfo().currency;
     const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
     const labelEl = document.getElementById('simp-local-label'); if (labelEl) labelEl.innerText = `當地幣別 ${cur} (${symbol})`;
     const symbolEl = document.getElementById('simp-local-symbol'); if (symbolEl) symbolEl.innerText = symbol;
     runSimp('krw');
+    const rateMsgEl = document.getElementById('rate-msg');
+    if (rateMsgEl) {
+      if (cur === 'TWD') { rateMsgEl.innerText = '當地即為台幣'; }
+      else { const rate = currentRateForCurrency(cur); rateMsgEl.innerText = rate ? `1 ${cur} ≈ NT$ ${(1/rate).toFixed(2)}` : '正在同步匯率...'; }
+    }
   }
 
   function runSimp(src) {
@@ -1483,7 +1483,7 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!shopDiscounts.length) { wrap.innerHTML = `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 8px;">尚無折扣，可新增會員價、優惠券、滿額折扣等，會依序疊加計算</p>`; return; }
     wrap.innerHTML = shopDiscounts.map(d => {
       const pct = d.value ? Math.round((1 - d.value/10) * 100) : 0;
-      const hint = d.type === 'percent' ? `<div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:3px; padding-left:2px;">${d.value ? `= ${d.value}折，折抵約 ${pct}%` : '輸入折數，例如打8折請輸入8'}</div>` : '';
+      const hint = d.type === 'percent' ? `<div id="shop-disc-hint-${d._did}" style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:3px; padding-left:2px;">${d.value ? `= ${d.value}折，折抵約 ${pct}%` : '輸入折數，例如打8折請輸入8'}</div>` : '';
       return `
       <div style="margin-bottom:10px;">
         <div style="display:flex; gap:6px; align-items:center;">
@@ -1501,7 +1501,17 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   function addShopDiscount() { shopDiscounts.push({ _did: shopDiscountSeq++, label:'', type:'percent', value:0 }); renderShopDiscounts(); runShop(); }
   function removeShopDiscount(did) { shopDiscounts = shopDiscounts.filter(d=>d._did!==did); renderShopDiscounts(); runShop(); }
-  function updateShopDiscount(did, field, val) { const d = shopDiscounts.find(x=>x._did===did); if(!d) return; d[field] = field==='value' ? p(val) : val; renderShopDiscounts(); runShop(); }
+  function updateShopDiscount(did, field, val) {
+    const d = shopDiscounts.find(x=>x._did===did); if(!d) return;
+    d[field] = field==='value' ? p(val) : val;
+    if (field === 'type') {
+      renderShopDiscounts(); // 換折扣類型時，欄位的 placeholder 跟提示文字顯示與否都要跟著換，這種結構性變化才需要整段重繪
+    } else if (field === 'value' && d.type === 'percent') {
+      const hintEl = document.getElementById(`shop-disc-hint-${did}`);
+      if (hintEl) { const pct = d.value ? Math.round((1 - d.value/10) * 100) : 0; hintEl.innerText = d.value ? `= ${d.value}折，折抵約 ${pct}%` : '輸入折數，例如打8折請輸入8'; }
+    }
+    runShop();
+  }
 
   // 依序套用每一筆折扣（前一筆算完的金額，是下一筆的起點），回傳每一步的中間結果，供畫面顯示明細
   function computeShopSteps() {
@@ -3601,18 +3611,18 @@ ${dayContextLines}
 
   // 房間清單／垃圾桶都直接讀 Firebase 的 rooms/ 節點，不再只看本機記得的清單——這樣才不會因為「這台裝置沒建立過或沒加入過」
   // 就看不到某個房間（例如很早以前建立、現在只能從 Firebase 後台才看得到的北海道房），垃圾桶也才能跨裝置同步一致
+  // 直接讀 rooms 這個父層節點很可能不在安全規則的讀取權限內（多半只開放到 rooms/$roomId 這一層，
+  // 這也是稍早 trash 搬到 rooms/_trash/ 才解決權限問題的同樣原因）。改成維護一份登記清單 rooms/_registry/{roomId}，
+  // 讀寫時都是指定到明確的子節點，跟 _trash 用的是同一套、已經驗證可行的路徑模式
   async function fetchAllRoomsFromFirebase() {
     try {
-      const snapshot = await db.ref('rooms').once('value');
+      const snapshot = await db.ref('rooms/_registry').once('value');
       const all = snapshot.val() || {};
-      const rooms = [];
-      Object.keys(all).forEach(key => {
-        if (key === '_trash') return;
-        const data = all[key];
-        rooms.push({ roomId: key, title: (data && data.tripSettings && data.tripSettings.title) || '' });
-      });
-      return rooms;
+      return Object.keys(all).map(key => ({ roomId: key, title: (all[key] && all[key].title) || '' }));
     } catch (e) { console.error('讀取所有房間失敗:', e); return null; }
+  }
+  async function registerRoom(roomId, title) {
+    try { await db.ref('rooms/_registry/' + roomId).set({ title: title || '', updatedAt: Date.now() }); } catch(e) { console.error('登記房間失敗:', e); }
   }
   async function fetchAllTrashFromFirebase() {
     try {
@@ -3698,6 +3708,7 @@ ${dayContextLines}
       const roomData = snapshot.val();
       if (roomData) { await db.ref('rooms/_trash/' + roomId).set({ data: roomData, deletedAt: Date.now() }); }
       await db.ref('rooms/' + roomId).remove();
+      await db.ref('rooms/_registry/' + roomId).remove();
     } catch (error) {
       alert('刪除時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
       return;
@@ -3723,6 +3734,7 @@ ${dayContextLines}
       if (!trashEntry || !trashEntry.data) { alert('找不到這筆垃圾桶資料，可能已經過期被自動清空。'); renderAdminTrashList(); return; }
       await db.ref('rooms/' + roomId).set(trashEntry.data);
       await db.ref('rooms/_trash/' + roomId).remove();
+      await registerRoom(roomId, (trashEntry.data.tripSettings && trashEntry.data.tripSettings.title) || '');
     } catch (error) {
       alert('還原時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：' + error.message);
       return;
@@ -3777,6 +3789,7 @@ ${dayContextLines}
     } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
 
     rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
+    registerRoom(roomId, tripSettings.title);
     renderHeroSyncStatus();
     fetchRates(); fetchWeather();
     renderDayPills(); renderDashboard(); renderReminder(true);
@@ -3849,6 +3862,7 @@ ${dayContextLines}
     }
 
     rememberRecentRoom(roomId, title, tripSettings.sub);
+    registerRoom(roomId, title);
     if (btn) btn.disabled = false;
     closeCreateRoomForm();
     // 重置後的資料雖然都存好了，但畫面上原本停留的是「上一個房間」渲染出來的內容，這裡要全部重新渲染一次，
