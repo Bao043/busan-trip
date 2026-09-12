@@ -323,6 +323,7 @@
     <div class="calc-tabs" id="prep-main-tabs" style="margin-bottom:16px;">
         <button class="tab-btn-sub active" onclick="switchPrepTab('docs', this)">憑證資訊</button>
         <button class="tab-btn-sub" onclick="switchPrepTab('checklist', this)">打包清單</button>
+        <button class="tab-btn-sub" onclick="switchPrepTab('food', this)">美食清單</button>
     </div>
 
     <!-- 憑證資訊：機票／租車／住宿／票券憑證 -->
@@ -335,6 +336,12 @@
     <div id="prep-tab-checklist" style="display:none;">
       <div id="prep-categories"></div>
       <button class="ghost-btn only-master" onclick="addCategory()" style="margin-top:4px;"><i class="fa-solid fa-plus"></i> 新增分類</button>
+    </div>
+
+    <!-- 美食清單：想吃／想去的店家或料理，跟行程分開先列出來，之後再排進每日行程 -->
+    <div id="prep-tab-food" style="display:none;">
+      <div id="food-list-items"></div>
+      <button class="ghost-btn only-master" onclick="openFoodListForm()"><i class="fa-solid fa-plus"></i> 新增想吃的美食</button>
     </div>
   </section>
 
@@ -470,6 +477,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div class="calc-tabs full-width">
         <button class="tab-btn-sub active" onclick="switchCalc('simple', this)">快速換算</button>
         <button class="tab-btn-sub" onclick="switchCalc('shop', this)">折扣試算</button>
+        <button class="tab-btn-sub" onclick="switchCalc('wishlist', this)">購物清單</button>
     </div>
     
     <div id="calc-simple-box" class="full-width">
@@ -484,23 +492,14 @@ Day2 12:00 outlet購物，預計逛一小時
     
     <div id="calc-shop-box" class="full-width" style="display:none;">
         <div class="card">
-            <div class="input-label">商品標價 (KRW)</div>
-            <div class="input-field"><span class="pre">₩</span><input type="text" id="shop-ori" inputmode="decimal" value="0" oninput="runShop()"></div>
-            <div style="display:flex; gap:8px; margin-bottom:12px;">
-                <button class="switch-btn" style="background:var(--navy); color:white; border:none; padding:6px 12px; border-radius:10px; font-weight:700;" id="btn-fix" onclick="setMode('fixed')">₩ 減免</button>
-                <button class="switch-btn" style="background:#E2E7EC; color:var(--gray); border:none; padding:6px 12px; border-radius:10px; font-weight:700;" id="btn-per" onclick="setMode('percent')">% 打折</button>
-            </div>
-            <div class="chip-row" style="margin-bottom:14px; display:flex; gap:6px;">
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(10)">10%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(20)">20%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(30)">30%</div>
-                <div class="chip" style="background:#F1F5F9; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;" onclick="setPresetDisc(50)">50%</div>
-            </div>
-            <div class="smart-stepper">
-                <button class="step-btn" onclick="adj('disc',-1)">-</button>
-                <div class="step-input-box"><input type="text" id="shop-disc" inputmode="decimal" value="0" oninput="runShop()"></div>
-                <button class="step-btn" onclick="adj('disc',1)">+</button>
-            </div>
+            <div class="input-label">商品（可加多筆，會自動加總）</div>
+            <div id="shop-items-list"></div>
+            <button type="button" class="ghost-btn" style="margin-bottom:16px; font-size:calc(12.5px * var(--font-scale)); padding:9px;" onclick="addShopItem()"><i class="fa-solid fa-plus"></i> 新增商品</button>
+
+            <div class="input-label">折扣／優惠券（可疊加多筆，依序套用）</div>
+            <div id="shop-discounts-list"></div>
+            <button type="button" class="ghost-btn" style="margin-bottom:16px; font-size:calc(12.5px * var(--font-scale)); padding:9px;" onclick="addShopDiscount()"><i class="fa-solid fa-plus"></i> 新增折扣</button>
+
             <div class="input-label">退稅比例 (%)</div>
             <div class="smart-stepper">
                 <button class="step-btn" onclick="adj('tax',-0.5)">-</button>
@@ -509,12 +508,20 @@ Day2 12:00 outlet購物，預計逛一小時
             </div>
         </div>
         <div class="step-preview" style="background: #F1F5F9; border-radius: 20px; padding: 16px; margin-bottom: 16px;">
-            <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>折扣後金額：</span><b id="res-after-disc">₩ 0</b></div>
+            <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>商品小計：</span><b id="shop-subtotal">₩ 0</b></div>
+            <div id="shop-steps-breakdown" style="margin-bottom:4px;"></div>
+            <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);"><span>折扣後金額：</span><b id="res-after-disc">₩ 0</b></div>
             <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>退稅金額預估：</span><b id="res-tax-val">₩ 0</b></div>
             <div class="step-row" style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>退稅後最終價：</span><b id="res-final-krw" style="color:var(--teal);">₩ 0</b></div>
         </div>
         <div class="final-res-card"><div class="twd" id="final-twd">NT$ 0</div><div class="krw" id="final-krw">≈ ₩ 0</div></div>
         <button class="save-btn only-master" style="margin-top:16px; padding: 16px; font-size:calc(16px * var(--font-scale));" onclick="sendCalcToExpense()"><i class="fa-solid fa-arrow-right-to-bracket"></i> 加入支出紀錄</button>
+    </div>
+
+    <!-- 購物清單：出發前／旅程中想買的東西，跟實際折扣試算分開，方便先列出來再一項項處理 -->
+    <div id="calc-wishlist-box" class="full-width" style="display:none;">
+      <div id="wishlist-items"></div>
+      <button class="ghost-btn only-master" onclick="openWishlistForm()"><i class="fa-solid fa-plus"></i> 新增購物項目</button>
     </div>
   </section>
 
@@ -880,7 +887,6 @@ Day2 12:00 outlet購物，預計逛一小時
 
   let rateTWD = 42.8;
   let rateJPY = 4.7, rateUSD = 0.031, rateEUR = 0.029; // TWD兌JPY/USD/EUR的初始預估值，頁面載入後會被 fetchRates() 抓到的即時匯率覆蓋
-  let shopMode = 'fixed';
   let masterPin = '1234'; 
   let isMasterMode = false; 
   let syncRoomId = '';
@@ -942,6 +948,8 @@ Day2 12:00 outlet購物，預計逛一小時
   let currentFontScale = 1;
   let travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
   let docItemSeq = 1; let activeDocType = 'flight'; let expandedDocIds = new Set();
+  let wishlistData = []; let wishlistItemSeq = 1; // 購物清單
+  let foodListData = []; let foodListItemSeq = 1; // 美食清單
 
   // 行程天數不再寫死，改成依 tripSettings.startDate ~ endDate 動態產生，這樣旅程日期改變（甚至日後開新房號用不同天數的行程）都能正確反映
   const WD_CHARS = ['日','一','二','三','四','五','六']; // 對應 Date.getDay()：0=週日...6=週六
@@ -1090,7 +1098,9 @@ Day2 12:00 outlet購物，預計逛一小時
         expenseRecords: expenseRecords || [],
         masterPin: masterPin || '1234',
         travelDocs: travelDocs || {},
-        travelers: travelers || []
+        travelers: travelers || [],
+        wishlistData: wishlistData || [],
+        foodListData: foodListData || []
       };
       const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
       try {
@@ -1172,15 +1182,16 @@ Day2 12:00 outlet購物，預計逛一小時
     if (stdWrap) { stdWrap.innerHTML = info.emergency.map(([label, num]) => `<div class="contact-row"><span>${escapeHtml(label)}</span><a href="tel:${escapeHtml(num)}">${escapeHtml(num)}</a></div>`).join(''); }
     const extraWrap = document.getElementById('emergency-extra-contacts');
     if (extraWrap) {
-      const list = (tripSettings.extraContacts !== undefined) ? tripSettings.extraContacts : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+      const list = tripSettings.hasCustomContacts ? (tripSettings.extraContacts || []) : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
       extraWrap.innerHTML = list.map(c => `<div class="contact-row"><span style="font-size:calc(13px * var(--font-scale));">${escapeHtml(c)}</span></div>`).join('');
     }
   }
   function openExtraContactsEdit() {
-    const list = (tripSettings.extraContacts !== undefined) ? tripSettings.extraContacts : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
+    const list = tripSettings.hasCustomContacts ? (tripSettings.extraContacts || []) : ['駐釜山辦事處急難救助專線：010-4537-7961（僅限急難救助事件・中文溝通服務）'];
     const fields = `<div class="input-label">其他聯絡資訊（每行一條，例如駐外辦事處電話）</div><textarea id="edf-extracontacts" style="width:100%; height:110px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(list.join('\n'))}</textarea>`;
     setupGeneralEdit('編輯其他聯絡資訊', fields, () => {
       tripSettings.extraContacts = document.getElementById('edf-extracontacts').value.split('\n').map(l => l.trim()).filter(Boolean);
+      tripSettings.hasCustomContacts = true; // 布林值Firebase不會弄丟，比檢查陣列本身存不存在可靠（Firebase會把空陣列整個省略掉）
       saveTripSettings(); renderEmergencyContacts(); closeGeneralEdit();
     });
   }
@@ -1333,6 +1344,9 @@ Day2 12:00 outlet購物，預計逛一小時
     btn.classList.add('active');
     document.getElementById('calc-simple-box').style.display = (type==='simple')?'block':'none';
     document.getElementById('calc-shop-box').style.display = (type==='shop')?'block':'none';
+    const wishBox = document.getElementById('calc-wishlist-box'); if (wishBox) wishBox.style.display = (type==='wishlist')?'block':'none';
+    if (type === 'wishlist') renderWishlist();
+    if (type === 'shop') { renderShopItems(); renderShopDiscounts(); runShop(); }
   }
 
   function runSimp(src) {
@@ -1340,35 +1354,203 @@ Day2 12:00 outlet購物，預計逛一小時
     if(src==='krw') { kI.value = f(v); tI.value = f(v / rateTWD); } else { tI.value = f(v); kI.value = f(v * rateTWD); }
   }
 
-  function setMode(m) {
-    shopMode = m;
-    document.getElementById('btn-fix').style.background = m==='fixed'?'var(--navy)':'#E2E7EC'; document.getElementById('btn-fix').style.color = m==='fixed'?'white':'var(--navy)';
-    document.getElementById('btn-per').style.background = m==='percent'?'var(--navy)':'#E2E7EC'; document.getElementById('btn-per').style.color = m==='percent'?'white':'var(--navy)';
-    runShop();
+  // ===== 折扣試算：多筆商品加總成小計，折扣/優惠券可疊加多筆、依序套用，最後套用退稅比例 =====
+  let shopItemSeq = 0;
+  let shopItems = [{ _sid: shopItemSeq++, name: '', price: 0 }];
+  let shopDiscountSeq = 0;
+  let shopDiscounts = [];
+  function adj(type, s) { const el = document.getElementById('shop-tax'); let v = p(el.value); el.value = (v + s).toFixed(1); runShop(); }
+
+  function renderShopItems() {
+    const wrap = document.getElementById('shop-items-list'); if (!wrap) return;
+    wrap.innerHTML = shopItems.map(it => `
+      <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
+        <input type="text" value="${escapeHtml(it.name)}" placeholder="品項名稱(選填)" oninput="updateShopItem(${it._sid},'name',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
+        <input type="text" inputmode="decimal" value="${it.price||''}" placeholder="₩金額" oninput="updateShopItem(${it._sid},'price',this.value)" style="width:96px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
+        ${shopItems.length>1 ? `<button onclick="removeShopItem(${it._sid})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>` : ''}
+      </div>
+    `).join('');
   }
-  function setPresetDisc(val) { document.getElementById('shop-disc').value = val; setMode('percent'); }
-  function adj(type, s) { const el = document.getElementById(type==='disc'?'shop-disc':'shop-tax'); let v = p(el.value); el.value = (v + s).toFixed(type==='tax'?1:0); runShop(); }
+  function addShopItem() { shopItems.push({ _sid: shopItemSeq++, name:'', price:0 }); renderShopItems(); runShop(); }
+  function removeShopItem(sid) { shopItems = shopItems.filter(i=>i._sid!==sid); renderShopItems(); runShop(); }
+  function updateShopItem(sid, field, val) { const it = shopItems.find(i=>i._sid===sid); if (!it) return; it[field] = field==='price' ? p(val) : val; runShop(); }
+
+  function renderShopDiscounts() {
+    const wrap = document.getElementById('shop-discounts-list'); if (!wrap) return;
+    if (!shopDiscounts.length) { wrap.innerHTML = `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 8px;">尚無折扣，可新增會員價、優惠券、滿額折扣等，會依序疊加計算</p>`; return; }
+    wrap.innerHTML = shopDiscounts.map(d => `
+      <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
+        <input type="text" value="${escapeHtml(d.label)}" placeholder="折扣名稱(選填)" oninput="updateShopDiscount(${d._did},'label',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
+        <select onchange="updateShopDiscount(${d._did},'type',this.value)" style="flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); background:#fff; font-family:inherit;">
+          <option value="percent" ${d.type==='percent'?'selected':''}>% 折扣</option>
+          <option value="fixed" ${d.type==='fixed'?'selected':''}>金額折抵</option>
+        </select>
+        <input type="text" inputmode="decimal" value="${d.value||''}" placeholder="數值" oninput="updateShopDiscount(${d._did},'value',this.value)" style="width:64px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
+        <button onclick="removeShopDiscount(${d._did})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `).join('');
+  }
+  function addShopDiscount() { shopDiscounts.push({ _did: shopDiscountSeq++, label:'', type:'percent', value:0 }); renderShopDiscounts(); runShop(); }
+  function removeShopDiscount(did) { shopDiscounts = shopDiscounts.filter(d=>d._did!==did); renderShopDiscounts(); runShop(); }
+  function updateShopDiscount(did, field, val) { const d = shopDiscounts.find(x=>x._did===did); if(!d) return; d[field] = field==='value' ? p(val) : val; runShop(); }
+
+  // 依序套用每一筆折扣（前一筆算完的金額，是下一筆的起點），回傳每一步的中間結果，供畫面顯示明細
+  function computeShopSteps() {
+    const subtotal = shopItems.reduce((s,it)=>s+(it.price||0), 0);
+    let running = subtotal;
+    const steps = shopDiscounts.map(d => {
+      if (d.type === 'percent') { running = running * (1 - (d.value||0)/100); }
+      else { running = Math.max(0, running - (d.value||0)); }
+      const label = d.label || (d.type==='percent' ? `${d.value||0}% 折扣` : `折抵 ₩${f(d.value||0)}`);
+      return { label, after: running };
+    });
+    return { subtotal, afterDiscounts: running, steps };
+  }
 
   function runShop() {
-    const ori = p(document.getElementById('shop-ori').value); const disc = p(document.getElementById('shop-disc').value); const tax = p(document.getElementById('shop-tax').value);
-    document.getElementById('shop-ori').value = f(ori);
-    let afterD = (shopMode==='fixed') ? Math.max(0, ori - disc) : ori * (1 - disc/100);
-    let taxAmt = afterD * (tax/100); let finalK = afterD - taxAmt;
-    document.getElementById('res-after-disc').innerText = `₩ ${f(afterD)}`; document.getElementById('res-tax-val').innerText = `₩ ${f(taxAmt)}`; document.getElementById('res-final-krw').innerText = `₩ ${f(finalK)}`;
-    document.getElementById('final-twd').innerText = `NT$ ${f(finalK / rateTWD)}`; document.getElementById('final-krw').innerText = `≈ ₩ ${f(finalK)}`;
+    const { subtotal, afterDiscounts, steps } = computeShopSteps();
+    const tax = p(document.getElementById('shop-tax').value);
+    const taxAmt = afterDiscounts * (tax/100);
+    const finalK = afterDiscounts - taxAmt;
+
+    const subEl = document.getElementById('shop-subtotal'); if (subEl) subEl.innerText = `₩ ${f(subtotal)}`;
+    const stepsWrap = document.getElementById('shop-steps-breakdown');
+    if (stepsWrap) { stepsWrap.innerHTML = steps.map(s => `<div style="display:flex; justify-content:space-between; font-size:calc(12px * var(--font-scale)); margin-bottom:4px; color:var(--gray);"><span>${escapeHtml(s.label)}</span><span>→ ₩${f(s.after)}</span></div>`).join(''); }
+    document.getElementById('res-after-disc').innerText = `₩ ${f(afterDiscounts)}`;
+    document.getElementById('res-tax-val').innerText = `₩ ${f(taxAmt)}`;
+    document.getElementById('res-final-krw').innerText = `₩ ${f(finalK)}`;
+    document.getElementById('final-twd').innerText = `NT$ ${f(finalK / rateTWD)}`;
+    document.getElementById('final-krw').innerText = `≈ ₩ ${f(finalK)}`;
   }
 
   function sendCalcToExpense() {
-    const ori = p(document.getElementById('shop-ori').value); const disc = p(document.getElementById('shop-disc').value); const tax = p(document.getElementById('shop-tax').value);
-    let afterD = (shopMode==='fixed') ? Math.max(0, ori - disc) : ori * (1 - disc/100);
-    let taxAmt = afterD * (tax/100);
-    let finalK = afterD - taxAmt;
-    if (finalK <= 0) { alert('請先輸入標價！'); return; }
-    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), currency: 'KRW', category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: rateTWD, quantity: 1, location: '', coupon: '', taxRefund: taxAmt > 0 ? `約 ₩${f(taxAmt)}` : '', note: '' });
+    const { subtotal, afterDiscounts } = computeShopSteps();
+    const tax = p(document.getElementById('shop-tax').value);
+    const taxAmt = afterDiscounts * (tax/100);
+    const finalK = afterDiscounts - taxAmt;
+    if (finalK <= 0) { alert('請先輸入商品金額！'); return; }
+    const itemsForExpense = shopItems.filter(it => it.price > 0).map(it => ({ nameOriginal: it.name || '購物項目', nameZh: '', price: it.price, quantity: 1 }));
+    const discountNote = shopDiscounts.map(d => d.label || (d.type==='percent' ? `${d.value||0}%` : `折抵₩${f(d.value||0)}`)).join('、');
+    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), currency: 'KRW', category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: rateTWD, quantity: 1, location: '', coupon: discountNote, taxRefund: taxAmt > 0 ? `約 ₩${f(taxAmt)}` : '', note: '', items: itemsForExpense });
     saveExpense(); renderExpenseSummary(); alert(`已成功加入支出紀錄！`);
+    shopItems = [{ _sid: shopItemSeq++, name:'', price:0 }]; shopDiscounts = [];
+    renderShopItems(); renderShopDiscounts(); runShop();
   }
 
   function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s === null || s === undefined ? '' : String(s); return div.innerHTML; }
+
+  // ===== 購物清單：出發前／旅程中想買的東西，跟折扣試算分開，方便先列出來再一項項處理 =====
+  function renderWishlist() {
+    const wrap = document.getElementById('wishlist-items'); if (!wrap) return;
+    if (!wishlistData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增購物項目</div>`; return; }
+    wrap.innerHTML = wishlistData.map(it => `
+      <div class="timeline-card" style="margin-bottom:10px; padding:14px;">
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <div onclick="toggleWishlistBought(${it.id})" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.bought?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.bought?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.bought?'var(--gray)':'var(--navy)'}; text-decoration:${it.bought?'line-through':'none'};">${escapeHtml(it.name)}${it.qty>1?` ×${it.qty}`:''}</div>
+            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${it.price ? `預計 ₩${f(it.price)}` : '未填預計金額'}${it.forOther ? ` · 代購給${escapeHtml(it.forWhom||'?')}` : ''}</div>
+            ${it.note ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(it.note)}</div>` : ''}
+          </div>
+          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
+            <button onclick="openWishlistForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteWishlistItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  function toggleWishlistBought(id) { const it = wishlistData.find(i=>i.id===id); if(it){ it.bought=!it.bought; saveWishlist(); renderWishlist(); } }
+  function deleteWishlistItem(id) { if(!confirm('確定要刪除這個購物項目嗎？')) return; wishlistData = wishlistData.filter(i=>i.id!==id); saveWishlist(); renderWishlist(); }
+  function openWishlistForm(editId) {
+    const editing = editId ? wishlistData.find(i=>i.id===editId) : null;
+    const fields = `
+      <div class="input-label">品項名稱</div>
+      <input type="text" id="wl-name" value="${editing?escapeHtml(editing.name):''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <div style="flex:1; min-width:0;"><div class="input-label">數量</div><input type="number" id="wl-qty" min="1" value="${editing?editing.qty:1}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;"></div>
+        <div style="flex:1; min-width:0;"><div class="input-label">預計金額 (KRW)</div><input type="text" inputmode="decimal" id="wl-price" value="${editing&&editing.price?editing.price:''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;"></div>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"><input type="checkbox" id="wl-forother" onchange="document.getElementById('wl-forwhom-wrap').style.display=this.checked?'block':'none'" ${editing&&editing.forOther?'checked':''}> 幫別人代購</label>
+      <div id="wl-forwhom-wrap" style="display:${editing&&editing.forOther?'block':'none'}; margin-bottom:12px;">
+        <div class="input-label">代購對象</div>
+        <input type="text" id="wl-forwhom" value="${editing?escapeHtml(editing.forWhom||''):''}" placeholder="例如：媽媽、同事" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+      </div>
+      <div class="input-label">備註</div>
+      <textarea id="wl-note" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">${editing?escapeHtml(editing.note||''):''}</textarea>
+    `;
+    setupGeneralEdit(editing?'編輯購物項目':'新增購物項目', fields, () => {
+      const name = document.getElementById('wl-name').value.trim();
+      if (!name) { alert('請輸入品項名稱！'); return; }
+      const qty = parseInt(document.getElementById('wl-qty').value,10) || 1;
+      const price = p(document.getElementById('wl-price').value);
+      const forOther = document.getElementById('wl-forother').checked;
+      const forWhom = document.getElementById('wl-forwhom').value.trim();
+      const note = document.getElementById('wl-note').value.trim();
+      if (editing) { Object.assign(editing, {name, qty, price, forOther, forWhom, note}); }
+      else { wishlistData.push({ id: wishlistItemSeq++, name, qty, price, forOther, forWhom, note, bought:false }); }
+      saveWishlist(); renderWishlist(); closeGeneralEdit();
+    });
+  }
+  async function saveWishlist() { try { await storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData)); await autoUploadIfEnabled(); } catch(e) {} }
+  async function loadWishlist() {
+    await migrateToRoomScopedStorage('wishlist');
+    try { const res = await storage.get(roomScopedKey('wishlist')); if (res && res.value) { wishlistData = JSON.parse(res.value); } } catch(e) {}
+    wishlistData.forEach(it => { if (it.id >= wishlistItemSeq) wishlistItemSeq = it.id + 1; });
+  }
+
+  // ===== 美食清單：想吃／想去的店家或料理，跟每日行程分開先列出來，之後再挑要排進哪一天 =====
+  function renderFoodList() {
+    const wrap = document.getElementById('food-list-items'); if (!wrap) return;
+    if (!foodListData.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">尚未新增想吃的美食</div>`; return; }
+    wrap.innerHTML = foodListData.map(it => `
+      <div class="timeline-card" style="margin-bottom:10px; padding:14px;">
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <div onclick="toggleFoodTried(${it.id})" style="width:22px; height:22px; border-radius:6px; border:2px solid #CBD5E1; display:flex; align-items:center; justify-content:center; cursor:pointer; background:${it.tried?'var(--teal)':'#fff'}; flex-shrink:0; margin-top:2px;">${it.tried?'<i class="fa-solid fa-check" style="color:white; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:calc(14.5px * var(--font-scale)); color:${it.tried?'var(--gray)':'var(--navy)'}; text-decoration:${it.tried?'line-through':'none'};">${escapeHtml(it.name)}</div>
+            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${it.location ? escapeHtml(it.location) : ''}${it.location && it.budget ? ' · ' : ''}${it.budget ? `預算 ₩${f(it.budget)}` : ''}</div>
+            ${it.note ? `<div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(it.note)}</div>` : ''}
+          </div>
+          <div class="only-master" style="display:flex; gap:6px; flex-shrink:0;">
+            <button onclick="openFoodListForm(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteFoodListItem(${it.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  function toggleFoodTried(id) { const it = foodListData.find(i=>i.id===id); if(it){ it.tried=!it.tried; saveFoodList(); renderFoodList(); } }
+  function deleteFoodListItem(id) { if(!confirm('確定要刪除這筆美食清單嗎？')) return; foodListData = foodListData.filter(i=>i.id!==id); saveFoodList(); renderFoodList(); }
+  function openFoodListForm(editId) {
+    const editing = editId ? foodListData.find(i=>i.id===editId) : null;
+    const fields = `
+      <div class="input-label">店名／料理名稱</div>
+      <input type="text" id="fl-name" value="${editing?escapeHtml(editing.name):''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <div class="input-label">地點</div>
+      <input type="text" id="fl-location" value="${editing?escapeHtml(editing.location||''):''}" placeholder="區域或地址" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <div class="input-label">預算 (KRW)</div>
+      <input type="text" inputmode="decimal" id="fl-budget" value="${editing&&editing.budget?editing.budget:''}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+      <div class="input-label">備註</div>
+      <textarea id="fl-note" placeholder="例如：必吃招牌、要提前預約" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">${editing?escapeHtml(editing.note||''):''}</textarea>
+    `;
+    setupGeneralEdit(editing?'編輯美食清單':'新增想吃的美食', fields, () => {
+      const name = document.getElementById('fl-name').value.trim();
+      if (!name) { alert('請輸入店名或料理名稱！'); return; }
+      const location = document.getElementById('fl-location').value.trim();
+      const budget = p(document.getElementById('fl-budget').value);
+      const note = document.getElementById('fl-note').value.trim();
+      if (editing) { Object.assign(editing, {name, location, budget, note}); }
+      else { foodListData.push({ id: foodListItemSeq++, name, location, budget, note, tried:false }); }
+      saveFoodList(); renderFoodList(); closeGeneralEdit();
+    });
+  }
+  async function saveFoodList() { try { await storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData)); await autoUploadIfEnabled(); } catch(e) {} }
+  async function loadFoodList() {
+    await migrateToRoomScopedStorage('food-list');
+    try { const res = await storage.get(roomScopedKey('food-list')); if (res && res.value) { foodListData = JSON.parse(res.value); } } catch(e) {}
+    foodListData.forEach(it => { if (it.id >= foodListItemSeq) foodListItemSeq = it.id + 1; });
+  }
 
   // ===== 一鍵 AI 辨識：直接呼叫使用者自己填的 Gemini API 金鑰，免去複製貼上外部 AI 的步驟。
   // 只有在設定頁填了金鑰才會顯示對應按鈕；沒有金鑰或呼叫失敗時，原本的手動複製貼上流程都還在，可以隨時改用 =====
@@ -1682,11 +1864,32 @@ Day2 12:00 outlet購物，預計逛一小時
     setTimeout(doRender, 400);
   }
 
+  // 用 Open-Meteo 的地理編碼 API 把城市名稱轉成經緯度；免金鑰、支援中文城市名。找不到就回傳 null，讓呼叫端自行退回預設值
+  async function geocodeCity(cityName) {
+    try {
+      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+      const data = await res.json();
+      if (data.results && data.results[0]) { return { lat: data.results[0].latitude, lon: data.results[0].longitude }; }
+    } catch(e) {}
+    return null;
+  }
+  // 總覽頁天氣：優先看「今天」這一天在行程裡有沒有指定城市（例如第一天在札幌、第二天改東京），
+  // 有指定就查那個城市的天氣；還沒到旅程當天，或當天沒特別指定城市，就用旅程國家的預設代表城市
   async function fetchWeather() {
     const info = getCountryInfo();
-    const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${info.cityLabel}天氣`;
+    let lat = info.lat, lon = info.lon, cityLabel = info.cityLabel;
+
+    const todayKey = todayOrTripDate();
+    const relevantDayKey = itinData[todayKey] ? todayKey : (ITIN_DAYS[0] && ITIN_DAYS[0].key);
+    const dayCity = tripSettings.dayCities && relevantDayKey && tripSettings.dayCities[relevantDayKey];
+    if (dayCity) {
+      const geo = await geocodeCity(dayCity);
+      if (geo) { lat = geo.lat; lon = geo.lon; cityLabel = dayCity; }
+    }
+
+    const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${cityLabel}天氣`;
     try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lon}&current=temperature_2m,weather_code&timezone=auto`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
       const data = await res.json(); document.getElementById('overview-weather').innerText = `${Math.round(data.current.temperature_2m)}°C ${weatherText(data.current.weather_code)}`;
     } catch(e) { document.getElementById('overview-weather').innerText = '暫時無法取得'; }
   }
@@ -1718,6 +1921,8 @@ Day2 12:00 outlet購物，預計逛一小時
     if (btn) btn.classList.add('active');
     document.getElementById('prep-tab-docs').style.display = (tab === 'docs') ? 'block' : 'none';
     document.getElementById('prep-tab-checklist').style.display = (tab === 'checklist') ? 'block' : 'none';
+    const foodTab = document.getElementById('prep-tab-food'); if (foodTab) foodTab.style.display = (tab === 'food') ? 'block' : 'none';
+    if (tab === 'food') renderFoodList();
   }
   function goToPrepDocs(type) {
     showP('p-prep', document.querySelectorAll('.nav-btn')[1]);
@@ -2022,11 +2227,27 @@ Day2 12:00 outlet購物，預計逛一小時
     wrap.querySelectorAll('.day-tab').forEach(tab => { if(tab.classList.contains('active')) { tab.style.background = 'var(--navy)'; tab.style.color = '#fff'; } });
   }
   function selectDay(key) { activeDay = key; renderDayTabs(); renderDayContent(); }
+  function openDayCityEdit() {
+    const current = (tripSettings.dayCities && tripSettings.dayCities[activeDay]) || '';
+    const fields = `<div class="input-label">這天所在城市（會影響總覽頁天氣顯示，例如：札幌、東京、大阪）</div><input type="text" id="edf-daycity" value="${escapeHtml(current)}" placeholder="留空則使用旅程預設城市" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; box-sizing:border-box;">`;
+    setupGeneralEdit('編輯這天所在城市', fields, () => {
+      if (!tripSettings.dayCities) tripSettings.dayCities = {};
+      const val = document.getElementById('edf-daycity').value.trim();
+      if (val) { tripSettings.dayCities[activeDay] = val; } else { delete tripSettings.dayCities[activeDay]; }
+      saveTripSettings(); renderDayContent();
+      if (activeDay === todayOrTripDate()) { fetchWeather(); } // 如果改的正好是今天，總覽頁天氣要跟著立刻更新
+      closeGeneralEdit();
+    });
+  }
 
   function renderDayContent() {
     const wrap = document.getElementById('itin-day-content'); if(!wrap) return;
+    const dayCity = tripSettings.dayCities && tripSettings.dayCities[activeDay];
+    let html = `<div class="card" style="padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <div style="font-size:calc(13px * var(--font-scale)); color:var(--navy); min-width:0;"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> 這天所在城市：<b>${escapeHtml(dayCity || getCountryInfo().cityLabel)}</b>${dayCity ? '' : '（旅程預設）'}</div>
+      <button class="edit-pill only-master" onclick="openDayCityEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
+    </div>`;
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
-    let html = '';
     if (items.length===0) { html += `<div class="card" style="text-align:center; padding:25px; color:var(--gray);">暫無行程</div>`; }
     else {
       html += items.map((it, idx) => {
@@ -3221,6 +3442,8 @@ ${dayContextLines}
     await loadPrep();
     await loadItin();
     await loadExpense();
+    await loadWishlist();
+    await loadFoodList();
 
     try {
       const snapshot = await db.ref('rooms/' + roomId).once('value');
@@ -3279,15 +3502,16 @@ ${dayContextLines}
 
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
-    tripSettings = { title, sub: '', startDate, endDate, country, notes: [], warns: [], climateNote: '', extraContacts: [] };
+    tripSettings = { title, sub: '', startDate, endDate, country, notes: [], warns: [], climateNote: '', extraContacts: [], hasCustomContacts: true };
     prepData = {}; itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
+    wishlistData = []; foodListData = [];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
 
-    await saveTripSettings(); await savePrep(); await saveItin(); await saveExpense(); await saveTravelDocs();
+    await saveTripSettings(); await savePrep(); await saveItin(); await saveExpense(); await saveTravelDocs(); await saveWishlist(); await saveFoodList();
 
     try {
-      const safePayload = { tripSettings, prepData, itinData, expenseRecords, masterPin: masterPin || '1234', travelDocs, travelers };
+      const safePayload = { tripSettings, prepData, itinData, expenseRecords, masterPin: masterPin || '1234', travelDocs, travelers, wishlistData, foodListData };
       const finalData = JSON.parse(JSON.stringify(safePayload, (k, v) => v === undefined ? '' : v));
       await db.ref('rooms/' + roomId).set(finalData);
     } catch (error) {
@@ -3304,6 +3528,7 @@ ${dayContextLines}
     renderDayTabs(); renderDayContent();
     renderExpenseSummary(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
+    renderWishlist(); renderFoodList();
     renderHeroSyncStatus(); fetchRates(); fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true);
     showMainApp();
     showP('p-overview', document.querySelectorAll('.nav-btn')[0]);
@@ -3348,6 +3573,8 @@ ${dayContextLines}
     if (data.masterPin) masterPin = data.masterPin;
     if (data.travelDocs) travelDocs = data.travelDocs;
     if (data.travelers && data.travelers.length) travelers = data.travelers;
+    if (data.wishlistData) wishlistData = data.wishlistData;
+    if (data.foodListData) foodListData = data.foodListData;
     refreshItinDays(); // 依同步進來的 tripSettings 日期重新產生天數清單，並確保每一天在 itinData 裡都有陣列可寫
 
     await storage.set(roomScopedKey('trip-settings'), JSON.stringify(tripSettings));
@@ -3355,6 +3582,8 @@ ${dayContextLines}
     await storage.set(roomScopedKey('itinerary'), JSON.stringify(itinData));
     await storage.set(roomScopedKey('expense-data'), JSON.stringify({records: expenseRecords, travelers}));
     await storage.set(roomScopedKey('travel-docs'), JSON.stringify(travelDocs));
+    await storage.set(roomScopedKey('wishlist'), JSON.stringify(wishlistData));
+    await storage.set(roomScopedKey('food-list'), JSON.stringify(foodListData));
     
     await storage.set(roomScopedKey('app-initialized'), 'true');
 
@@ -3362,6 +3591,8 @@ ${dayContextLines}
     if (formState[activeDay] === undefined) { renderDayContent(); } // 避免遠端同步更新蓋掉使用者正在填寫的新增/編輯表單
     renderExpenseSummary(); renderDayPills(); renderMembersSettingsList();
     renderDocTypeNav(); renderDocList(); renderOverviewFlightSummary();
+    const wishBox = document.getElementById('calc-wishlist-box'); if (wishBox && wishBox.style.display !== 'none') renderWishlist();
+    const foodTab = document.getElementById('prep-tab-food'); if (foodTab && foodTab.style.display !== 'none') renderFoodList();
     renderReminder(true);
   }
 
@@ -3416,7 +3647,9 @@ ${dayContextLines}
       expenseRecords: expenseRecords || [],
       masterPin: masterPin || '1234',
       travelDocs: travelDocs || {},
-      travelers: travelers || []
+      travelers: travelers || [],
+      wishlistData: wishlistData || [],
+      foodListData: foodListData || []
     };
     
     const finalData = JSON.parse(JSON.stringify(safePayload, (key, value) => (value === undefined) ? "" : value));
@@ -3761,6 +3994,8 @@ ${dayContextLines}
     await loadPrep(); 
     await loadItin(); 
     await loadExpense();
+    await loadWishlist();
+    await loadFoodList();
 
     await storage.set(roomScopedKey('app-initialized'), 'true');
 
