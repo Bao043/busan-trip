@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>旅遊 app </title>
+<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,7 +38,10 @@
     position: relative; background: var(--bg); border-radius: 36px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
-  body.tablet-view .app-container { max-width: 880px; }
+  body.tablet-view .app-container { max-width: 700px; padding-bottom: 130px; }
+  body.tablet-view .hero-header { padding: 32px; }
+  body.tablet-view .card { padding: 26px; }
+  body.tablet-view .page-header { padding: 40px 12px 18px; }
   /* 修正平板 inactive 面板重疊問題 */
   body.tablet-view .grid-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   body.tablet-view .full-width { grid-column: 1 / -1; }
@@ -93,7 +96,7 @@
   .final-res-card .krw { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
   .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
-  body.tablet-view .bottom-nav { max-width: 800px; }
+  body.tablet-view .bottom-nav { max-width: 640px; }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: var(--gray); border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 600; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
   .nav-btn i { font-size:calc(20px * var(--font-scale)); margin-bottom: 4px; transition: 0.3s; }
@@ -250,10 +253,10 @@
     </div>
 
     <!-- 待辦提醒卡：依倒數天數、行前準備進度、當日行程完成狀態計算出當下最相關的一項待辦，並附上可直接跳轉的按鈕 -->
-    <div class="card full-width" id="reminder-card" style="margin-top:18px; background:linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border-color:#DDD6FE;">
-        <div class="section-title" style="color:#6D28D9;"><i class="fa-solid fa-list-check"></i> 待辦提醒</div>
-        <div id="reminder-body" style="font-size:calc(14px * var(--font-scale)); color:#5B21B6; line-height:1.6; font-weight:600; margin-bottom:12px;">載入最新提醒中...</div>
-        <button id="reminder-btn" style="display:none; align-items:center; gap:6px; background:#6D28D9; color:#fff; border:none; padding:10px 16px; border-radius:14px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; font-family:inherit;"></button>
+    <div class="card full-width" id="reminder-card" style="margin-top:18px; background:linear-gradient(135deg, #EAF7FA 0%, #DCF0F5 100%); border-color:#BFE3EC;">
+        <div class="section-title" style="color:#0E7A8F;"><i class="fa-solid fa-list-check"></i> 待辦提醒</div>
+        <div id="reminder-body" style="font-size:calc(14px * var(--font-scale)); color:#0F6674; line-height:1.6; font-weight:600; margin-bottom:12px;">載入最新提醒中...</div>
+        <button id="reminder-btn" style="display:none; align-items:center; gap:6px; background:var(--teal); color:#fff; border:none; padding:10px 16px; border-radius:14px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; font-family:inherit;"></button>
     </div>
 
     <!-- 航班摘要（精簡版，完整資訊在準備頁的憑證資訊） -->
@@ -265,7 +268,7 @@
     <!-- 即時資訊匯率 -->
     <div class="dual-card-row full-width">
         <div class="card mini-card">
-            <div class="mini-label"><i class="fa-solid fa-won-sign"></i> 即時匯率</div>
+            <div class="mini-label"><i class="fa-solid fa-money-bill-transfer"></i> 即時匯率</div>
             <div id="overview-rate" class="mini-value">讀取中...</div>
         </div>
         <div class="card mini-card">
@@ -491,8 +494,8 @@ Day2 12:00 outlet購物，預計逛一小時
     
     <div id="calc-simple-box" class="full-width">
         <div class="card">
-            <div class="input-label">韓元 KRW (₩)</div>
-            <div class="input-field"><span class="pre">₩</span><input type="text" id="simp-krw" inputmode="decimal" placeholder="0" oninput="runSimp('krw')"></div>
+            <div class="input-label" id="simp-local-label">韓元 KRW (₩)</div>
+            <div class="input-field"><span class="pre" id="simp-local-symbol">₩</span><input type="text" id="simp-krw" inputmode="decimal" placeholder="0" oninput="runSimp('krw')"></div>
             <div style="text-align:center; color:var(--gold); margin:-10px 0 10px; font-size:calc(22px * var(--font-scale));"><i class="fa-solid fa-arrows-up-down"></i></div>
             <div class="input-label">台幣 TWD ($)</div>
             <div class="input-field"><span class="pre">$</span><input type="text" id="simp-twd" inputmode="decimal" placeholder="0" oninput="runSimp('twd')"></div>
@@ -559,19 +562,19 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <div id="home-recent-rooms" style="margin-top:28px; text-align:left; position:relative;"></div>
 
-  <!-- 功能亮點：填補空白版面，同時讓第一次使用的人知道這個App能做什麼 -->
-  <div style="margin-top:32px; display:flex; gap:10px; position:relative;">
-    <div style="flex:1; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px 8px; text-align:center;">
-      <div style="width:38px; height:38px; border-radius:12px; background:#EAF7FA; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--teal); font-size:calc(16px * var(--font-scale));"></i></div>
-      <div style="font-size:calc(11px * var(--font-scale)); color:var(--navy); font-weight:700;">即時同步</div>
+  <!-- 功能亮點：純資訊展示，不是按鈕，所以刻意不用卡片外觀，避免讓人誤以為可以點 -->
+  <div style="margin-top:32px; display:flex; justify-content:space-around; align-items:flex-start; padding:4px 6px; position:relative;">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+      <i class="fa-solid fa-cloud-arrow-up" style="color:var(--teal); font-size:calc(19px * var(--font-scale));"></i>
+      <span style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); font-weight:700;">即時同步</span>
     </div>
-    <div style="flex:1; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px 8px; text-align:center;">
-      <div style="width:38px; height:38px; border-radius:12px; background:#FFF1F0; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--coral); font-size:calc(16px * var(--font-scale));"></i></div>
-      <div style="font-size:calc(11px * var(--font-scale)); color:var(--navy); font-weight:700;">AI 排行程</div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+      <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--coral); font-size:calc(19px * var(--font-scale));"></i>
+      <span style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); font-weight:700;">AI 排行程</span>
     </div>
-    <div style="flex:1; background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px 8px; text-align:center;">
-      <div style="width:38px; height:38px; border-radius:12px; background:#FBF3E9; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><i class="fa-solid fa-wallet" style="color:var(--gold); font-size:calc(16px * var(--font-scale));"></i></div>
-      <div style="font-size:calc(11px * var(--font-scale)); color:var(--navy); font-weight:700;">記帳算帳</div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+      <i class="fa-solid fa-wallet" style="color:var(--gold); font-size:calc(19px * var(--font-scale));"></i>
+      <span style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); font-weight:700;">記帳算帳</span>
     </div>
   </div>
 
@@ -656,7 +659,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-12</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-12 14:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1203,6 +1206,7 @@ Day2 12:00 outlet購物，預計逛一小時
     renderClimateNote();
     renderEmergencyContacts();
     renderOverviewRate();
+    refreshCalcCurrencyUI();
     updateCountdown();
     refreshAiAutoButtons();
   }
@@ -1391,12 +1395,22 @@ Day2 12:00 outlet購物，預計逛一小時
     btn.classList.add('active');
     document.getElementById('calc-simple-box').style.display = (type==='simple')?'block':'none';
     document.getElementById('calc-shop-box').style.display = (type==='shop')?'block':'none';
+    refreshCalcCurrencyUI();
     if (type === 'shop') { renderShopItems(); renderShopDiscounts(); runShop(); }
+  }
+  // 算帳頁兩個功能原本都寫死用韓元，這裡統一依旅程國家換成對應幣別（符號、名稱、匯率都會跟著換）
+  function refreshCalcCurrencyUI() {
+    const cur = getCountryInfo().currency;
+    const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
+    const labelEl = document.getElementById('simp-local-label'); if (labelEl) labelEl.innerText = `當地幣別 ${cur} (${symbol})`;
+    const symbolEl = document.getElementById('simp-local-symbol'); if (symbolEl) symbolEl.innerText = symbol;
+    runSimp('krw');
   }
 
   function runSimp(src) {
+    const rate = currentRateForCurrency(getCountryInfo().currency);
     const kI = document.getElementById('simp-krw'); const tI = document.getElementById('simp-twd'); let v = p(src==='krw'?kI.value:tI.value);
-    if(src==='krw') { kI.value = f(v); tI.value = f(v / rateTWD); } else { tI.value = f(v); kI.value = f(v * rateTWD); }
+    if(src==='krw') { kI.value = f(v); tI.value = f(v / rate); } else { tI.value = f(v); kI.value = f(v * rate); }
   }
 
   // ===== 折扣試算：多筆商品加總成小計，折扣/優惠券可疊加多筆、依序套用，最後套用退稅比例 =====
@@ -1408,10 +1422,11 @@ Day2 12:00 outlet購物，預計逛一小時
 
   function renderShopItems() {
     const wrap = document.getElementById('shop-items-list'); if (!wrap) return;
+    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
     wrap.innerHTML = shopItems.map(it => `
       <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
         <input type="text" value="${escapeHtml(it.name)}" placeholder="品項名稱(選填)" oninput="updateShopItem(${it._sid},'name',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
-        <input type="text" inputmode="decimal" value="${it.price||''}" placeholder="₩金額" oninput="updateShopItem(${it._sid},'price',this.value)" style="width:96px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
+        <input type="text" inputmode="decimal" value="${it.price||''}" placeholder="${symbol}金額" oninput="updateShopItem(${it._sid},'price',this.value)" style="width:96px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(13px * var(--font-scale)); box-sizing:border-box;">
         ${shopItems.length>1 ? `<button onclick="removeShopItem(${it._sid})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>` : ''}
       </div>
     `).join('');
@@ -1420,33 +1435,43 @@ Day2 12:00 outlet購物，預計逛一小時
   function removeShopItem(sid) { shopItems = shopItems.filter(i=>i._sid!==sid); renderShopItems(); runShop(); }
   function updateShopItem(sid, field, val) { const it = shopItems.find(i=>i._sid===sid); if (!it) return; it[field] = field==='price' ? p(val) : val; runShop(); }
 
+  // 折扣型態改成「打幾折」而非直接輸入百分比：老人家很容易把「6折」誤會成「折抵6%」，實際上6折是「付6成、折抵4成」，
+  // 用折數輸入（例如輸入6代表6折）比較不會算錯；金額折抵維持原樣，兩種都可以疊加多筆依序套用
   function renderShopDiscounts() {
     const wrap = document.getElementById('shop-discounts-list'); if (!wrap) return;
+    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
     if (!shopDiscounts.length) { wrap.innerHTML = `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 8px;">尚無折扣，可新增會員價、優惠券、滿額折扣等，會依序疊加計算</p>`; return; }
-    wrap.innerHTML = shopDiscounts.map(d => `
-      <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
-        <input type="text" value="${escapeHtml(d.label)}" placeholder="折扣名稱(選填)" oninput="updateShopDiscount(${d._did},'label',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
-        <select onchange="updateShopDiscount(${d._did},'type',this.value)" style="flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); background:#fff; font-family:inherit;">
-          <option value="percent" ${d.type==='percent'?'selected':''}>% 折扣</option>
-          <option value="fixed" ${d.type==='fixed'?'selected':''}>金額折抵</option>
-        </select>
-        <input type="text" inputmode="decimal" value="${d.value||''}" placeholder="數值" oninput="updateShopDiscount(${d._did},'value',this.value)" style="width:64px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
-        <button onclick="removeShopDiscount(${d._did})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+    wrap.innerHTML = shopDiscounts.map(d => {
+      const pct = d.value ? Math.round((1 - d.value/10) * 100) : 0;
+      const hint = d.type === 'percent' ? `<div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-top:3px; padding-left:2px;">${d.value ? `= ${d.value}折，折抵約 ${pct}%` : '輸入折數，例如打8折請輸入8'}</div>` : '';
+      return `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input type="text" value="${escapeHtml(d.label)}" placeholder="折扣名稱(選填)" oninput="updateShopDiscount(${d._did},'label',this.value)" style="flex:1; min-width:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
+          <select onchange="updateShopDiscount(${d._did},'type',this.value)" style="flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); background:#fff; font-family:inherit;">
+            <option value="percent" ${d.type==='percent'?'selected':''}>打折</option>
+            <option value="fixed" ${d.type==='fixed'?'selected':''}>金額折抵</option>
+          </select>
+          <input type="text" inputmode="decimal" value="${d.value||''}" placeholder="${d.type==='percent'?'折數':'金額'}" oninput="updateShopDiscount(${d._did},'value',this.value)" style="width:64px; flex-shrink:0; padding:9px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale)); box-sizing:border-box;">
+          <button onclick="removeShopDiscount(${d._did})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        ${hint}
       </div>
-    `).join('');
+    `;}).join('');
   }
   function addShopDiscount() { shopDiscounts.push({ _did: shopDiscountSeq++, label:'', type:'percent', value:0 }); renderShopDiscounts(); runShop(); }
   function removeShopDiscount(did) { shopDiscounts = shopDiscounts.filter(d=>d._did!==did); renderShopDiscounts(); runShop(); }
-  function updateShopDiscount(did, field, val) { const d = shopDiscounts.find(x=>x._did===did); if(!d) return; d[field] = field==='value' ? p(val) : val; runShop(); }
+  function updateShopDiscount(did, field, val) { const d = shopDiscounts.find(x=>x._did===did); if(!d) return; d[field] = field==='value' ? p(val) : val; renderShopDiscounts(); runShop(); }
 
   // 依序套用每一筆折扣（前一筆算完的金額，是下一筆的起點），回傳每一步的中間結果，供畫面顯示明細
   function computeShopSteps() {
+    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
     const subtotal = shopItems.reduce((s,it)=>s+(it.price||0), 0);
     let running = subtotal;
     const steps = shopDiscounts.map(d => {
-      if (d.type === 'percent') { running = running * (1 - (d.value||0)/100); }
+      if (d.type === 'percent') { running = running * ((d.value || 10) / 10); } // 折數/10 = 實付比例，未輸入時視為10折（不折扣）
       else { running = Math.max(0, running - (d.value||0)); }
-      const label = d.label || (d.type==='percent' ? `${d.value||0}% 折扣` : `折抵 ₩${f(d.value||0)}`);
+      const label = d.label || (d.type==='percent' ? `打${d.value||10}折` : `折抵 ${symbol}${f(d.value||0)}`);
       return { label, after: running };
     });
     return { subtotal, afterDiscounts: running, steps };
@@ -1457,15 +1482,17 @@ Day2 12:00 outlet購物，預計逛一小時
     const tax = p(document.getElementById('shop-tax').value);
     const taxAmt = afterDiscounts * (tax/100);
     const finalK = afterDiscounts - taxAmt;
+    const rate = currentRateForCurrency(getCountryInfo().currency);
+    const symbol = CURRENCY_SYMBOL[getCountryInfo().currency] || (getCountryInfo().currency + ' ');
 
-    const subEl = document.getElementById('shop-subtotal'); if (subEl) subEl.innerText = `₩ ${f(subtotal)}`;
+    const subEl = document.getElementById('shop-subtotal'); if (subEl) subEl.innerText = `${symbol} ${f(subtotal)}`;
     const stepsWrap = document.getElementById('shop-steps-breakdown');
-    if (stepsWrap) { stepsWrap.innerHTML = steps.map(s => `<div style="display:flex; justify-content:space-between; font-size:calc(12px * var(--font-scale)); margin-bottom:4px; color:var(--gray);"><span>${escapeHtml(s.label)}</span><span>→ ₩${f(s.after)}</span></div>`).join(''); }
-    document.getElementById('res-after-disc').innerText = `₩ ${f(afterDiscounts)}`;
-    document.getElementById('res-tax-val').innerText = `₩ ${f(taxAmt)}`;
-    document.getElementById('res-final-krw').innerText = `₩ ${f(finalK)}`;
-    document.getElementById('final-twd').innerText = `NT$ ${f(finalK / rateTWD)}`;
-    document.getElementById('final-krw').innerText = `≈ ₩ ${f(finalK)}`;
+    if (stepsWrap) { stepsWrap.innerHTML = steps.map(s => `<div style="display:flex; justify-content:space-between; font-size:calc(12px * var(--font-scale)); margin-bottom:4px; color:var(--gray);"><span>${escapeHtml(s.label)}</span><span>→ ${symbol}${f(s.after)}</span></div>`).join(''); }
+    document.getElementById('res-after-disc').innerText = `${symbol} ${f(afterDiscounts)}`;
+    document.getElementById('res-tax-val').innerText = `${symbol} ${f(taxAmt)}`;
+    document.getElementById('res-final-krw').innerText = `${symbol} ${f(finalK)}`;
+    document.getElementById('final-twd').innerText = `NT$ ${f(finalK / rate)}`;
+    document.getElementById('final-krw').innerText = `≈ ${symbol} ${f(finalK)}`;
   }
 
   function sendCalcToExpense() {
@@ -1474,9 +1501,11 @@ Day2 12:00 outlet購物，預計逛一小時
     const taxAmt = afterDiscounts * (tax/100);
     const finalK = afterDiscounts - taxAmt;
     if (finalK <= 0) { alert('請先輸入商品金額！'); return; }
+    const currency = getCountryInfo().currency;
+    const symbol = CURRENCY_SYMBOL[currency] || (currency + ' ');
     const itemsForExpense = shopItems.filter(it => it.price > 0).map(it => ({ nameOriginal: it.name || '購物項目', nameZh: '', price: it.price, quantity: 1 }));
-    const discountNote = shopDiscounts.map(d => d.label || (d.type==='percent' ? `${d.value||0}%` : `折抵₩${f(d.value||0)}`)).join('、');
-    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), currency: 'KRW', category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: rateTWD, quantity: 1, location: '', coupon: discountNote, taxRefund: taxAmt > 0 ? `約 ₩${f(taxAmt)}` : '', note: '', items: itemsForExpense });
+    const discountNote = shopDiscounts.map(d => d.label || (d.type==='percent' ? `打${d.value||10}折` : `折抵${symbol}${f(d.value||0)}`)).join('、');
+    expenseRecords.push({ id: expItemSeq++, amount: Math.round(finalK), currency, category: '購物', payer: travelers[0], method: '信用卡', date: todayOrTripDate(), item: '購物試算匯入', rateAtTime: currentRateForCurrency(currency), quantity: 1, location: '', coupon: discountNote, taxRefund: taxAmt > 0 ? `約 ${symbol}${f(taxAmt)}` : '', note: '', items: itemsForExpense });
     saveExpense(); renderExpenseSummary(); alert(`已成功加入支出紀錄！`);
     shopItems = [{ _sid: shopItemSeq++, name:'', price:0 }]; shopDiscounts = [];
     renderShopItems(); renderShopDiscounts(); runShop();
@@ -1937,10 +1966,13 @@ Day2 12:00 outlet購物，預計逛一小時
     const todayKey = todayOrTripDate();
     const relevantDayKey = itinData[todayKey] ? todayKey : (ITIN_DAYS[0] && ITIN_DAYS[0].key);
     const resolved = relevantDayKey ? resolveDayCity(relevantDayKey) : null;
+    let geocodeOk = null;
     if (resolved && resolved.city) {
       const geo = await geocodeCity(resolved.city);
+      geocodeOk = !!geo;
       if (geo) { lat = geo.lat; lon = geo.lon; cityLabel = resolved.city; }
     }
+    addDebugLog('weather_resolve', { relevantDayKey, resolvedCity: resolved ? resolved.city : '', resolvedSource: resolved ? resolved.source : '', geocodeOk, finalCityLabel: cityLabel, lat, lon });
 
     const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${cityLabel}天氣`;
     try {
@@ -2896,7 +2928,7 @@ ${dayContextLines}
   // ===== 記帳與消費功能 =====
   const EXP_CATS = ['飲食','交通','購物','門票景點','住宿','其他'];
   const CAT_ICON = {'飲食':'🍜','交通':'🚕','購物':'🛍️','門票景點':'🎫','住宿':'🏨','其他':'📎'};
-  const CURRENCY_SYMBOL = { KRW: '₩', TWD: 'NT$', JPY: '¥', USD: '$', EUR: '€' };
+  const CURRENCY_SYMBOL = { KRW: '₩', TWD: 'NT$', JPY: '¥', USD: '$', EUR: '€', THB: '฿', SGD: 'S$', HKD: 'HK$' };
   
   async function loadExpense() {
     await migrateToRoomScopedStorage('expense-data');
@@ -2980,19 +3012,26 @@ ${dayContextLines}
     if (chevron) chevron.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
   }
 
-  function openQuickAdd(prefill) {
+  function openQuickAdd(prefill, editId) {
     const box = document.getElementById('quick-add-box'); box.style.display = 'block';
     const pf = prefill || {};
     if (pf.category && EXP_CATS.includes(pf.category)) qaCat = pf.category;
+    if (pf.payer && travelers.includes(pf.payer)) qaPayer = pf.payer;
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
-    if (pf.currency === 'TWD' || pf.currency === 'KRW') qaCurrency = pf.currency;
+    if (pf.method && QA_METHODS.includes(pf.method)) qaMethod = pf.method;
+    if (pf.currency && CURRENCY_SYMBOL[pf.currency]) qaCurrency = pf.currency;
     const prefillAmount = pf.amount ? f(pf.amount) : '';
     const prefillItem = pf.item || '';
     const prefillLocation = pf.location || '';
+    const prefillCoupon = pf.coupon || '';
+    const prefillTaxRefund = pf.taxRefund || '';
+    const prefillNote = pf.note || '';
+    const prefillQty = pf.quantity || 1;
     const prefillDate = (pf.date && /^\d{4}-\d{2}-\d{2}$/.test(pf.date)) ? pf.date : todayOrTripDate();
+    const moreDetailsOpen = !!(editId && (prefillLocation || prefillCoupon || prefillTaxRefund || prefillNote));
 
     let aiNotice = '';
-    if (prefill) {
+    if (prefill && !editId) {
       aiNotice = (pf.amount > 0)
         ? `<div style="background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; padding:10px 12px; font-size:calc(12px * var(--font-scale)); color:#1E40AF; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 已辨識收據內容，請確認或修改後再存入</div>`
         : `<div style="background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:12px; padding:10px 12px; font-size:calc(12px * var(--font-scale)); color:#B45309; margin-bottom:12px; line-height:1.5;"><i class="fa-solid fa-circle-exclamation"></i> AI 無法確定金額，請手動確認並填寫</div>`;
@@ -3023,25 +3062,26 @@ ${dayContextLines}
           </div>
           <div style="flex:0 0 68px;">
             <div class="input-label">數量</div>
-            <input type="number" id="qa-qty" min="1" value="1" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
+            <input type="number" id="qa-qty" min="1" value="${prefillQty}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
           </div>
         </div>
         <div class="input-label">日期</div>
         <input type="date" id="qa-date" value="${prefillDate}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
 
-        <button type="button" onclick="toggleQaMoreDetails()" style="width:100%; background:#F1F5F9; border:none; border-radius:12px; padding:10px; color:var(--navy); font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:12px;"><i class="fa-solid fa-chevron-down" id="qa-more-chevron"></i> 更多詳細資訊（地點／優惠券／退稅／備註）</button>
-        <div id="qa-more-details" style="display:none; margin-bottom:4px;">
+        <button type="button" onclick="toggleQaMoreDetails()" style="width:100%; background:#F1F5F9; border:none; border-radius:12px; padding:10px; color:var(--navy); font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:12px;"><i class="fa-solid fa-chevron-${moreDetailsOpen?'up':'down'}" id="qa-more-chevron"></i> 更多詳細資訊（地點／優惠券／退稅／備註）</button>
+        <div id="qa-more-details" style="display:${moreDetailsOpen?'block':'none'}; margin-bottom:4px;">
           <div class="input-label">消費地點</div>
           <input type="text" id="qa-location" placeholder="店家或地點名稱" value="${escapeHtml(prefillLocation)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
           <div class="input-label">優惠券／折扣</div>
-          <input type="text" id="qa-coupon" placeholder="例如：外國人9折" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+          <input type="text" id="qa-coupon" placeholder="例如：外國人9折" value="${escapeHtml(prefillCoupon)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
           <div class="input-label">退稅金額</div>
-          <input type="text" id="qa-taxrefund" placeholder="預估或實際退稅金額" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
+          <input type="text" id="qa-taxrefund" placeholder="預估或實際退稅金額" value="${escapeHtml(prefillTaxRefund)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
           <div class="input-label">備註</div>
-          <textarea id="qa-note" placeholder="其他補充說明" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:4px;"></textarea>
+          <textarea id="qa-note" placeholder="其他補充說明" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:4px;">${escapeHtml(prefillNote)}</textarea>
         </div>
 
-        <button class="save-btn" style="margin-top:8px;" onclick="submitQuickAdd()">確認記帳</button>
+        <button class="save-btn" style="margin-top:8px;" onclick="submitQuickAdd(${editId?editId:'null'})">${editId ? '儲存修改' : '確認記帳'}</button>
+        ${editId ? `<button class="ghost-btn" style="margin-top:8px;" onclick="document.getElementById('quick-add-box').style.display='none';">取消</button>` : ''}
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
@@ -3049,7 +3089,14 @@ ${dayContextLines}
     renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
   }
 
-  function submitQuickAdd() {
+  function editExpenseItem(id) {
+    const r = expenseRecords.find(x => x.id === id);
+    if (!r) return;
+    openQuickAdd(r, id);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function submitQuickAdd(editId) {
     const amt = p(document.getElementById('qa-amount').value); const item = document.getElementById('qa-item').value.trim(); if(!amt) return;
     const dateEl = document.getElementById('qa-date');
     const date = (dateEl && dateEl.value) ? dateEl.value : todayOrTripDate();
@@ -3059,7 +3106,16 @@ ${dayContextLines}
     const coupon = document.getElementById('qa-coupon').value.trim();
     const taxRefund = document.getElementById('qa-taxrefund').value.trim();
     const note = document.getElementById('qa-note').value.trim();
-    expenseRecords.push({ id: expItemSeq++, amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date: date, item: item||qaCat, rateAtTime: currentRateForCurrency(qaCurrency), quantity, location, coupon, taxRefund, note });
+    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note };
+    if (editId) {
+      const existing = expenseRecords.find(r => r.id === editId);
+      if (existing) {
+        if (existing.currency !== qaCurrency) { data.rateAtTime = currentRateForCurrency(qaCurrency); } // 幣別有改才需要重新記錄當下匯率，其餘欄位直接覆蓋（原本的商品明細 items 不受影響）
+        Object.assign(existing, data);
+      }
+    } else {
+      expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: currentRateForCurrency(qaCurrency) });
+    }
     saveExpense(); document.getElementById('quick-add-box').style.display = 'none'; renderExpenseSummary();
   }
 
@@ -3307,7 +3363,7 @@ ${dayContextLines}
   }
 
   // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示（支援 KRW/TWD/JPY/USD/EUR；rateAtTime 代表「該筆幣別」兌 1 TWD 的匯率，未知幣別則比照 KRW 處理避免出錯）
-  function getCurrencyRate(cur) { if (cur === 'JPY') return rateJPY; if (cur === 'USD') return rateUSD; if (cur === 'EUR') return rateEUR; return null; }
+  function getCurrencyRate(cur) { if (cur === 'JPY') return rateJPY; if (cur === 'USD') return rateUSD; if (cur === 'EUR') return rateEUR; if (cur === 'THB') return rateTHB; if (cur === 'SGD') return rateSGD; if (cur === 'HKD') return rateHKD; return null; }
   function currentRateForCurrency(cur) { if (!cur || cur === 'KRW') return rateTWD; if (cur === 'TWD') return 1; return getCurrencyRate(cur) || rateTWD; }
   function recordToKRW(r) {
     if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
@@ -3410,10 +3466,11 @@ ${dayContextLines}
     ].filter(Boolean).join('') + itemsBlock;
 
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
-      <div class="only-master" style="position:absolute; top:10px; right:10px;">
+      <div class="only-master" style="position:absolute; top:10px; right:10px; display:flex; gap:6px;">
+        <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
         <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:34px; gap:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:60px; gap:8px;">
         <div style="min-width:0;">
           <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${escapeHtml(r.item)}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
