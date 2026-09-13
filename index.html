@@ -708,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 15:00</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 15:45</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -2234,7 +2234,11 @@ Day2 12:00 outlet購物，預計逛一小時
       '仙台':[38.2682,140.8694], '函館':[41.7688,140.7288], '小樽':[43.1907,140.9947], '旭川':[43.7706,142.3650],
       '金澤':[36.5613,136.6562], '日光':[36.7199,139.6982], '箱根':[35.2324,139.1069], '輕井澤':[36.3484,138.5965],
       '長崎':[32.7503,129.8779], '熊本':[32.8031,130.7079], '鹿兒島':[31.5966,130.5571], '新千歲':[42.7752,141.6923],
-      '千歲':[42.8206,141.6520], '洞爺湖':[42.5600,140.8400], '登別':[42.4130,141.1070], '富良野':[43.3422,142.3830]
+      '千歲':[42.8206,141.6520], '洞爺湖':[42.5600,140.8400], '登別':[42.4130,141.1070], '富良野':[43.3422,142.3830],
+      // 日文漢字寫法：AI 匯入的行程常常直接用日文字（歳≠歲、浜≠濱、広≠廣…），字不同就比對不到，一併收錄
+      '新千歳':[42.7752,141.6923], '千歳':[42.8206,141.6520], '横浜':[35.4437,139.6380], '広島':[34.3853,132.4553],
+      '沖縄':[26.2124,127.6809], '那覇':[26.2124,127.6809], '鹿児島':[31.5966,130.5571], '軽井沢':[36.3484,138.5965],
+      '金沢':[36.5613,136.6562], '神戸':[34.6901,135.1955], '箱根':[35.2324,139.1069], '日光':[36.7199,139.6982]
     },
     '🇹🇭 泰國': {
       '曼谷':[13.7563,100.5018], '清邁':[18.7883,98.9853], '普吉':[7.8804,98.3923], '芭達雅':[12.9236,100.8825],
@@ -2274,7 +2278,7 @@ Day2 12:00 outlet購物，預計逛一小時
       '東京': ['淺草','晴空塔','澀谷','新宿','池袋','銀座','秋葉原','台場','上野','原宿','表參道','六本木','築地','豐洲','東京站','東京鐵塔','明治神宮','淺草寺','吉祥寺','中目黑','羽田','成田'],
       '大阪': ['道頓堀','心齋橋','難波','梅田','通天閣','大阪城','日本橋','天王寺','新世界','海遊館','環球影城','關西機場'],
       '京都': ['清水寺','伏見稻荷','金閣寺','銀閣寺','嵐山','祇園','二年坂','三年坂','平安神宮','錦市場','京都站'],
-      '札幌': ['大通','狸小路','薄野','二條市場','白色戀人','羊之丘','札幌站','円山'],
+      '札幌': ['大通','狸小路','薄野','二條市場','二条市場','白色戀人','白い恋人','羊之丘','札幌站','札幌駅','円山'],
       '福岡': ['博多','天神','中洲','太宰府','門司港'],
       '橫濱': ['港未來','紅磚倉庫','山下公園'],
       '奈良': ['奈良公園','東大寺','春日大社'],
@@ -2348,8 +2352,22 @@ Day2 12:00 outlet購物，預計逛一小時
     const info = getCountryInfo();
     let lat = info.lat, lon = info.lon, cityLabel = info.cityLabel;
 
+    // 挑一個「真的有行程內容」的日子來判斷城市。
+    // 原本只檢查 itinData[todayKey] 是否存在，但空陣列在 JS 也是 true，
+    // 於是會鎖在一個沒有任何項目的日子 → 判斷不出城市 → 退回國家預設，跟行程頁顯示的城市對不起來
     const todayKey = todayOrTripDate();
-    const relevantDayKey = itinData[todayKey] ? todayKey : (ITIN_DAYS[0] && ITIN_DAYS[0].key);
+    const hasItems = (k) => k && Array.isArray(itinData[k]) && itinData[k].length > 0;
+    let relevantDayKey = hasItems(todayKey) ? todayKey : null;
+    if (!relevantDayKey) {
+      // 今天沒行程（例如還沒出發）就往後找第一個有內容、而且判斷得出城市的日子
+      for (const d of ITIN_DAYS) {
+        if (!hasItems(d.key)) continue;
+        const r = resolveDayCity(d.key);
+        if (r.city) { relevantDayKey = d.key; break; }
+        if (!relevantDayKey) relevantDayKey = d.key;
+      }
+    }
+    if (!relevantDayKey && ITIN_DAYS[0]) relevantDayKey = ITIN_DAYS[0].key;
     const resolved = relevantDayKey ? resolveDayCity(relevantDayKey) : null;
     const tried = [];
     if (resolved && resolved.candidates && resolved.candidates.length) {
@@ -2363,7 +2381,11 @@ Day2 12:00 outlet購物，預計逛一小時
     }
     addDebugLog('weather_resolve', { relevantDayKey, resolvedSource: resolved ? resolved.source : '', tried, finalCityLabel: cityLabel, lat, lon });
 
-    const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${cityLabel}天氣`;
+    // 標示這是哪一天的城市，跟行程頁對照時才不會覺得兩邊兜不起來
+    const dayObj = ITIN_DAYS.find(d => d.key === relevantDayKey);
+    const isToday = relevantDayKey === todayKey;
+    const labelEl = document.getElementById('weather-city-label');
+    if (labelEl) labelEl.innerText = (dayObj && !isToday) ? `${cityLabel}天氣・${dayObj.date}` : `${cityLabel}天氣`;
     try {
       const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
       const data = await res.json(); document.getElementById('overview-weather').innerText = `${Math.round(data.current.temperature_2m)}°C ${weatherText(data.current.weather_code)}`;
@@ -4336,6 +4358,8 @@ ${dayContextLines}
 
   // 實際切換到某個房號並載入其資料：建立成功、加入成功、點擊「最近旅程」都會走這裡，確保行為一致
   async function enterRoom(roomId) {
+    // 進別的房間前先切斷舊房監聽，避免載入過程中舊房資料還被寫進來
+    if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
     syncRoomId = roomId;
     localStorage.setItem('sync-room-id', roomId);
 
@@ -4407,6 +4431,10 @@ ${dayContextLines}
     }
     if (statusEl) statusEl.innerText = '';
 
+    // 先切斷前一個房間的即時監聽：否則舊房的監聽會繼續觸發，把舊房資料寫進這個新房間，
+    // 造成「新建的房間卻出現別人的支出/成員」
+    if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
     const countryDefaults = COUNTRY_DEFAULTS[country] || COUNTRY_DEFAULTS['其他'];
@@ -4446,6 +4474,8 @@ ${dayContextLines}
     renderHeroSyncStatus(); fetchRates(); fetchWeather(); renderDayPills(); renderDashboard(); renderReminder(true);
     showMainApp();
     showP('p-overview', document.querySelectorAll('.nav-btn')[0]);
+    // 自動同步原本就開著的話，改成監聽這個新房間
+    if (localStorage.getItem('sync-auto-enabled') === 'true') { attachAutoSyncListener(roomId); }
   }
 
   function openJoinRoomForm() {
@@ -4569,6 +4599,9 @@ ${dayContextLines}
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
     activeSyncListener = db.ref('rooms/' + roomId);
     activeSyncListener.on('value', (snapshot) => {
+      // 最後一道保險：這個監聽如果不是對應目前所在房間（例如切換房間時殘留的舊監聽），直接忽略，
+      // 不然會把別的房間的資料寫進目前房間
+      if (roomId !== syncRoomId) return;
       if (snapshot.exists()) {
         updateLocalData(snapshot.val());
         renderHeroSyncStatus();
