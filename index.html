@@ -3,11 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
+<title>Travel-app</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- 加到主畫面時的 App 圖示。直接內嵌成 data URI，這樣不用額外上傳圖檔到 GitHub；
+     若 iOS 沒吃這種寫法，改成上傳 icon.png 再把 href 換成 "icon.png" 即可 -->
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Travel-app">
+<meta name="theme-color" content="#1d3557">
 <!-- 引入 Firebase 官方 CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -597,7 +606,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div style="width:78px; height:78px; border-radius:24px; background:linear-gradient(135deg, #1d3557 0%, #457b9d 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:0 14px 30px rgba(29,53,87,0.32), 0 2px 6px rgba(29,53,87,0.15);">
       <i class="fa-solid fa-route" style="font-size:calc(32px * var(--font-scale)); color:#fff;"></i>
     </div>
-    <h1 class="clean-title">我的旅遊規劃</h1>
+    <h1 class="clean-title">Travel-app</h1>
     <p style="color:var(--gray); font-size:calc(14px * var(--font-scale)); margin-top:6px; margin-bottom:0;">一起規劃、同步、記錄你的旅程</p>
   </div>
 
@@ -708,7 +717,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 22:45</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 23:25</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3480,6 +3489,83 @@ ${dayContextLines}
 
   const QA_METHODS = ['現金','信用卡','行動支付','其他'];
   let qaParticipants = [];
+  let qaSplitMode = 'even';
+  let qaAllocItems = [];
+  let allocSeq = 1;
+
+  function setQaSplitMode(mode) {
+    qaSplitMode = mode;
+    document.querySelectorAll('.qa-mode-btn').forEach(b => {
+      const on = b.dataset.mode === mode;
+      b.style.background = on ? 'var(--navy)' : '#E2E7EC';
+      b.style.color = on ? '#fff' : 'var(--gray)';
+    });
+    const evenBox = document.getElementById('qa-even-box'); if (evenBox) evenBox.style.display = mode === 'even' ? 'block' : 'none';
+    const itemsBox = document.getElementById('qa-items-box'); if (itemsBox) itemsBox.style.display = mode === 'items' ? 'block' : 'none';
+    if (mode === 'items') { if (!qaAllocItems.length) addAllocItem(); else renderAllocItems(); }
+  }
+  function addAllocItem() {
+    qaAllocItems.push({ _id: allocSeq++, name: '', unitPrice: 0, alloc: [{ who: travelers[0] || '', qty: 1, proxyFor: '' }] });
+    renderAllocItems();
+  }
+  function removeAllocItem(id) { qaAllocItems = qaAllocItems.filter(i => i._id !== id); renderAllocItems(); }
+  function updateAllocItem(id, field, val) {
+    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
+    it[field] = field === 'unitPrice' ? p(val) : val;
+    if (field === 'unitPrice') refreshAllocTotal(); // 只改金額不必整段重畫，不然打字游標會跑掉
+  }
+  function addAllocRow(id) {
+    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
+    it.alloc.push({ who: travelers[0] || '', qty: 1, proxyFor: '' });
+    renderAllocItems();
+  }
+  function removeAllocRow(id, idx) {
+    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
+    it.alloc.splice(idx, 1); if (!it.alloc.length) it.alloc.push({ who: travelers[0] || '', qty: 1, proxyFor: '' });
+    renderAllocItems();
+  }
+  function updateAllocRow(id, idx, field, val) {
+    const it = qaAllocItems.find(i => i._id === id); if (!it || !it.alloc[idx]) return;
+    it.alloc[idx][field] = field === 'qty' ? (parseInt(val, 10) || 0) : val;
+    if (field !== 'who') refreshAllocTotal();
+  }
+  function refreshAllocTotal() {
+    const el = document.getElementById('qa-alloc-total'); if (!el) return;
+    const total = allocItemsTotal(qaAllocItems);
+    const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
+    el.innerHTML = `逐項合計：${symbol} ${f(total)}　<span style="color:var(--gray); font-weight:600;">（存檔時會以這個金額為準）</span>`;
+  }
+  function renderAllocItems() {
+    const wrap = document.getElementById('qa-alloc-list'); if (!wrap) return;
+    const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
+    wrap.innerHTML = qaAllocItems.map(it => {
+      const rows = it.alloc.map((a, idx) => `
+        <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px;">
+          <select onchange="updateAllocRow(${it._id},${idx},'who',this.value)" style="flex:1; min-width:0; padding:7px; border-radius:8px; border:1px solid #ccc; background:#fff; font-family:inherit; font-size:calc(12px * var(--font-scale));">
+            ${travelers.map(t => `<option value="${escapeHtml(t)}" ${a.who===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
+          </select>
+          <input type="number" min="0" value="${a.qty}" oninput="updateAllocRow(${it._id},${idx},'qty',this.value)" style="width:56px; flex-shrink:0; padding:7px; border-radius:8px; border:1px solid #ccc; text-align:center;">
+          <input type="text" value="${escapeHtml(a.proxyFor||'')}" placeholder="代購給(選填)" oninput="updateAllocRow(${it._id},${idx},'proxyFor',this.value)" style="flex:1; min-width:0; padding:7px; border-radius:8px; border:1px solid #ccc; font-size:calc(12px * var(--font-scale));">
+          <button type="button" onclick="removeAllocRow(${it._id},${idx})" style="flex-shrink:0; background:#F1F5F9; border:none; width:28px; height:28px; border-radius:8px; color:var(--warn); cursor:pointer;">×</button>
+        </div>`).join('');
+      const subtotal = (Number(it.unitPrice)||0) * it.alloc.reduce((s,a)=>s+(Number(a.qty)||0),0);
+      return `
+      <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:10px;">
+        <div style="display:flex; gap:5px; align-items:center; margin-bottom:7px;">
+          <input type="text" value="${escapeHtml(it.name)}" placeholder="商品名稱" oninput="updateAllocItem(${it._id},'name',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale));">
+          <input type="text" inputmode="decimal" value="${it.unitPrice||''}" placeholder="單價" oninput="updateAllocItem(${it._id},'unitPrice',this.value)" style="width:76px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
+          <button type="button" onclick="removeAllocItem(${it._id})" style="flex-shrink:0; background:#FEF2F2; border:none; width:30px; height:30px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        ${rows}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+          <button type="button" onclick="addAllocRow(${it._id})" style="background:none; border:none; color:var(--teal); font-weight:700; font-size:calc(11.5px * var(--font-scale)); cursor:pointer; padding:0;">＋ 再加一個人</button>
+          <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">小計 ${symbol}${f(subtotal)}</span>
+        </div>
+      </div>`;
+    }).join('');
+    refreshAllocTotal();
+  }
+
   // 分攤對象是可複選的，跟其他單選的 chip 列不同，所以另外寫一個
   function renderQaParticipants() {
     const el = document.getElementById('qa-participants-row'); if (!el) return;
@@ -3557,8 +3643,24 @@ ${dayContextLines}
         <div class="chip-row" id="qa-payer-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         <div class="input-label">付款方式</div>
         <div class="chip-row" id="qa-method-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
-        <div class="input-label">這筆由誰分攤（預設全部人平分）</div>
-        <div class="chip-row" id="qa-participants-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div class="input-label">分攤方式</div>
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+          <button type="button" class="qa-mode-btn" data-mode="even" style="flex:1; padding:9px; border:none; border-radius:10px; font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; font-family:inherit;">平分</button>
+          <button type="button" class="qa-mode-btn" data-mode="items" style="flex:1; padding:9px; border:none; border-radius:10px; font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; font-family:inherit;">逐項分配</button>
+        </div>
+
+        <div id="qa-even-box">
+          <div class="input-label">這筆由誰分攤（預設全部人平分）</div>
+          <div class="chip-row" id="qa-participants-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        </div>
+
+        <!-- 逐項分配：一次結帳買了多樣東西、各自屬於不同人時使用，也可標記某幾件是幫別人代購 -->
+        <div id="qa-items-box" style="display:none; margin-bottom:12px;">
+          <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">適合一起結帳但東西各自歸屬的情況。每件商品填單價，再列出誰拿幾個；幫旅程外的人買的可填「代購給」。</p>
+          <div id="qa-alloc-list"></div>
+          <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="addAllocItem()"><i class="fa-solid fa-plus"></i> 新增商品</button>
+          <div id="qa-alloc-total" style="margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"></div>
+        </div>
         <div class="input-label">金額</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
           <button type="button" onclick="setQaCurrency('KRW', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='KRW'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='KRW'?'#fff':'var(--gray)'};">₩ 韓元</button>
@@ -3602,6 +3704,12 @@ ${dayContextLines}
     renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
     qaParticipants = (pf.participants && pf.participants.length) ? pf.participants.filter(n=>travelers.includes(n)) : travelers.slice();
     renderQaParticipants();
+    // 逐項分配：編輯既有紀錄時帶回原本的內容
+    qaAllocItems = (Array.isArray(pf.allocItems) && pf.allocItems.length)
+      ? pf.allocItems.map(it => ({ _id: allocSeq++, name: it.name||'', unitPrice: Number(it.unitPrice)||0, alloc: (it.alloc||[]).map(a => ({ who: a.who||'', qty: Number(a.qty)||0, proxyFor: a.proxyFor||'' })) }))
+      : [];
+    box.querySelectorAll('.qa-mode-btn').forEach(b => b.addEventListener('click', () => setQaSplitMode(b.dataset.mode)));
+    setQaSplitMode(pf.splitMode === 'items' ? 'items' : 'even');
     // 直接在這個表單容器上綁事件，並把容器傳進去做範圍查詢：
     // 之前用字串 onclick + 全域 getElementById，只要畫面上同時存在兩份表單就會抓錯欄位而靜默失敗
     const submitBtn = box.querySelector('.qa-submit-btn');
@@ -3638,7 +3746,8 @@ ${dayContextLines}
     const amtEl = q('qa-amount');
     const amt = p(amtEl ? amtEl.value : '');
     const itemEl = q('qa-item'); const item = itemEl ? itemEl.value.trim() : '';
-    if (!amt) { alert('請輸入金額'); return; } // 原本金額空白時是直接 return，按了完全沒反應也看不出原因
+    const allocTotalNow = (qaSplitMode === 'items') ? allocItemsTotal(qaAllocItems) : 0;
+    if (!amt && !allocTotalNow) { alert(qaSplitMode === 'items' ? '請至少填一項商品的單價與數量' : '請輸入金額'); return; }
     const dateEl = q('qa-date');
     const date = (dateEl && dateEl.value) ? dateEl.value : todayOrTripDate();
     const qtyEl = q('qa-qty');
@@ -3648,6 +3757,16 @@ ${dayContextLines}
     const taxEl = q('qa-taxrefund'); const taxRefund = taxEl ? taxEl.value.trim() : '';
     const noteEl = q('qa-note'); const note = noteEl ? noteEl.value.trim() : '';
     const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
+    // 逐項分配模式：金額以各項小計加總為準，避免跟填寫的總額對不起來
+    if (qaSplitMode === 'items' && qaAllocItems.length) {
+      data.splitMode = 'items';
+      data.allocItems = qaAllocItems.map(it => ({ name: it.name, unitPrice: Number(it.unitPrice)||0, alloc: (it.alloc||[]).filter(a=>a.who && (Number(a.qty)||0) > 0).map(a => ({ who: a.who, qty: Number(a.qty)||0, proxyFor: (a.proxyFor||'').trim() })) }));
+      const t = allocItemsTotal(data.allocItems);
+      if (t > 0) data.amount = Math.round(t);
+    } else {
+      data.splitMode = 'even';
+      data.allocItems = [];
+    }
     if (editId) {
       const existing = expenseRecords.find(r => r.id === editId);
       if (existing) {
@@ -3925,6 +4044,54 @@ ${dayContextLines}
   // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示（支援 KRW/TWD/JPY/USD/EUR；rateAtTime 代表「該筆幣別」兌 1 TWD 的匯率，未知幣別則比照 KRW 處理避免出錯）
   function getCurrencyRate(cur) { if (cur === 'JPY') return rateJPY; if (cur === 'USD') return rateUSD; if (cur === 'EUR') return rateEUR; if (cur === 'THB') return rateTHB; if (cur === 'SGD') return rateSGD; if (cur === 'HKD') return rateHKD; return null; }
   function currentRateForCurrency(cur) { if (!cur || cur === 'KRW') return rateTWD; if (cur === 'TWD') return 1; return getCurrencyRate(cur) || rateTWD; }
+  // ===== 逐項分配：一張收據裡不同商品由不同人分擔，且可標記某幾件是幫別人代購 =====
+  // 資料結構：record.splitMode='items' 時使用 record.allocItems
+  //   allocItems: [{ name, unitPrice, alloc:[{ who, qty, proxyFor }] }]
+  //   who = 實際付這筆錢的旅伴；proxyFor 有值代表這幾件是幫這個人代購（那個人通常不在旅程成員內）
+  function allocItemsTotal(allocItems) {
+    return (allocItems || []).reduce((s, it) => {
+      const unit = Number(it.unitPrice) || 0;
+      return s + (it.alloc || []).reduce((s2, a) => s2 + unit * (Number(a.qty) || 0), 0);
+    }, 0);
+  }
+  // 每個人在這筆支出裡實際該負擔多少（代購的部分仍算在代墊者身上，另外在代購清單追蹤）
+  function allocSharesByPerson(record) {
+    const out = {};
+    const rate = record.currency === 'TWD' ? 1 : (record.rateAtTime || currentRateForCurrency(record.currency) || 1);
+    (record.allocItems || []).forEach(it => {
+      const unit = Number(it.unitPrice) || 0;
+      (it.alloc || []).forEach(a => {
+        const amt = unit * (Number(a.qty) || 0);
+        const twd = record.currency === 'TWD' ? amt : amt / rate;
+        if (!a.who) return;
+        out[a.who] = (out[a.who] || 0) + twd;
+      });
+    });
+    return out;
+  }
+  // 代購墊付清單：誰幫誰墊了多少，用來跟旅程外的人請款
+  function computeProxyDebts() {
+    const rows = [];
+    (expenseRecords || []).forEach(r => {
+      if (r.splitMode !== 'items') return;
+      const rate = r.currency === 'TWD' ? 1 : (r.rateAtTime || currentRateForCurrency(r.currency) || 1);
+      (r.allocItems || []).forEach(it => {
+        const unit = Number(it.unitPrice) || 0;
+        (it.alloc || []).forEach(a => {
+          if (!a.proxyFor || !a.proxyFor.trim()) return;
+          const amt = unit * (Number(a.qty) || 0);
+          rows.push({
+            fronted: a.who, forWhom: a.proxyFor.trim(),
+            item: it.name || r.item || '商品', qty: Number(a.qty) || 0,
+            twd: Math.round(r.currency === 'TWD' ? amt : amt / rate),
+            date: r.date || ''
+          });
+        });
+      });
+    });
+    return rows;
+  }
+
   // ===== 分帳結算 =====
   // 每筆支出依「實際分攤的人」平分（沒指定就視為全員平分），算出每人應付多少、實付多少，
   // 再把債務兩兩相抵，產生「誰付給誰多少」的最少轉帳筆數
@@ -3938,6 +4105,18 @@ ${dayContextLines}
     (expenseRecords || []).forEach(r => {
       const twd = recordToTWD(r);
       if (paid[r.payer] !== undefined) paid[r.payer] += twd;
+
+      if (r.splitMode === 'items' && Array.isArray(r.allocItems) && r.allocItems.length) {
+        // 逐項分配：各人只負擔自己拿的那幾件（代購的部分仍算在代墊者身上）
+        const byPerson = allocSharesByPerson(r);
+        let allocated = 0;
+        Object.keys(byPerson).forEach(n => { if (share[n] !== undefined) { share[n] += byPerson[n]; allocated += byPerson[n]; } });
+        // 沒分配到的差額（例如運費、湊整）回歸全員平分，避免金額對不起來
+        const rest = twd - allocated;
+        if (Math.abs(rest) > 0.5) { const each = rest / people.length; people.forEach(n => { share[n] += each; }); }
+        return;
+      }
+
       let parts = Array.isArray(r.participants) ? r.participants.filter(n => people.includes(n)) : [];
       if (!parts.length) parts = people; // 舊資料沒有分攤欄位時，視為全員平分
       const each = twd / parts.length;
@@ -4051,6 +4230,24 @@ ${dayContextLines}
       </div>`).join('');
     }
     html += `</div>`;
+
+    // 代購墊付：幫旅程外的人買的東西，不進旅伴之間的分帳，另外列出來方便向對方請款
+    const proxies = computeProxyDebts();
+    if (proxies.length) {
+      const byPair = {};
+      proxies.forEach(x => { const k = `${x.fronted}→${x.forWhom}`; (byPair[k] = byPair[k] || { ...x, twd: 0, items: [] }); byPair[k].twd += x.twd; byPair[k].items.push(`${x.item}×${x.qty}`); });
+      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購墊付</div>
+        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">幫旅程以外的人買的，不算在上面的旅伴分帳裡，要另外跟對方收</p>`;
+      html += Object.values(byPair).map(x => `<div style="padding:10px 0; border-bottom:1px solid var(--line);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span style="font-size:calc(13.5px * var(--font-scale));"><b style="color:var(--navy);">${escapeHtml(x.forWhom)}</b> <span style="color:var(--gray);">應還</span> <b style="color:var(--teal);">${escapeHtml(x.fronted)}</b></span>
+            <b style="color:var(--navy); flex-shrink:0;">NT$ ${f(x.twd)}</b>
+          </div>
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(x.items.join('、'))}</div>
+        </div>`).join('');
+      html += `</div>`;
+    }
+
     wrap.innerHTML = html;
   }
 
@@ -4950,6 +5147,35 @@ ${dayContextLines}
     const wsSettle = XLSX.utils.aoa_to_sheet(settleRows);
     wsSettle['!cols'] = [{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:10},{wch:16},{wch:12}];
     XLSX.utils.book_append_sheet(wb, wsSettle, '分帳結算');
+
+    // ===== 逐項分配明細 + 代購墊付 =====
+    const allocRows = [['日期','支出項目','商品','單價','分配對象','數量','小計','代購給']];
+    let hasAlloc = false;
+    (expenseRecords||[]).forEach(r => {
+      if (r.splitMode !== 'items' || !Array.isArray(r.allocItems)) return;
+      r.allocItems.forEach(it => {
+        (it.alloc||[]).forEach(a => {
+          hasAlloc = true;
+          allocRows.push([r.date||'', r.item||'', it.name||'', Number(it.unitPrice)||0, a.who||'', Number(a.qty)||0, (Number(it.unitPrice)||0)*(Number(a.qty)||0), a.proxyFor||'']);
+        });
+      });
+    });
+    if (hasAlloc) {
+      const wsAlloc = XLSX.utils.aoa_to_sheet(allocRows);
+      wsAlloc['!cols'] = [{wch:12},{wch:18},{wch:18},{wch:10},{wch:12},{wch:8},{wch:12},{wch:12}];
+      XLSX.utils.book_append_sheet(wb, wsAlloc, '逐項分配');
+    }
+    const proxyList = computeProxyDebts();
+    if (proxyList.length) {
+      const proxyRows = [['日期','代墊者','代購給','商品','數量','金額(TWD)']];
+      proxyList.forEach(x => proxyRows.push([x.date, x.fronted, x.forWhom, x.item, x.qty, x.twd]));
+      const totalProxy = proxyList.reduce((s,x)=>s+x.twd,0);
+      proxyRows.push([]);
+      proxyRows.push(['合計','','','','', totalProxy]);
+      const wsProxy = XLSX.utils.aoa_to_sheet(proxyRows);
+      wsProxy['!cols'] = [{wch:12},{wch:12},{wch:12},{wch:18},{wch:8},{wch:12}];
+      XLSX.utils.book_append_sheet(wb, wsProxy, '代購墊付');
+    }
 
     // ===== 分類統計 =====
     const catTotals = {};
