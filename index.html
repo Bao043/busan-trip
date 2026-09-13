@@ -708,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 16:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 22:35</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1287,12 +1287,9 @@ Day2 12:00 outlet購物，預計逛一小時
   async function loadTripSettings() {
     await migrateToRoomScopedStorage('trip-settings');
     try { const res = await storage.get(roomScopedKey('trip-settings')); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
-    // 金鑰在裝置層級共用：任一房間有填過就記起來，其他房間（含之後新建的）自動沿用，不用每房重貼
-    try {
-      const dk = localStorage.getItem('gemini-api-key-device') || '';
-      if (tripSettings && tripSettings.geminiApiKey && !dk) { localStorage.setItem('gemini-api-key-device', tripSettings.geminiApiKey); }
-      else if (tripSettings && !tripSettings.geminiApiKey && dk) { tripSettings.geminiApiKey = dk; }
-    } catch(e) {}
+    // 金鑰共用：任一房間填過就備份起來，其他房間與其他裝置都能自動沿用
+    if (tripSettings && tripSettings.geminiApiKey) { saveSharedApiKey(tripSettings.geminiApiKey); }
+    else if (tripSettings) { const shared = await loadSharedApiKey(); if (shared) tripSettings.geminiApiKey = shared; }
     refreshItinDays();
     renderTripSettingsUI();
   }
@@ -1471,6 +1468,9 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
+    // 即時同步的勾選狀態要跟實際設定對齊，否則新建房間後打開設定會看到沒勾（但其實是開著的）
+    const autoEl = document.getElementById('sync-auto-check');
+    if (autoEl) autoEl.checked = localStorage.getItem('sync-auto-enabled') === 'true';
     const curLabel = document.getElementById('current-room-label'); if (curLabel) curLabel.innerText = syncRoomId || '--';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
   }
@@ -1484,8 +1484,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const keyEl = document.getElementById('setting-gemini-key');
     if (keyEl) {
       tripSettings.geminiApiKey = keyEl.value.trim();
-      // 同時存一份在這台裝置上（不分房間），之後新建房間可以直接沿用，不用每次重貼
-      try { if (tripSettings.geminiApiKey) localStorage.setItem('gemini-api-key-device', tripSettings.geminiApiKey); } catch(e) {}
+      if (tripSettings.geminiApiKey) saveSharedApiKey(tripSettings.geminiApiKey); // 備份到本機＋雲端，所有房間與裝置共用
     }
     const pin = document.getElementById('setting-master-pin').value.trim();
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
@@ -4070,7 +4069,9 @@ ${dayContextLines}
     if (twdEl) twdEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
 
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return;
-    if (expenseRecords.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; return; }
+    // 沒有消費紀錄時也要更新分帳摘要再結束，否則那張卡片會留著上一個房間畫好的內容，
+    // 造成「消費明細是空的、分帳卻有別房金額」
+    if (expenseRecords.length === 0) { wrap.innerHTML = '<p class="empty-hint">尚無消費紀錄</p>'; renderSettlementSummary(); return; }
 
     const groupKeyOf = expBreakdownMode === 'member' ? (r => r.payer || '未指定')
       : expBreakdownMode === 'date' ? (r => r.date || '未填日期')
@@ -4232,6 +4233,23 @@ ${dayContextLines}
       return Object.keys(all).map(key => ({ roomId: key, title: (all[key] && all[key].title) || '', creator: (all[key] && all[key].creator) || '' }));
     } catch (e) { console.error('讀取所有房間失敗:', e); return null; }
   }
+  // 金鑰除了存在本機，也存一份在雲端共用節點：
+  // 只存本機的話，換一台裝置或在新裝置建立房間時就拿不到（這正是「新房間金鑰消失」的主因）
+  async function saveSharedApiKey(key) {
+    if (!key) return;
+    try { localStorage.setItem('gemini-api-key-device', key); } catch(e) {}
+    try { await db.ref('rooms/_settings/geminiApiKey').set(key); } catch(e) { console.error('金鑰雲端備份失敗:', e); }
+  }
+  async function loadSharedApiKey() {
+    try { const dk = localStorage.getItem('gemini-api-key-device'); if (dk) return dk; } catch(e) {}
+    try {
+      const snap = await db.ref('rooms/_settings/geminiApiKey').once('value');
+      const k = snap.val();
+      if (k) { try { localStorage.setItem('gemini-api-key-device', k); } catch(e) {} return k; }
+    } catch(e) {}
+    return '';
+  }
+
   async function registerRoom(roomId, title, creator) {
     const c = creator !== undefined ? creator : ((tripSettings && tripSettings.creator) || '');
     try { await db.ref('rooms/_registry/' + roomId).set({ title: title || '', creator: c, updatedAt: Date.now() }); } catch(e) { console.error('登記房間失敗:', e); }
@@ -4476,7 +4494,7 @@ ${dayContextLines}
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
     const countryDefaults = COUNTRY_DEFAULTS[country] || COUNTRY_DEFAULTS['其他'];
-    let savedDeviceKey = ''; try { savedDeviceKey = localStorage.getItem('gemini-api-key-device') || ''; } catch(e) {}
+    const savedDeviceKey = await loadSharedApiKey(); // 本機沒有就去雲端拿，換裝置也能沿用
     try { if (creator) localStorage.setItem('creator-nickname', creator); } catch(e) {} // 記住暱稱，下次建立房間直接帶入
     tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true, geminiApiKey: savedDeviceKey, creator: creator || '', createdAt: Date.now() };
     prepData = {};
@@ -4962,6 +4980,8 @@ ${dayContextLines}
   // ===== 全域初始化入口 =====
   window.onload = async () => {
     await loadFontScale();
+    // 即時同步預設開啟（只有第一次、還沒有任何設定時才套用；使用者自己關掉的話尊重其選擇）
+    try { if (localStorage.getItem('sync-auto-enabled') === null) localStorage.setItem('sync-auto-enabled', 'true'); } catch(e) {}
     updateKoreaTime(); setInterval(updateKoreaTime, 30000);
     setInterval(updatePassCountdowns, 1000);
 
