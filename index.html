@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版</title>
+<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -94,6 +94,7 @@
   .hero-header::after {
     content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px;
     background: radial-gradient(circle, rgba(255,142,126,0.4) 0%, rgba(255,255,255,0) 70%); filter: blur(15px);
+    pointer-events: none; /* 純裝飾光暈，位置正好蓋在右上角齒輪上，不加這行會把點擊事件吃掉 */
   }
   .page-header { padding: 56px 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
@@ -691,7 +692,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:58</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 13:15</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1250,6 +1251,10 @@ Day2 12:00 outlet購物，預計逛一小時
   async function loadTripSettings() {
     await migrateToRoomScopedStorage('trip-settings');
     try { const res = await storage.get(roomScopedKey('trip-settings')); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
+    // 這個房間還沒有金鑰時，沿用這台裝置上存過的那把，不用每個房間重貼一次
+    if (tripSettings && !tripSettings.geminiApiKey) {
+      try { const dk = localStorage.getItem('gemini-api-key-device'); if (dk) tripSettings.geminiApiKey = dk; } catch(e) {}
+    }
     refreshItinDays();
     renderTripSettingsUI();
   }
@@ -1439,7 +1444,11 @@ Day2 12:00 outlet購物，預計逛一小時
     tripSettings.startDate = document.getElementById('setting-trip-startdate').value;
     tripSettings.endDate = document.getElementById('setting-trip-enddate').value;
     const keyEl = document.getElementById('setting-gemini-key');
-    if (keyEl) tripSettings.geminiApiKey = keyEl.value.trim();
+    if (keyEl) {
+      tripSettings.geminiApiKey = keyEl.value.trim();
+      // 同時存一份在這台裝置上（不分房間），之後新建房間可以直接沿用，不用每次重貼
+      try { if (tripSettings.geminiApiKey) localStorage.setItem('gemini-api-key-device', tripSettings.geminiApiKey); } catch(e) {}
+    }
     const pin = document.getElementById('setting-master-pin').value.trim();
     if (pin && pin.length === 4) { masterPin = pin; localStorage.setItem(roomScopedKey('master-pin-code'), pin); }
     else if (pin) { alert('主操作密碼必須為 4 位數字！'); return; }
@@ -2116,6 +2125,43 @@ Day2 12:00 outlet購物，預計逛一小時
     '🇺🇸 美國': ['紐約','洛杉磯','舊金山','西雅圖','拉斯維加斯','芝加哥','波士頓','華盛頓','夏威夷','檀香山','聖地牙哥','奧蘭多'],
     '其他': []
   };
+  // 地標／景點 → 所在城市。天氣查詢用的地理資料庫只認得城市，丟「景福宮」這種景點名進去是查不到的，
+  // 必須先換算成它所在的城市（景福宮→首爾）才查得到天氣
+  const LANDMARK_TO_CITY = {
+    '🇰🇷 韓國': {
+      '首爾': ['景福宮','昌德宮','明洞','弘大','東大門','南大門','梨泰院','江南','狎鷗亭','仁寺洞','三清洞','北村','南山','N首爾塔','漢江','汝矣島','聖水','望遠','延南','新村','梨花','清溪川','樂天世界','COEX','金浦','土俗村','光化門','弘益'],
+      '釜山': ['海雲台','甘川洞','廣安里','西面','南浦洞','札嘎其','太宗台','影島','松島','機張','釜山站','五六島'],
+      '仁川': ['仁川機場','松島國際','月尾島','中華街','永宗島'],
+      '濟州': ['濟州','西歸浦','城山日出峰','漢拏山','牛島'],
+      '慶州': ['佛國寺','石窟庵','瞻星台','大陵苑']
+    },
+    '🇯🇵 日本': {
+      '東京': ['淺草','晴空塔','澀谷','新宿','池袋','銀座','秋葉原','台場','上野','原宿','表參道','六本木','築地','豐洲','東京站','東京鐵塔','明治神宮','淺草寺','吉祥寺','中目黑','羽田'],
+      '大阪': ['道頓堀','心齋橋','難波','梅田','通天閣','大阪城','environment','日本橋','天王寺','新世界','海遊館','萬博'],
+      '京都': ['清水寺','伏見稻荷','金閣寺','銀閣寺','嵐山','祇園','二年坂','三年坂','平安神宮','錦市場','京都站'],
+      '札幌': ['大通','狸小路','薄野','二條市場','白色戀人','羊之丘','札幌站','円山'],
+      '福岡': ['博多','天神','中洲','太宰府','門司港'],
+      '橫濱': ['港未來','紅磚倉庫','中華街','山下公園'],
+      '奈良': ['奈良公園','東大寺','春日大社'],
+      '函館': ['函館山','五稜郭','金森倉庫','函館朝市'],
+      '小樽': ['小樽運河','堺町','音樂盒堂'],
+      '名古屋': ['名古屋城','榮','大須','熱田神宮']
+    },
+    '🇹🇼 台灣': {
+      '台北': ['台北101','西門町','士林','饒河','永康街','象山','故宮','北投','淡水','信義','大稻埕','松山'],
+      '台中': ['逢甲','一中街','高美濕地','宮原眼科','審計新村'],
+      '台南': ['安平','赤崁樓','花園夜市','神農街'],
+      '高雄': ['駁二','旗津','蓮池潭','六合夜市','美麗島']
+    }
+  };
+  function landmarkToCity(text) {
+    if (!text) return '';
+    const map = LANDMARK_TO_CITY[(tripSettings && tripSettings.country)] || {};
+    for (const city of Object.keys(map)) {
+      for (const lm of map[city]) { if (text.includes(lm)) return city; }
+    }
+    return '';
+  }
   function findKnownCity(text) {
     if (!text) return '';
     const list = COUNTRY_CITIES[(tripSettings && tripSettings.country)] || [];
@@ -2124,20 +2170,28 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   // 回傳一串由可信度高到低的候選地名，呼叫端可以逐個嘗試地理編碼，
   // 避免第一個查不到就整個放棄、直接退回國家預設城市
-  function resolveDayCity(dayKey) {
+  function resolveDayCity(dayKey, _noInherit) {
     const manual = tripSettings.dayCities && tripSettings.dayCities[dayKey];
     if (manual) return { city: manual, candidates: [manual], source: 'manual' };
 
     const items = (itinData[dayKey] || []).slice().sort((a,b) => (a.time||'').localeCompare(b.time||''));
+    const dayText = items.map(it => `${it.place||''} ${it.address||''} ${it.title||''} ${it.notes||''}`).join(' ');
     const candidates = [];
     const push = (v) => { const t = (v||'').trim(); if (t && !candidates.includes(t)) candidates.push(t); };
 
-    // 1. 先從所有文字裡找出已知城市名，這種最準
-    for (const it of items) {
-      const hit = findKnownCity(`${it.place||''} ${it.address||''} ${it.title||''} ${it.notes||''}`);
-      if (hit) { push(hit); break; }
+    // 1. 文字裡直接出現城市名，最可信
+    push(findKnownCity(dayText));
+    // 2. 出現的是知名地標，換算成它所在的城市（天氣只查得到城市）
+    push(landmarkToCity(dayText));
+    // 3. 都沒有的話，沿用前一天已判斷出的城市——多天待在同一個城市是常態
+    if (!candidates.length && !_noInherit) {
+      const idx = ITIN_DAYS.findIndex(d => d.key === dayKey);
+      for (let i = idx - 1; i >= 0; i--) {
+        const prev = resolveDayCity(ITIN_DAYS[i].key, true);
+        if (prev.city) return { city: prev.city, candidates: [prev.city], source: 'inherit' };
+      }
     }
-    // 2. 再來是明確填寫的地點、地址欄位
+    // 4. 最後才用原始地點欄位（常常是景點名，天氣不一定查得到）
     items.forEach(it => push(it.place));
     items.forEach(it => push(it.address));
 
@@ -2561,7 +2615,7 @@ Day2 12:00 outlet購物，預計逛一小時
   function renderDayContent() {
     const wrap = document.getElementById('itin-day-content'); if(!wrap) return;
     const resolved = resolveDayCity(activeDay);
-    const sourceLabel = resolved.source === 'manual' ? '（手動指定）' : resolved.source === 'auto' ? '（自動抓行程地點）' : '（旅程預設）';
+    const sourceLabel = resolved.source === 'manual' ? '（手動指定）' : resolved.source === 'auto' ? '（自動判斷）' : resolved.source === 'inherit' ? '（沿用前一天）' : '（旅程預設）';
     let html = `<div class="card" style="padding:12px 16px; margin-bottom:12px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
         <div style="font-size:calc(13px * var(--font-scale)); color:var(--navy); min-width:0;"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> 這天所在城市：<b>${escapeHtml(resolved.city || getCountryInfo().cityLabel)}</b>${sourceLabel}</div>
@@ -4035,7 +4089,8 @@ ${dayContextLines}
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
     const countryDefaults = COUNTRY_DEFAULTS[country] || COUNTRY_DEFAULTS['其他'];
-    tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true };
+    let savedDeviceKey = ''; try { savedDeviceKey = localStorage.getItem('gemini-api-key-device') || ''; } catch(e) {}
+    tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true, geminiApiKey: savedDeviceKey };
     prepData = {};
     Object.keys(PREP_DEFAULT).forEach(cat => { prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); }); // 新房間也要有預設打包清單，不能空白開始
     itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
