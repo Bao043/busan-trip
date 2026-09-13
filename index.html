@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title> travel-app </title>
+<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -708,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 15:45</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 16:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1206,15 +1206,26 @@ Day2 12:00 outlet購物，預計逛一小時
   // 從舊版「不分房號、全站共用」的 key 一次性搬到新版「依房號獨立」的 key：
   // 如果目前房號的獨立 key 還沒有資料、但舊的共用 key 有資料，就複製一份過去，
   // 這樣既有使用者（例如原本的 111 房號）升級後不會覺得資料憑空消失
+  // 這個遷移是給「還沒有房號概念的舊資料」用的一次性升級，只能套用到第一個承接舊資料的房間。
+  // 原本每進一個房間都會跑，導致新建立的房間（本身還沒資料）直接把那份共用舊資料抄進來，
+  // 就變成「新房間卻有別的房間的記帳」——資料污染的主因
+  function legacyMigrationDone() {
+    try { return localStorage.getItem('legacy-migration-room') || ''; } catch(e) { return ''; }
+  }
   async function migrateToRoomScopedStorage(baseKey) {
     if (!syncRoomId) return;
+    const owner = legacyMigrationDone();
+    if (owner && owner !== syncRoomId) return; // 舊資料已經歸給別的房間了，其他房間一律不碰
     try {
       const scopedRes = await storage.get(roomScopedKey(baseKey));
       if (scopedRes && scopedRes.value) return;
     } catch(e) {}
     try {
       const oldRes = await storage.get(baseKey);
-      if (oldRes && oldRes.value) { await storage.set(roomScopedKey(baseKey), oldRes.value); }
+      if (oldRes && oldRes.value) {
+        await storage.set(roomScopedKey(baseKey), oldRes.value);
+        if (!owner) { try { localStorage.setItem('legacy-migration-room', syncRoomId); } catch(e) {} } // 標記舊資料的歸屬，之後其他房間不會再抄走
+      }
     } catch(e) {}
   }
   async function checkInitialization() {
@@ -1276,10 +1287,12 @@ Day2 12:00 outlet購物，預計逛一小時
   async function loadTripSettings() {
     await migrateToRoomScopedStorage('trip-settings');
     try { const res = await storage.get(roomScopedKey('trip-settings')); if (res && res.value) { tripSettings = JSON.parse(res.value); } } catch(e) { console.error(e); }
-    // 這個房間還沒有金鑰時，沿用這台裝置上存過的那把，不用每個房間重貼一次
-    if (tripSettings && !tripSettings.geminiApiKey) {
-      try { const dk = localStorage.getItem('gemini-api-key-device'); if (dk) tripSettings.geminiApiKey = dk; } catch(e) {}
-    }
+    // 金鑰在裝置層級共用：任一房間有填過就記起來，其他房間（含之後新建的）自動沿用，不用每房重貼
+    try {
+      const dk = localStorage.getItem('gemini-api-key-device') || '';
+      if (tripSettings && tripSettings.geminiApiKey && !dk) { localStorage.setItem('gemini-api-key-device', tripSettings.geminiApiKey); }
+      else if (tripSettings && !tripSettings.geminiApiKey && dk) { tripSettings.geminiApiKey = dk; }
+    } catch(e) {}
     refreshItinDays();
     renderTripSettingsUI();
   }
@@ -1926,6 +1939,15 @@ Day2 12:00 outlet購物，預計逛一小時
     const needIds = ['display-trip-title','overview-rate','overview-weather','climate-note-text','emergency-standard-contacts','itin-day-content','cat-breakdown','prep-categories','hero-meta-row'];
     const lost = needIds.filter(id => !document.getElementById(id));
     if (lost.length===0) ok('畫面元素','全部正常'); else bad('畫面元素',`找不到：${lost.join('、')}`);
+
+    // 6b. 資料歸屬檢查：抓出可能是從別的房間跑進來的資料
+    const owner = legacyMigrationDone();
+    if (owner && owner !== syncRoomId && owner !== '__none__') ok('舊資料歸屬', `已鎖定給房號 ${owner}，本房不會被套用`);
+    else if (owner === '__none__') ok('舊資料歸屬', '已停用舊資料遷移，不會有跨房污染');
+    else if (!owner) warn('舊資料歸屬', '尚未鎖定，若這台裝置有無房號的舊資料，第一個進入的房間會接收它');
+    const unknownPayers = [...new Set((expenseRecords||[]).map(r=>r.payer).filter(p=>p && !travelers.includes(p)))];
+    if (unknownPayers.length) bad('支出付款人', `有不在成員名單內的付款人（可能是別房資料）：${unknownPayers.join('、')}`);
+    else ok('支出付款人', '都在本房成員名單內');
 
     // 7. 雲端連線（實際打一次）
     try {
@@ -2649,14 +2671,17 @@ Day2 12:00 outlet購物，預計逛一小時
     } catch(e) {}
 
     const initialized = await checkInitialization();
-    if (!hasLocal && !initialized) {
-      prepData = {}; 
+    // 只要這個房間目前沒有任何打包清單內容，就套用預設。
+    // 原本多加了「房間未初始化」這個條件，萬一房間已標記初始化卻沒存到清單（例如同步過程中斷），
+    // 就會變成完全空白的打包清單——每個房間都該有預設清單，所以改以「內容是否為空」為準
+    if (!prepData || typeof prepData !== 'object') prepData = {};
+    const isEmptyPrep = Object.keys(prepData).length === 0;
+    if (isEmptyPrep) {
+      prepData = {};
       Object.keys(PREP_DEFAULT).forEach(cat => { 
         prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); 
       });
       await storage.set(roomScopedKey('prep-checklist'), JSON.stringify(prepData));
-    } else if (!prepData) {
-      prepData = {};
     }
     
     Object.values(prepData).forEach(arr => arr.forEach(it => { if(it.id >= prepItemSeq) prepItemSeq = it.id+1; }));
@@ -4357,9 +4382,19 @@ ${dayContextLines}
   }
 
   // 實際切換到某個房號並載入其資料：建立成功、加入成功、點擊「最近旅程」都會走這裡，確保行為一致
+  // 切換房間前把記憶體資料整個歸零：各 load 函式在「這個房間沒有資料」時不會覆寫變數，
+  // 舊房間的內容就會留在記憶體裡被當成新房間的資料顯示（新房間出現別人的記帳就是這樣來的）
+  function resetRoomDataInMemory() {
+    tripSettings = { title: '', sub: '', startDate: '', endDate: '', notes: [], warns: [] };
+    prepData = {}; itinData = {}; expenseRecords = [];
+    travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+    travelers = []; wishlistData = []; foodListData = [];
+  }
+
   async function enterRoom(roomId) {
     // 進別的房間前先切斷舊房監聽，避免載入過程中舊房資料還被寫進來
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+    resetRoomDataInMemory();
     syncRoomId = roomId;
     localStorage.setItem('sync-room-id', roomId);
 
@@ -4376,6 +4411,7 @@ ${dayContextLines}
       if (snapshot.exists()) { await updateLocalData(snapshot.val()); }
     } catch (e) { console.error('進入房間時讀取雲端資料失敗:', e); }
 
+    if (!travelers.length) travelers = ['我']; // 清空後若該房間確實沒有成員資料，補一個預設值，記帳才有付款人可選
     rememberRecentRoom(roomId, tripSettings.title, tripSettings.sub);
     registerRoom(roomId, tripSettings.title);
     renderHeroSyncStatus();
@@ -4434,6 +4470,8 @@ ${dayContextLines}
     // 先切斷前一個房間的即時監聽：否則舊房的監聽會繼續觸發，把舊房資料寫進這個新房間，
     // 造成「新建的房間卻出現別人的支出/成員」
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; }
+    // 全新房間一律不套用舊資料遷移：沒先佔住的話，等一下的 load 會把無房號的舊資料抄進來
+    try { if (!localStorage.getItem('legacy-migration-room')) localStorage.setItem('legacy-migration-room', '__none__'); } catch(e) {}
 
     // 全新旅程：資料從空白開始，不沿用先前在別的房間編輯到一半的內容
     syncRoomId = roomId;
