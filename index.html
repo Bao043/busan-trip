@@ -692,7 +692,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 13:05</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 13:30</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -780,6 +780,15 @@ Day2 12:00 outlet購物，預計逛一小時
       <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px; line-height:1.6;">填入你自己的 Google Gemini API 金鑰後，收據辨識與行程匯入會多一顆「一鍵AI辨識」按鈕，不用再手動複製貼上到外部 AI。金鑰會跟其他設定一起透過上面的 Firebase 同步給旅伴；辨識時是瀏覽器直接呼叫 Google，不會經過其他伺服器。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2563EB;">前往 Google AI Studio 免費申請</a>，有免費額度，旅行時偶爾用用通常夠。</p>
       <input type="password" id="setting-gemini-key" placeholder="貼上你的 Gemini API 金鑰（不填就維持手動複製貼上）" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(13px * var(--font-scale)); outline:none; box-sizing:border-box;">
       <div id="gemini-key-status" style="font-size:calc(11px * var(--font-scale)); margin-top:6px; font-weight:700;"></div>
+    </div>
+
+    <!-- 自我檢測：一鍵把常見問題掃一遍（資料完整性、元素是否存在、雲端連線、城市判斷…），
+         不用再一個功能一個功能手動點過去 -->
+    <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-stethoscope"></i> 自我檢測</h4>
+      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:10px; line-height:1.6;">一鍵檢查這個房間的資料與各項功能是否正常，幾秒就跑完，有問題會直接列出來。</p>
+      <button class="ghost-btn" style="font-size:calc(12.5px * var(--font-scale)); padding:10px;" onclick="runSelfTest()"><i class="fa-solid fa-play"></i> 開始檢測</button>
+      <div id="selftest-result" style="margin-top:12px;"></div>
     </div>
 
     <!-- 診斷紀錄：自動記錄AI呼叫與雲端同步的關鍵事件，回報問題時複製貼上就有完整脈絡，不用再靠截圖或口述描述 -->
@@ -1432,7 +1441,6 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
-    const roomInp = document.getElementById('sync-room-input'); if (roomInp) roomInp.value = syncRoomId || ''; // 每次打開都對齊目前實際所在的房號，避免顯示成別的房間
     const curLabel = document.getElementById('current-room-label'); if (curLabel) curLabel.innerText = syncRoomId || '--';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
   }
@@ -1843,6 +1851,85 @@ Day2 12:00 outlet購物，預計逛一小時
     if (!log.length) return '（目前沒有診斷紀錄）';
     return log.map(e => JSON.stringify(e)).join('\n');
   }
+  // ===== 自我檢測：把常見的壞掉點一次掃過，取代人工一個一個功能點 =====
+  async function runSelfTest() {
+    const box = document.getElementById('selftest-result'); if (!box) return;
+    box.innerHTML = `<p style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray);"><i class="fa-solid fa-spinner fa-spin"></i> 檢測中...</p>`;
+    const R = [];
+    const ok = (n,d) => R.push({s:'ok', n, d});
+    const warn = (n,d) => R.push({s:'warn', n, d});
+    const bad = (n,d) => R.push({s:'bad', n, d});
+
+    // 1. 房間與資料
+    if (syncRoomId) ok('房間', `目前在房號 ${syncRoomId}`); else bad('房間','沒有所在房間，請回首頁建立或加入');
+    if (tripSettings && tripSettings.title) ok('旅程基本資料', `${tripSettings.title}／${tripSettings.country||'未設定國家'}`);
+    else bad('旅程基本資料','標題是空的');
+    if (tripSettings && tripSettings.startDate && tripSettings.endDate) {
+      const d = tripDayCount();
+      if (d > 0) ok('日期範圍', `${tripSettings.startDate} ~ ${tripSettings.endDate}（${d}天）`);
+      else bad('日期範圍','回程日期早於出發日期');
+    } else warn('日期範圍','起訖日期沒填完整，行程天數與倒數會不準');
+
+    // 2. 各模組資料量
+    const itinCount = Object.values(itinData||{}).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
+    ok('行程資料', `${ITIN_DAYS.length} 天、共 ${itinCount} 個項目`);
+    const prepCount = Object.values(prepData||{}).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
+    if (prepCount>0) ok('打包清單', `${Object.keys(prepData||{}).length} 個分類、${prepCount} 項`); else warn('打包清單','目前是空的');
+    ok('支出紀錄', `${(expenseRecords||[]).length} 筆`);
+    ok('旅伴成員', `${(travelers||[]).length} 人`);
+    const docCount = ['flights','cars','hotels','passes'].reduce((s,k)=>s+((travelDocs&&travelDocs[k])?travelDocs[k].length:0),0);
+    ok('憑證資訊', `${docCount} 筆`);
+    ok('購物／美食清單', `${(wishlistData||[]).length} / ${(foodListData||[]).length} 筆`);
+
+    // 3. 每一天的城市判斷（最容易出錯的地方）
+    let cityOk = 0, cityFail = [];
+    ITIN_DAYS.forEach(d => {
+      const r = resolveDayCity(d.key);
+      const coords = r.city ? localCityCoords(r.city) : null;
+      if (r.city && coords) cityOk++;
+      else if ((itinData[d.key]||[]).length > 0) cityFail.push(`${d.date}${r.city?`→${r.city}(查無座標)`:'→判斷不出城市'}`);
+    });
+    if (cityFail.length === 0) ok('每日城市／天氣', `${cityOk} 天都能正確對應到城市`);
+    else warn('每日城市／天氣', `${cityOk} 天正常，這幾天需手動指定：${cityFail.join('、')}`);
+
+    // 4. 匯率
+    const cur = getCountryInfo().currency;
+    const rate = currentRateForCurrency(cur);
+    if (rate && rate > 0) ok('匯率', `1 ${cur} ≈ NT$ ${(1/rate).toFixed(3)}`); else bad('匯率', `${cur} 匯率取得失敗`);
+
+    // 5. AI 金鑰
+    const key = (tripSettings && tripSettings.geminiApiKey || '').trim();
+    let deviceKey=''; try { deviceKey = localStorage.getItem('gemini-api-key-device')||''; } catch(e){}
+    if (key) ok('AI 金鑰', deviceKey===key ? '已設定（並已存成裝置預設，新房間會自動帶入）' : '已設定');
+    else warn('AI 金鑰','未設定，一鍵AI辨識按鈕不會出現');
+
+    // 6. 畫面元素是否都在
+    const needIds = ['display-trip-title','overview-rate','overview-weather','climate-note-text','emergency-standard-contacts','itin-day-content','cat-breakdown','prep-categories','hero-meta-row'];
+    const lost = needIds.filter(id => !document.getElementById(id));
+    if (lost.length===0) ok('畫面元素','全部正常'); else bad('畫面元素',`找不到：${lost.join('、')}`);
+
+    // 7. 雲端連線（實際打一次）
+    try {
+      const snap = await db.ref('rooms/' + syncRoomId).once('value');
+      if (snap.exists()) ok('雲端連線','讀取正常，雲端有這個房間的資料');
+      else warn('雲端連線','連得上，但雲端沒有這個房間的資料（可到上方按「立即上傳」）');
+    } catch(e) { bad('雲端連線', e.message); }
+    const autoOn = localStorage.getItem('sync-auto-enabled')==='true';
+    ok('即時同步', autoOn ? '已開啟' : '未開啟（修改只存在本機，旅伴看不到）');
+
+    const icon = s => s==='ok'?'<i class="fa-solid fa-circle-check" style="color:var(--teal);"></i>' : s==='warn'?'<i class="fa-solid fa-triangle-exclamation" style="color:var(--gold);"></i>' : '<i class="fa-solid fa-circle-xmark" style="color:var(--warn);"></i>';
+    const nBad = R.filter(r=>r.s==='bad').length, nWarn = R.filter(r=>r.s==='warn').length;
+    const summary = nBad ? `發現 ${nBad} 個問題${nWarn?`、${nWarn} 個提醒`:''}` : nWarn ? `沒有錯誤，有 ${nWarn} 個提醒` : '全部正常';
+    box.innerHTML = `<div style="font-weight:800; color:${nBad?'var(--warn)':'var(--navy)'}; font-size:calc(13px * var(--font-scale)); margin-bottom:8px;">${summary}</div>`
+      + R.map(r=>`<div style="display:flex; gap:7px; align-items:flex-start; font-size:calc(12px * var(--font-scale)); margin-bottom:6px; line-height:1.5;"><span style="flex-shrink:0;">${icon(r.s)}</span><span><b style="color:var(--navy);">${escapeHtml(r.n)}</b>：<span style="color:var(--gray);">${escapeHtml(r.d)}</span></span></div>`).join('')
+      + `<button class="ghost-btn" style="margin-top:10px; font-size:calc(12px * var(--font-scale)); padding:8px;" onclick="copySelfTest()"><i class="fa-solid fa-copy"></i> 複製檢測結果</button>`;
+    window.__lastSelfTest = R.map(r=>`[${r.s}] ${r.n}：${r.d}`).join('\n');
+  }
+  async function copySelfTest() {
+    try { await navigator.clipboard.writeText(window.__lastSelfTest || ''); alert('已複製檢測結果'); }
+    catch(e) { alert('複製失敗，請手動選取文字'); }
+  }
+
   async function copyDebugLog() {
     const text = getDebugLogText();
     try {
@@ -4060,7 +4147,6 @@ ${dayContextLines}
   async function enterRoom(roomId) {
     syncRoomId = roomId;
     localStorage.setItem('sync-room-id', roomId);
-    const roomInp = document.getElementById('sync-room-input'); if (roomInp) roomInp.value = roomId;
 
     await loadTripSettings();
     await loadTravelDocs();
@@ -4138,7 +4224,6 @@ ${dayContextLines}
     wishlistData = []; foodListData = [];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
-    const newRoomInp = document.getElementById('sync-room-input'); if (newRoomInp) newRoomInp.value = roomId; // 同步更新設定頁的房號欄位，避免它殘留上一個房間的舊房號（發布按鈕是讀這個欄位的值）
 
     await saveTripSettings(); await savePrep(); await saveItin(); await saveExpense(); await saveTravelDocs(); await saveWishlist(); await saveFoodList();
 
@@ -4586,8 +4671,6 @@ ${dayContextLines}
 
     // 先取出目前房號，讓接下來的 loadTripSettings 等函式從一開始就依房號讀取各自獨立的本機資料，
     // 不然這幾個 load 函式會先用「沒有房號」的共用 key 讀一次，等一下才知道房號、資料就對不上
-    const roomInp = document.getElementById('sync-room-input');
-    if (roomInp) roomInp.value = savedRoom;
     syncRoomId = savedRoom;
     const savedPin = localStorage.getItem(roomScopedKey('master-pin-code')) || localStorage.getItem('master-pin-code'); if (savedPin) masterPin = savedPin;
 
