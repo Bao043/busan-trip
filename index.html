@@ -708,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 22:35</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 22:45</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1558,6 +1558,12 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   function showP(id, b) {
+    // 離開支出頁時關掉沒送出的記帳表單，不然下次回來會看到它還開著
+    if (id !== 'p-expense') {
+      const qab = document.getElementById('quick-add-box');
+      if (qab && qab.style.display !== 'none') { qab.style.display = 'none'; qab.innerHTML = ''; }
+      if (editingExpenseId !== null) { editingExpenseId = null; document.querySelectorAll('[id^="inline-expense-edit-"]').forEach(el => el.innerHTML = ''); }
+    }
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
     document.getElementById(id).classList.add('active'); if(b) b.classList.add('active');
@@ -3588,7 +3594,7 @@ ${dayContextLines}
         </div>
 
         <button class="save-btn qa-submit-btn" style="margin-top:8px;">${editId ? '儲存修改' : '確認記帳'}</button>
-        ${editId ? `<button class="ghost-btn qa-cancel-btn" style="margin-top:8px;">取消</button>` : ''}
+        <button class="ghost-btn qa-cancel-btn" style="margin-top:8px;">取消</button>
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
@@ -3620,7 +3626,9 @@ ${dayContextLines}
   }
   function closeExpenseEdit() {
     editingExpenseId = null;
-    const box = document.getElementById('quick-add-box'); if (box) box.style.display = 'none';
+    // 內容一併清空：只隱藏不清空的話，下次再進支出頁表單還是整個開著，看起來像自己跳出來
+    const box = document.getElementById('quick-add-box'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+    document.querySelectorAll('[id^="inline-expense-edit-"]').forEach(el => el.innerHTML = '');
     renderExpenseSummary();
   }
 
@@ -3649,7 +3657,10 @@ ${dayContextLines}
     } else {
       expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: currentRateForCurrency(qaCurrency) });
     }
-    saveExpense(); editingExpenseId = null; const qab = document.getElementById('quick-add-box'); if (qab) qab.style.display = 'none'; renderExpenseSummary();
+    saveExpense(); editingExpenseId = null;
+    const qab = document.getElementById('quick-add-box'); if (qab) { qab.style.display = 'none'; qab.innerHTML = ''; }
+    document.querySelectorAll('[id^="inline-expense-edit-"]').forEach(el => el.innerHTML = '');
+    renderExpenseSummary();
   }
 
   // ===== 消費統計切換（類別／成員／日期） =====
