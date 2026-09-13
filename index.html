@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版 V17  (Firebase 雲端同步版)</title>
+<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<!-- 霞鶩文楷 TC：偏手寫楷體的柔和字型，用在輸入框讓填寫時不會太生硬正式 -->
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- 引入 Firebase 官方 CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -34,7 +32,9 @@
      so focusing any field never triggers that jarring zoom */
   input, select, textarea {
     font-size: max(16px, calc(13px * var(--font-scale))) !important;
-    font-family: "LXGW WenKai TC", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+    /* 圓體優先：ui-rounded/SF Pro Rounded 讓數字與英文變圓潤；中文部分 iOS 沒有內建圓體，
+       會落到 PingFang TC，跟按鈕文字同一套 */
+    font-family: ui-rounded, "SF Pro Rounded", "Yuanti TC", "PingFang TC", "Noto Sans TC", sans-serif;
     letter-spacing: 0.3px;
   }
   /* 日期/時間這類原生控制項用系統字比較不會出現字寬跑掉的狀況，維持原本的黑體 */
@@ -708,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:35</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 15:00</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
