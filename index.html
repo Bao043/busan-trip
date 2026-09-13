@@ -701,7 +701,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:05</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3461,7 +3461,11 @@ ${dayContextLines}
   }
 
   function openQuickAdd(prefill, editId, hostEl) {
-    const box = hostEl || document.getElementById('quick-add-box'); box.style.display = 'block';
+    // 同一時間只允許存在一份表單：兩份並存時欄位 id 會重複，查到的可能是另一份的空欄位
+    const mainBox = document.getElementById('quick-add-box');
+    if (hostEl) { if (mainBox) { mainBox.innerHTML = ''; mainBox.style.display = 'none'; } }
+    else { editingExpenseId = null; document.querySelectorAll('[id^="inline-expense-edit-"]').forEach(el => el.innerHTML = ''); }
+    const box = hostEl || mainBox; box.style.display = 'block';
     const pf = prefill || {};
     if (pf.category && EXP_CATS.includes(pf.category)) qaCat = pf.category;
     if (pf.payer && travelers.includes(pf.payer)) qaPayer = pf.payer;
@@ -3530,8 +3534,8 @@ ${dayContextLines}
           <textarea id="qa-note" placeholder="其他補充說明" style="width:100%; min-width:0; min-height:50px; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:4px;">${escapeHtml(prefillNote)}</textarea>
         </div>
 
-        <button class="save-btn" style="margin-top:8px;" onclick="submitQuickAdd(${editId?editId:'null'})">${editId ? '儲存修改' : '確認記帳'}</button>
-        ${editId ? `<button class="ghost-btn" style="margin-top:8px;" onclick="closeExpenseEdit()">取消</button>` : ''}
+        <button class="save-btn qa-submit-btn" style="margin-top:8px;">${editId ? '儲存修改' : '確認記帳'}</button>
+        ${editId ? `<button class="ghost-btn qa-cancel-btn" style="margin-top:8px;">取消</button>` : ''}
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
@@ -3539,6 +3543,12 @@ ${dayContextLines}
     renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
     qaParticipants = (pf.participants && pf.participants.length) ? pf.participants.filter(n=>travelers.includes(n)) : travelers.slice();
     renderQaParticipants();
+    // 直接在這個表單容器上綁事件，並把容器傳進去做範圍查詢：
+    // 之前用字串 onclick + 全域 getElementById，只要畫面上同時存在兩份表單就會抓錯欄位而靜默失敗
+    const submitBtn = box.querySelector('.qa-submit-btn');
+    if (submitBtn) submitBtn.addEventListener('click', () => submitQuickAdd(editId || null, box));
+    const cancelBtn = box.querySelector('.qa-cancel-btn');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => closeExpenseEdit());
   }
 
   let editingExpenseId = null;
@@ -3561,16 +3571,21 @@ ${dayContextLines}
     renderExpenseSummary();
   }
 
-  function submitQuickAdd(editId) {
-    const amt = p(document.getElementById('qa-amount').value); const item = document.getElementById('qa-item').value.trim(); if(!amt) return;
-    const dateEl = document.getElementById('qa-date');
+  function submitQuickAdd(editId, scope) {
+    const root = scope || document;
+    const q = (id) => root.querySelector('#' + id);
+    const amtEl = q('qa-amount');
+    const amt = p(amtEl ? amtEl.value : '');
+    const itemEl = q('qa-item'); const item = itemEl ? itemEl.value.trim() : '';
+    if (!amt) { alert('請輸入金額'); return; } // 原本金額空白時是直接 return，按了完全沒反應也看不出原因
+    const dateEl = q('qa-date');
     const date = (dateEl && dateEl.value) ? dateEl.value : todayOrTripDate();
-    const qtyEl = document.getElementById('qa-qty');
+    const qtyEl = q('qa-qty');
     const quantity = (qtyEl && parseInt(qtyEl.value, 10) > 0) ? parseInt(qtyEl.value, 10) : 1;
-    const location = document.getElementById('qa-location').value.trim();
-    const coupon = document.getElementById('qa-coupon').value.trim();
-    const taxRefund = document.getElementById('qa-taxrefund').value.trim();
-    const note = document.getElementById('qa-note').value.trim();
+    const locEl = q('qa-location'); const location = locEl ? locEl.value.trim() : '';
+    const coupEl = q('qa-coupon'); const coupon = coupEl ? coupEl.value.trim() : '';
+    const taxEl = q('qa-taxrefund'); const taxRefund = taxEl ? taxEl.value.trim() : '';
+    const noteEl = q('qa-note'); const note = noteEl ? noteEl.value.trim() : '';
     const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
     if (editId) {
       const existing = expenseRecords.find(r => r.id === editId);
