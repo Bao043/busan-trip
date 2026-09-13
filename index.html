@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
+<title>旅遊 app </title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -130,8 +130,8 @@
   .panel.active { display: block; }
   
   .countdown-chip { background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 16px; padding: 8px 14px; text-align:center; border: 1px solid rgba(255,255,255,0.25); }
-  .countdown-chip .cd-num { display:block; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(20px * var(--font-scale)); font-weight:800; color: var(--coral); line-height:1; }
-  .countdown-chip .cd-label { display:block; font-size:calc(10px * var(--font-scale)); opacity: 0.9; margin-top:2px; }
+  .countdown-chip .cd-num { display:inline; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(20px * var(--font-scale)); font-weight:800; color: var(--coral); line-height:1; }
+  .countdown-chip .cd-label { display:inline; font-size:calc(11px * var(--font-scale)); opacity: 0.9; font-weight:700; }
   
   .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; font-size:calc(13px * var(--font-scale)); background: #FAFBFC; padding: 12px; border-radius: 16px; }
   .bp-grid-item { display: flex; flex-direction: column; }
@@ -250,22 +250,29 @@
   <section class="panel active grid-panel" id="p-overview">
     <div class="hero-header full-width">
       <div class="hero-inner">
-        <div class="hero-top-row" style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+        <div class="hero-top-row" style="display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%;">
           <div class="role-toggle-badge" onclick="triggerRoleSwitch()">
             <i class="fa-solid fa-user-shield"></i> <span id="display-role-text">一般使用者模式</span>
           </div>
-          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:9px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.25); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); transition: 0.3s;"><i class="fa-solid fa-gear" style="font-size:calc(16px * var(--font-scale));"></i></button>
-              <div class="countdown-chip"><span class="cd-num" id="countdown-num">--</span><span class="cd-label" id="countdown-label">天後出發</span></div>
-            </div>
-            <div id="hero-members-row" style="display:flex;"></div>
-            <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.18); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.3); border-radius:16px; padding:8px 14px; color:#fff; cursor:pointer; white-space:nowrap;"></div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <div id="hero-sync-status" onclick="openAdvancedSettings()" style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.24); border-radius:14px; padding:7px 12px; color:#fff; cursor:pointer; white-space:nowrap;"></div>
+            <button onclick="openSettingsModal()" style="background: rgba(255,255,255,0.22); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); flex-shrink:0;"><i class="fa-solid fa-gear" style="font-size:calc(15px * var(--font-scale));"></i></button>
           </div>
         </div>
-        <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 14px; font-size:calc(31px * var(--font-scale)); letter-spacing:-0.8px; text-shadow:0 2px 12px rgba(0,0,0,0.18);">釜山行旅</h1>
+
+        <h1 class="clean-title" id="display-trip-title" style="color: white; margin-top: 20px; font-size:calc(31px * var(--font-scale)); letter-spacing:-0.8px; text-shadow:0 2px 12px rgba(0,0,0,0.18);">釜山行旅</h1>
         <p class="hero-sub" id="display-trip-sub" style="margin:7px 0 0; opacity:0.92; font-size:calc(14.5px * var(--font-scale)); font-weight:700;">11.10(二) - 11.14(六)・5天4夜</p>
         <div id="hero-meta-row" style="display:flex; flex-wrap:wrap; gap:7px; margin-top:13px;"></div>
+
+        <!-- 底部帶狀區：左邊旅伴頭像、右邊倒數，讓這一列也橫向撐滿，不會留下大片空白 -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:18px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.16);">
+          <div id="hero-members-row" style="display:flex; align-items:center;"></div>
+          <div class="countdown-chip" style="display:flex; align-items:center; gap:8px; padding:8px 14px; flex-shrink:0;">
+            <i class="fa-solid fa-plane-departure" style="font-size:calc(13px * var(--font-scale)); opacity:0.85;"></i>
+            <span class="cd-num" id="countdown-num" style="font-size:calc(19px * var(--font-scale));">--</span>
+            <span class="cd-label" id="countdown-label" style="margin-top:0;">天後出發</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -684,7 +691,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:22</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:32</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3127,16 +3134,17 @@ ${dayContextLines}
   const AVATAR_COLORS = ['#FF8E7E', '#5B9EA2', '#C5A07A', '#8B7FD1', '#6FCF97', '#F2994A', '#56A8E8', '#E8749A'];
   function renderHeroMembersRow() {
     const wrap = document.getElementById('hero-members-row'); if (!wrap) return;
-    if (!travelers.length) { wrap.innerHTML = ''; return; }
+    if (!travelers.length) { wrap.innerHTML = `<span onclick="openSettingsModal()" style="font-size:calc(11.5px * var(--font-scale)); color:rgba(255,255,255,0.7); font-weight:700; cursor:pointer;"><i class="fa-solid fa-user-plus"></i> 新增旅伴</span>`; return; }
     const shown = travelers.slice(0, 5);
     wrap.innerHTML = shown.map((name, i) => `<div title="${escapeHtml(name)}" style="width:28px; height:28px; border-radius:50%; background:${AVATAR_COLORS[i % AVATAR_COLORS.length]}; border:2px solid rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#fff; margin-left:${i>0?'-9px':'0'}; box-shadow:0 2px 5px rgba(0,0,0,0.18);">${escapeHtml(name.slice(0,1).toUpperCase())}</div>`).join('')
-      + (travelers.length > 5 ? `<div style="width:28px; height:28px; border-radius:50%; background:#2C3E50; border:2px solid rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; font-size:calc(10px * var(--font-scale)); font-weight:800; color:#fff; margin-left:-9px; box-shadow:0 2px 5px rgba(0,0,0,0.18);">+${travelers.length-5}</div>` : '');
+      + (travelers.length > 5 ? `<div style="width:28px; height:28px; border-radius:50%; background:#2C3E50; border:2px solid rgba(255,255,255,0.9); display:flex; align-items:center; justify-content:center; font-size:calc(10px * var(--font-scale)); font-weight:800; color:#fff; margin-left:-9px; box-shadow:0 2px 5px rgba(0,0,0,0.18);">+${travelers.length-5}</div>` : '')
+      + `<span style="margin-left:9px; font-size:calc(11.5px * var(--font-scale)); color:rgba(255,255,255,0.75); font-weight:700; white-space:nowrap;">${travelers.length} 人同行</span>`;
   }
   function renderHeroSyncStatus() {
     const wrap = document.getElementById('hero-sync-status'); if (!wrap) return;
     wrap.innerHTML = syncRoomId
-      ? `<i class="fa-solid fa-cloud" style="font-size:calc(15px * var(--font-scale)); opacity:0.9;"></i><span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;"><span style="font-size:calc(9.5px * var(--font-scale)); opacity:0.85; font-weight:600;">房號</span><span style="font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:0.5px; font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;">${escapeHtml(syncRoomId)}</span></span>`
-      : `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(14px * var(--font-scale));"></i><span style="font-size:calc(12px * var(--font-scale)); font-weight:700;">尚未雲端同步</span>`;
+      ? `<i class="fa-solid fa-cloud" style="font-size:calc(13px * var(--font-scale)); opacity:0.9;"></i><span style="font-size:calc(10.5px * var(--font-scale)); opacity:0.85; font-weight:700;">房號</span><span style="font-size:calc(14px * var(--font-scale)); font-weight:800; letter-spacing:0.4px;">${escapeHtml(syncRoomId)}</span>`
+      : `<i class="fa-solid fa-cloud-arrow-up" style="font-size:calc(13px * var(--font-scale));"></i><span style="font-size:calc(11.5px * var(--font-scale)); font-weight:700;">未同步</span>`;
   }
   function addMemberFromSettings() {
     const inp = document.getElementById('setting-new-member'); const name = inp.value.trim(); if (!name) return;
