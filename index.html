@@ -480,6 +480,13 @@ Day2 12:00 outlet購物，預計逛一小時
         <div id="cat-breakdown"><p class="empty-hint">尚無消費紀錄</p></div>
       </div>
 
+      <!-- 分帳摘要：直接在支出頁給出「誰該付誰多少」的結論，不用先想到要去算帳頁找 -->
+      <div class="card" id="settle-summary-card" style="display:none;">
+        <div class="section-title"><i class="fa-solid fa-scale-balanced"></i> 分帳結算</div>
+        <div id="settle-summary-body"></div>
+        <button class="ghost-btn" style="margin-top:10px; font-size:calc(12.5px * var(--font-scale)); padding:9px;" onclick="goToSettlement()">查看完整分帳明細 <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+
       <div class="dual-card-row only-master" style="margin-bottom:15px;">
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1;" onclick="openQuickAdd()"><i class="fa-solid fa-pen"></i> 快速記一筆</button>
         <button class="save-btn" style="margin-bottom:0; padding:16px 8px; font-size:calc(14.5px * var(--font-scale)); flex:1; background:linear-gradient(135deg, #7C9CBF 0%, #4A6FA1 100%); box-shadow:0 4px 12px rgba(74,111,161,0.25);" onclick="toggleReceiptPanel()"><i class="fa-solid fa-camera"></i> AI 拍照記帳</button>
@@ -701,7 +708,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:35</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3472,7 +3479,7 @@ ${dayContextLines}
     if (!travelers.includes(qaPayer)) qaPayer = travelers[0] || '我';
     if (pf.method && QA_METHODS.includes(pf.method)) qaMethod = pf.method;
     if (pf.currency && CURRENCY_SYMBOL[pf.currency]) qaCurrency = pf.currency;
-    const prefillAmount = pf.amount ? f(pf.amount) : '';
+    const prefillAmount = (pf.amount || pf.amount === 0) ? String(pf.amount) : ''; // type=number 不接受帶千分位逗號的值，會整個被丟掉變空白，所以這裡不能用 f()
     const prefillItem = pf.item || '';
     const prefillLocation = pf.location || '';
     const prefillCoupon = pf.coupon || '';
@@ -3898,6 +3905,53 @@ ${dayContextLines}
     return { people, rows, transfers, totalTWD };
   }
 
+  // 支出頁的分帳摘要：只給結論（誰付給誰多少），細節留在算帳頁
+  function renderSettlementSummary() {
+    const card = document.getElementById('settle-summary-card');
+    const body = document.getElementById('settle-summary-body');
+    if (!card || !body) return;
+    if (!(expenseRecords||[]).length || !(travelers||[]).length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const { rows, transfers, totalTWD } = computeSettlement();
+    const avg = rows.length ? Math.round(totalTWD/rows.length) : 0;
+    let html = `<div style="font-size:calc(12.5px * var(--font-scale)); color:var(--gray); margin-bottom:10px;">總支出 NT$ ${f(totalTWD)}　平均每人 NT$ ${f(avg)}</div>`;
+    if (!transfers.length) {
+      html += `<p style="margin:0; font-size:calc(13px * var(--font-scale)); color:var(--teal); font-weight:700;"><i class="fa-solid fa-circle-check"></i> 大家都已平衡，不用互相轉帳</p>`;
+    } else {
+      html += transfers.map(t => `<div style="display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale));">
+        <b style="color:var(--coral);">${escapeHtml(t.from)}</b>
+        <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
+        <b style="color:var(--teal);">${escapeHtml(t.to)}</b>
+        <b style="margin-left:auto; color:var(--navy);">NT$ ${f(t.amount)}</b>
+      </div>`).join('');
+    }
+    body.innerHTML = html;
+  }
+  function goToSettlement() {
+    const btns = document.querySelectorAll('#p-calc .calc-tabs .tab-btn-sub');
+    showP('p-calc', document.querySelectorAll('.nav-btn')[4]);
+    if (btns[2]) switchCalc('settle', btns[2]);
+  }
+
+  // 列出某個人參與分攤的每一筆，讓他能核對自己的金額怎麼算出來的
+  function settleDetailFor(name) {
+    const people = travelers || [];
+    const lines = [];
+    (expenseRecords||[]).forEach(r => {
+      let parts = Array.isArray(r.participants) ? r.participants.filter(n=>people.includes(n)) : [];
+      if (!parts.length) parts = people;
+      if (!parts.includes(name)) return;
+      const twd = recordToTWD(r);
+      const each = Math.round(twd / parts.length);
+      lines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:3px 0;"><span>${escapeHtml(r.item||r.category||'支出')}${r.payer===name?'（本人付）':''}　<span style="opacity:0.7;">${parts.length}人分</span></span><span style="flex-shrink:0;">NT$ ${f(each)}</span></div>`);
+    });
+    return lines.length ? lines.join('') : `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有參與任何一筆分攤</div>`;
+  }
+  function toggleSettleDetail(name) {
+    const el = document.getElementById('settle-detail-' + name); if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
   function renderSettlement() {
     const wrap = document.getElementById('settle-content'); if (!wrap) return;
     const { rows, transfers, totalTWD } = computeSettlement();
@@ -3922,6 +3976,8 @@ ${dayContextLines}
           <b style="color:${color}; font-size:calc(14px * var(--font-scale));">${label}</b>
         </div>
         <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">已付 NT$ ${f(r.paid)}　應分攤 NT$ ${f(r.share)}</div>
+        <button onclick="toggleSettleDetail('${escapeHtml(r.name)}')" style="background:none; border:none; color:var(--teal); font-size:calc(11.5px * var(--font-scale)); font-weight:700; padding:6px 0 0; cursor:pointer;">明細 <i class="fa-solid fa-chevron-down"></i></button>
+        <div id="settle-detail-${escapeHtml(r.name)}" style="display:none; margin-top:6px; padding-left:10px; border-left:2px solid var(--line);">${settleDetailFor(r.name)}</div>
       </div>`;
     }).join('') + `</div>`;
 
@@ -4001,6 +4057,7 @@ ${dayContextLines}
         ${sortedRecords.map(r => renderExpenseCard(r) + (editingExpenseId === r.id ? `<div id="inline-expense-edit-${r.id}"></div>` : '')).join('')}
       </div>`;
     }).join('');
+    renderSettlementSummary(); // 支出一有變動，分帳摘要就跟著更新
   }
 
   let expandedExpenseIds = new Set();
