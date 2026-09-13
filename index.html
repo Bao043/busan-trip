@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>旅遊 app </title>
+<title>釜山行 2026 · 旗艦版</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
     --teal: #49B8D0; --gold: #C5A07A; --gray: #98A2B3; --line: rgba(0,0,0,0.06);
     --text-general: #49566B; --text-secondary: #667085; --success: #28C76F;
     --warn: #FF5A5F; --warn-bg: #FFF5F2; --warn-border: #FF8E7E;
-    --note-bg: #FFFDF2; --note-border: #F1C40F;
+    --note-bg: #FAF6F0; --note-border: #C5A07A;
     --btn-orange: linear-gradient(135deg, #FFAD99 0%, #FF8A84 100%);
     --glass: rgba(255, 255, 255, 0.9);
     --font-scale: 1;
@@ -80,7 +80,7 @@
   
   .hero-header {
     background: linear-gradient(140deg, #16283f 0%, #1d3557 45%, #457b9d 100%);
-    padding: 26px 25px 30px; color: white; 
+    padding: 56px 25px 30px; color: white; 
     border-radius: 0 0 36px 36px; position: relative; overflow: hidden; margin: 0 -16px;
     box-shadow: 0 10px 30px rgba(29,53,87,0.22);
   }
@@ -95,7 +95,7 @@
     content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px;
     background: radial-gradient(circle, rgba(255,142,126,0.4) 0%, rgba(255,255,255,0) 70%); filter: blur(15px);
   }
-  .page-header { padding: 35px 12px 15px; }
+  .page-header { padding: 56px 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
   .section-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(18px * var(--font-scale)); font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
   .calc-tabs { display: flex; background: #E2E7EC; border-radius: 20px; padding: 4px; margin-bottom: 20px; }
@@ -165,7 +165,7 @@
     border-radius: 28px;
     padding: 22px;
     margin-bottom: 18px;
-    box-shadow: 0 8px 24px rgba(241, 196, 15, 0.12);
+    box-shadow: 0 8px 24px rgba(197, 160, 122, 0.18);
   }
   
   .contact-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1.5px solid var(--line); font-size:calc(14.5px * var(--font-scale)); }
@@ -337,8 +337,8 @@
     </div>
 
     <div class="alert-warning-card">
-        <div class="section-title" style="color: #B7950B; font-weight: 800;"><i class="fa-solid fa-circle-info"></i> 行程注意事項 <button class="edit-pill only-master" onclick="openNoteEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
-        <ul class="note-list" id="display-notes-list" style="margin:0; padding-left:18px; font-size:calc(14.5px * var(--font-scale)); line-height: 1.6; color:#7D6608; font-weight: 500;">
+        <div class="section-title" style="color: #8A6A42; font-weight: 800;"><i class="fa-solid fa-circle-info"></i> 行程注意事項 <button class="edit-pill only-master" onclick="openNoteEdit()" style="background:#FADBD8; color:#78281F;"><i class="fa-solid fa-pen"></i></button></div>
+        <ul class="note-list" id="display-notes-list" style="margin:0; padding-left:18px; font-size:calc(14.5px * var(--font-scale)); line-height: 1.6; color:#7A5C3A; font-weight: 500;">
         </ul>
     </div>
   </section>
@@ -691,7 +691,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:32</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:58</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -2084,40 +2084,65 @@ Day2 12:00 outlet購物，預計逛一小時
   }
 
   // 用 Open-Meteo 的地理編碼 API 把城市名稱轉成經緯度；免金鑰、支援中文城市名。找不到就回傳 null，讓呼叫端自行退回預設值
+  const geocodeCache = {};
   async function geocodeCity(cityName) {
+    const key = (cityName||'').trim();
+    if (!key) return null;
+    if (Object.prototype.hasOwnProperty.call(geocodeCache, key)) return geocodeCache[key];
+    let result = null;
     try {
-      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(key)}&count=1&language=zh`);
       const data = await res.json();
-      if (data.results && data.results[0]) { return { lat: data.results[0].latitude, lon: data.results[0].longitude }; }
+      if (data.results && data.results[0]) {
+        const r = data.results[0];
+        result = { lat: r.latitude, lon: r.longitude, name: r.name || key, region: r.admin1 || '' };
+      }
     } catch(e) {}
-    return null;
+    geocodeCache[key] = result;
+    return result;
   }
   // 判斷某一天實際要用哪個地點查天氣：手動指定的優先；沒有手動指定就自動抓當天最早一筆「有填地點」的行程項目
   // （例如「前往新千歲機場」的地點欄位若填了新千歲機場，就直接拿來查）；兩者都沒有就回傳空字串，讓呼叫端退回旅程預設城市
-  // 從行程名稱推出地點：AI 匯入時常常只填了行程名稱、沒填地點欄，
-  // 這裡把「前往」「抵達」「入住」這類動詞跟尾綴拿掉，剩下的通常就是地名或店名
-  function cityFromTitle(title) {
-    if (!title) return '';
-    let t = title.trim();
-    t = t.replace(/^(前往|抵達|出發前往|搭車前往|搭機前往|移動至|移動到|入住|退房後前往|離開飯店前往|遊覽|參觀|逛|去|到)\s*/u, '');
-    t = t.replace(/\s*(附近|一日遊|半日遊|自由行|散步|行程|觀光|之旅)$/u, '');
-    t = t.replace(/[（(].*?[）)]/gu, '').trim(); // 去掉括號補充說明
-    return t.length >= 2 ? t : '';
+  // 各國常見城市／地區名，用來從行程文字裡直接比對出地名。
+  // 比「把動詞拿掉再丟去查」可靠很多——AI 匯入的行程名稱常常是整句話（例如「搭乘台灣虎航IT606前往首爾」），
+  // 這種句子整串丟去地理編碼一定查不到，最後就會退回國家預設城市
+  const COUNTRY_CITIES = {
+    '🇰🇷 韓國': ['首爾','釜山','仁川','濟州','大邱','光州','大田','慶州','江陵','全州','水原','束草','麗水','安東'],
+    '🇯🇵 日本': ['東京','大阪','京都','札幌','福岡','名古屋','橫濱','神戶','奈良','廣島','沖繩','那霸','仙台','函館','小樽','旭川','金澤','日光','箱根','富士','輕井澤','長崎','熊本','鹿兒島','高雄山','新千歲'],
+    '🇹🇭 泰國': ['曼谷','清邁','普吉','芭達雅','清萊','華欣','蘇美','甲米','大城'],
+    '🇹🇼 台灣': ['台北','臺北','新北','桃園','台中','臺中','台南','臺南','高雄','基隆','新竹','嘉義','宜蘭','花蓮','台東','臺東','南投','屏東','澎湖','金門','墾丁','日月潭','阿里山'],
+    '🇸🇬 新加坡': ['新加坡','聖淘沙'],
+    '🇭🇰 香港': ['香港','九龍','中環','尖沙咀','銅鑼灣','旺角','大嶼山'],
+    '🇺🇸 美國': ['紐約','洛杉磯','舊金山','西雅圖','拉斯維加斯','芝加哥','波士頓','華盛頓','夏威夷','檀香山','聖地牙哥','奧蘭多'],
+    '其他': []
+  };
+  function findKnownCity(text) {
+    if (!text) return '';
+    const list = COUNTRY_CITIES[(tripSettings && tripSettings.country)] || [];
+    for (const city of list) { if (text.includes(city)) return city; }
+    return '';
   }
+  // 回傳一串由可信度高到低的候選地名，呼叫端可以逐個嘗試地理編碼，
+  // 避免第一個查不到就整個放棄、直接退回國家預設城市
   function resolveDayCity(dayKey) {
     const manual = tripSettings.dayCities && tripSettings.dayCities[dayKey];
-    if (manual) return { city: manual, source: 'manual' };
+    if (manual) return { city: manual, candidates: [manual], source: 'manual' };
+
     const items = (itinData[dayKey] || []).slice().sort((a,b) => (a.time||'').localeCompare(b.time||''));
-    const withPlace = items.find(it => it.place && it.place.trim());
-    if (withPlace) return { city: withPlace.place.trim(), source: 'auto' };
-    const withAddress = items.find(it => it.address && it.address.trim());
-    if (withAddress) return { city: withAddress.address.trim(), source: 'auto' };
-    // 最後才從行程名稱猜，準確度較低但總比直接退回國家預設城市好
+    const candidates = [];
+    const push = (v) => { const t = (v||'').trim(); if (t && !candidates.includes(t)) candidates.push(t); };
+
+    // 1. 先從所有文字裡找出已知城市名，這種最準
     for (const it of items) {
-      const guess = cityFromTitle(it.title);
-      if (guess) return { city: guess, source: 'auto' };
+      const hit = findKnownCity(`${it.place||''} ${it.address||''} ${it.title||''} ${it.notes||''}`);
+      if (hit) { push(hit); break; }
     }
-    return { city: '', source: 'default' };
+    // 2. 再來是明確填寫的地點、地址欄位
+    items.forEach(it => push(it.place));
+    items.forEach(it => push(it.address));
+
+    if (!candidates.length) return { city: '', candidates: [], source: 'default' };
+    return { city: candidates[0], candidates, source: 'auto' };
   }
   // 總覽頁天氣：優先看「今天」這一天實際所在地點（手動指定，或自動抓行程「地點」欄位），
   // 查到就用那個地點的天氣；還沒到旅程當天、或當天沒有可用地點，就用旅程國家的預設代表城市
@@ -2128,13 +2153,16 @@ Day2 12:00 outlet購物，預計逛一小時
     const todayKey = todayOrTripDate();
     const relevantDayKey = itinData[todayKey] ? todayKey : (ITIN_DAYS[0] && ITIN_DAYS[0].key);
     const resolved = relevantDayKey ? resolveDayCity(relevantDayKey) : null;
-    let geocodeOk = null;
-    if (resolved && resolved.city) {
-      const geo = await geocodeCity(resolved.city);
-      geocodeOk = !!geo;
-      if (geo) { lat = geo.lat; lon = geo.lon; cityLabel = resolved.city; }
+    const tried = [];
+    if (resolved && resolved.candidates && resolved.candidates.length) {
+      // 逐個候選地名嘗試，查到第一個成功的就用它；全部失敗才退回國家預設城市
+      for (const cand of resolved.candidates.slice(0, 4)) {
+        const geo = await geocodeCity(cand);
+        tried.push({ cand, ok: !!geo });
+        if (geo) { lat = geo.lat; lon = geo.lon; cityLabel = cand; break; }
+      }
     }
-    addDebugLog('weather_resolve', { relevantDayKey, resolvedCity: resolved ? resolved.city : '', resolvedSource: resolved ? resolved.source : '', geocodeOk, finalCityLabel: cityLabel, lat, lon });
+    addDebugLog('weather_resolve', { relevantDayKey, resolvedSource: resolved ? resolved.source : '', tried, finalCityLabel: cityLabel, lat, lon });
 
     const labelEl = document.getElementById('weather-city-label'); if (labelEl) labelEl.innerText = `${cityLabel}天氣`;
     try {
@@ -2497,13 +2525,49 @@ Day2 12:00 outlet購物，預計逛一小時
     });
   }
 
+  // 每一天各自抓自己所在城市的天氣：第一天在首爾、第二天在別的城市時，各自顯示各自的預報
+  async function renderDayWeather(dayKey, candidates) {
+    const el = document.getElementById('day-weather-slot'); if (!el) return;
+    const renderTo = (html) => { const cur = document.getElementById('day-weather-slot'); if (cur) cur.innerHTML = html; };
+    renderTo(`<span style="color:var(--gray);">天氣讀取中...</span>`);
+
+    let geo = null, usedName = '';
+    for (const cand of (candidates || []).slice(0, 4)) {
+      geo = await geocodeCity(cand);
+      if (geo) { usedName = geo.name || cand; break; }
+    }
+    if (!geo) { renderTo(`<span style="color:var(--gray);">查不到這個地點的天氣，可點鉛筆改成城市名稱</span>`); return; }
+
+    // Open-Meteo 的每日預報大約只到未來16天，超出範圍就不顯示避免給出錯誤資訊
+    const p = dayKey.split('-');
+    const target = new Date(+p[0], +p[1]-1, +p[2]);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffDays = Math.round((target - today) / 86400000);
+    if (diffDays < 0) { renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・這天已過</span>`); return; }
+    if (diffDays > 15) { renderTo(`<span style="color:var(--gray);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(usedName)}・出發前幾天才會有預報</span>`); return; }
+
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&daily=temperature_2m_max,temperature_2m_min,weather_code&start_date=${dayKey}&end_date=${dayKey}&timezone=auto`);
+      const data = await res.json();
+      const maxT = Math.round(data.daily.temperature_2m_max[0]);
+      const minT = Math.round(data.daily.temperature_2m_min[0]);
+      const desc = weatherText(data.daily.weather_code[0]);
+      renderTo(`<i class="fa-solid fa-cloud-sun"></i> ${escapeHtml(usedName)} ${minT}-${maxT}°C ${escapeHtml(desc)}　<span style="color:var(--gray); font-weight:600;">${escapeHtml(clothingAdvice(maxT, minT))}</span>`);
+    } catch(e) {
+      renderTo(`<span style="color:var(--gray);">天氣暫時無法取得</span>`);
+    }
+  }
+
   function renderDayContent() {
     const wrap = document.getElementById('itin-day-content'); if(!wrap) return;
     const resolved = resolveDayCity(activeDay);
     const sourceLabel = resolved.source === 'manual' ? '（手動指定）' : resolved.source === 'auto' ? '（自動抓行程地點）' : '（旅程預設）';
-    let html = `<div class="card" style="padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-      <div style="font-size:calc(13px * var(--font-scale)); color:var(--navy); min-width:0;"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> 這天所在城市：<b>${escapeHtml(resolved.city || getCountryInfo().cityLabel)}</b>${sourceLabel}</div>
-      <button class="edit-pill only-master" onclick="openDayCityEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
+    let html = `<div class="card" style="padding:12px 16px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <div style="font-size:calc(13px * var(--font-scale)); color:var(--navy); min-width:0;"><i class="fa-solid fa-location-dot" style="color:var(--gold);"></i> 這天所在城市：<b>${escapeHtml(resolved.city || getCountryInfo().cityLabel)}</b>${sourceLabel}</div>
+        <button class="edit-pill only-master" onclick="openDayCityEdit()" style="flex-shrink:0;"><i class="fa-solid fa-pen"></i></button>
+      </div>
+      <div id="day-weather-slot" style="font-size:calc(12.5px * var(--font-scale)); color:var(--teal); font-weight:700; margin-top:8px;"></div>
     </div>`;
     const items = (itinData[activeDay]||[]).slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
     if (items.length===0) { html += `<div class="card" style="text-align:center; padding:25px; color:var(--gray);">暫無行程</div>`; }
@@ -2555,6 +2619,7 @@ Day2 12:00 outlet購物，預計逛一小時
       else if (formState[activeDay] === undefined) { html += `<button class="ghost-btn only-master" onclick="openAddForm()"><i class="fa-solid fa-plus"></i> 新增行程項目</button>`; }
     }
     wrap.innerHTML = html;
+    renderDayWeather(activeDay, resolved.candidates && resolved.candidates.length ? resolved.candidates : [getCountryInfo().cityLabel]);
     if (isMasterMode && formState[activeDay] !== undefined) {
       const editId = formState[activeDay]==='new' ? null : formState[activeDay];
       const editing = editId ? (itinData[activeDay]||[]).find(i=>i.id===editId) : null;
