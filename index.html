@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>釜山行 2026 · 旗艦版 V17 Pro (Firebase 雲端同步版)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- 霞鶩文楷 TC：偏手寫楷體的柔和字型，用在輸入框讓填寫時不會太生硬正式 -->
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- 引入 Firebase 官方 CDN -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -29,7 +32,16 @@
   /* iOS Safari auto-zooms the whole page when a focused input's font-size is under 16px;
      this floors every form control at 16px (or bigger, if the user's font-scale setting calls for it)
      so focusing any field never triggers that jarring zoom */
-  input, select, textarea { font-size: max(16px, calc(13px * var(--font-scale))) !important; font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; }
+  input, select, textarea {
+    font-size: max(16px, calc(13px * var(--font-scale))) !important;
+    font-family: "LXGW WenKai TC", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+    letter-spacing: 0.3px;
+  }
+  /* 日期/時間這類原生控制項用系統字比較不會出現字寬跑掉的狀況，維持原本的黑體 */
+  input[type="date"], input[type="time"], input[type="datetime-local"] {
+    font-family: "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+    letter-spacing: normal;
+  }
   body {
     font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
     background-color: #E9EDF0; color: var(--text-general); font-weight: 600;
@@ -664,7 +676,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 11:29</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 12:05</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -733,23 +745,16 @@ Day2 12:00 outlet購物，預計逛一小時
     </div>
 
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
-      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-database"></i> Firebase 即時雲端同步</h4>
-      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">主操作者建立房號後發布；其他人輸入相同房號即可連線，並享有 WebSocket 瞬間自動同步功能！目前房號會顯示在總覽頁上方。</p>
+      <h4 style="margin-top:0; margin-bottom:8px; font-size:calc(15px * var(--font-scale)); color:var(--navy);"><i class="fa-solid fa-database"></i> 雲端即時同步</h4>
+      <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:0; margin-bottom:8px;">開啟後，你的修改會即時同步給同房號的旅伴。切換或建立房間請回首頁操作。</p>
       
       <div class="sync-status-bar" id="sync-status" style="margin-bottom:10px; display:none;"></div>
       
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <input type="text" id="sync-room-input" placeholder="請輸入房號 (Room ID)" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px; font-size:calc(13px * var(--font-scale)); outline:none;">
-        
-        <div class="only-master" style="display:flex; gap:6px;">
-          <button class="save-btn" style="flex:1; padding:8px 12px; font-size:calc(12px * var(--font-scale)); background:#10B981;" onclick="syncUpload()"><i class="fa-solid fa-cloud-arrow-up"></i> 主控：建立房號並發布</button>
-        </div>
-        
-        <button class="ghost-btn" style="padding:8px 12px; font-size:calc(12px * var(--font-scale)); width:100%;" onclick="syncDownload()"><i class="fa-solid fa-cloud-arrow-down"></i> 讀取此房號資料</button>
-        
-        <label style="display:flex; align-items:center; gap:6px; font-size:calc(12px * var(--font-scale)); color:var(--gray); cursor:pointer; margin-top:4px;">
-          <input type="checkbox" id="sync-auto-check" onchange="toggleAutoSync(this.checked)"> 開啟 Firebase 雲端即時同步 (自動更新)
+        <label style="display:flex; align-items:center; gap:6px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); cursor:pointer; font-weight:700;">
+          <input type="checkbox" id="sync-auto-check" onchange="toggleAutoSync(this.checked)"> 開啟雲端即時同步（自動更新）
         </label>
+        <button class="ghost-btn only-master" style="padding:8px 12px; font-size:calc(12px * var(--font-scale)); width:100%;" onclick="syncUpload()"><i class="fa-solid fa-cloud-arrow-up"></i> 立即上傳目前資料到雲端</button>
       </div>
     </div>
 
@@ -1252,14 +1257,42 @@ Day2 12:00 outlet購物，預計逛一小時
   }
   // 氣候提醒無法自動判斷（跟月份、城市都有關），改成可編輯欄位；沒設定過的舊房間（例如原本的111）預設維持原本釜山文字，
   // 新建立的房間則顯示「尚未填寫」提示，不會誤把釜山的氣候資訊套用到別的國家
+  // 氣候提醒：跟天氣卡一樣綁定「行程當天所在城市」，用該城市的實際預報溫度自動產生穿搭建議。
+  // 使用者若自己手動填過，一律以手動內容優先，不會被自動內容蓋掉。
+  let autoClimateNoteText = '';
   function renderClimateNote() {
     const el = document.getElementById('climate-note-text'); if (!el) return;
-    if (tripSettings.climateNote === undefined) { el.innerText = '11月釜山約 15-17°C (日)、8-9°C (夜),日夜溫差大,建議洋蔥式穿法多帶件外套'; }
-    else if (tripSettings.climateNote) { el.innerText = tripSettings.climateNote; }
-    else { el.innerText = '尚未填寫氣候提醒，點右側鉛筆新增'; }
+    if (tripSettings.climateNote) { el.innerText = tripSettings.climateNote; return; }
+    if (autoClimateNoteText) { el.innerText = autoClimateNoteText; return; }
+    el.innerText = '氣候提醒讀取中...';
+  }
+  function clothingAdvice(maxT, minT) {
+    const diff = maxT - minT;
+    let base;
+    if (maxT >= 30) base = '天氣炎熱，穿短袖透氣衣物、注意防曬補水';
+    else if (maxT >= 25) base = '溫暖舒適，短袖為主即可';
+    else if (maxT >= 20) base = '溫度宜人，薄長袖或薄外套剛好';
+    else if (maxT >= 15) base = '略有涼意，建議帶一件外套';
+    else if (maxT >= 10) base = '天氣偏涼，需要保暖外套';
+    else if (maxT >= 5) base = '天氣寒冷，厚外套、圍巾手套備著';
+    else base = '嚴寒天氣，務必穿足保暖衣物與防風外套';
+    if (diff >= 8) base += '；日夜溫差大，建議洋蔥式穿法';
+    return base;
+  }
+  async function refreshClimateNote(lat, lon, cityLabel) {
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`);
+      const data = await res.json();
+      const maxT = Math.round(data.daily.temperature_2m_max[0]);
+      const minT = Math.round(data.daily.temperature_2m_min[0]);
+      autoClimateNoteText = `${cityLabel}今日 ${minT}-${maxT}°C，${clothingAdvice(maxT, minT)}`;
+    } catch(e) {
+      autoClimateNoteText = '';
+    }
+    renderClimateNote();
   }
   function openClimateNoteEdit() {
-    const fields = `<div class="input-label">氣候／穿搭提醒</div><textarea id="edf-climate" style="width:100%; height:90px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(tripSettings.climateNote || '')}</textarea>`;
+    const fields = `<div class="input-label">氣候／穿搭提醒</div><p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">留空的話，系統會依「行程當天所在城市」的即時預報自動產生提醒；想自己寫就直接輸入，會以你寫的為準。</p><textarea id="edf-climate" placeholder="留空＝自動依所在城市產生" style="width:100%; height:90px; border:2px solid #E2E7EC; border-radius:12px; padding:10px;">${escapeHtml(tripSettings.climateNote || '')}</textarea>`;
     setupGeneralEdit('編輯氣候提醒', fields, () => {
       tripSettings.climateNote = document.getElementById('edf-climate').value.trim();
       saveTripSettings(); renderClimateNote(); closeGeneralEdit();
@@ -1342,6 +1375,8 @@ Day2 12:00 outlet購物，預計逛一小時
     document.getElementById('setting-trip-enddate').value = tripSettings.endDate || '';
     document.getElementById('setting-master-pin').value = masterPin;
     const keyEl = document.getElementById('setting-gemini-key'); if (keyEl) keyEl.value = (tripSettings && tripSettings.geminiApiKey) || '';
+    const roomInp = document.getElementById('sync-room-input'); if (roomInp) roomInp.value = syncRoomId || ''; // 每次打開都對齊目前實際所在的房號，避免顯示成別的房間
+    const curLabel = document.getElementById('current-room-label'); if (curLabel) curLabel.innerText = syncRoomId || '--';
     document.getElementById('advanced-settings-overlay').style.display = 'flex';
   }
   function closeAdvancedSettings() { document.getElementById('advanced-settings-overlay').style.display = 'none'; }
@@ -2037,6 +2072,7 @@ Day2 12:00 outlet購物，預計逛一小時
       const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
       const data = await res.json(); document.getElementById('overview-weather').innerText = `${Math.round(data.current.temperature_2m)}°C ${weatherText(data.current.weather_code)}`;
     } catch(e) { document.getElementById('overview-weather').innerText = '暫時無法取得'; }
+    refreshClimateNote(lat, lon, cityLabel); // 氣候提醒跟著同一個城市走
   }
   function weatherText(code) {
     if (code === 0) return '晴朗'; if ([1,2,3].includes(code)) return '多雲'; if ([45,48].includes(code)) return '有霧';
@@ -3871,6 +3907,7 @@ ${dayContextLines}
     wishlistData = []; foodListData = [];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
+    const newRoomInp = document.getElementById('sync-room-input'); if (newRoomInp) newRoomInp.value = roomId; // 同步更新設定頁的房號欄位，避免它殘留上一個房間的舊房號（發布按鈕是讀這個欄位的值）
 
     await saveTripSettings(); await savePrep(); await saveItin(); await saveExpense(); await saveTravelDocs(); await saveWishlist(); await saveFoodList();
 
@@ -3961,40 +3998,10 @@ ${dayContextLines}
   }
 
   async function syncUpload() {
-    let roomInput = document.getElementById('sync-room-input').value.trim();
-    // 判斷這次是「新建一個房號」還是「重新發布目前正在編輯的這個房間」：
-    // 欄位空白，或跟目前 syncRoomId 不同，都代表對方想要的是一個新房號，這時才需要檢查是否已被使用；
-    // 跟目前房號相同就是單純更新，不用檢查（不然自己每次發布更新都會被擋下來）
-    const isClaimingNewRoomId = !roomInput || roomInput !== syncRoomId;
-    if (!roomInput) { 
-      roomInput = generateRoomId(); 
-      document.getElementById('sync-room-input').value = roomInput;
-    }
+    const roomInput = syncRoomId; // 房號一律以目前實際所在的房間為準，建立/切換房間統一由首頁負責
+    if (!roomInput) { alert('目前沒有所在的房間，請先回首頁建立或加入一個旅程。'); return; }
 
     const syncStatus = document.getElementById('sync-status');
-    if (isClaimingNewRoomId) {
-      if (syncStatus) {
-        syncStatus.style.display = 'flex';
-        syncStatus.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> 正在確認房號是否可用...</span>`;
-      }
-      try {
-        const existing = await db.ref('rooms/' + roomInput).once('value');
-        if (existing.exists()) {
-          if (syncStatus) {
-            syncStatus.style.background = '#FEF2F2';
-            syncStatus.style.color = '#991B1B';
-            syncStatus.style.borderColor = '#FCA5A5';
-            syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-xmark"></i> 房號已存在</span>`;
-          }
-          alert(`房號「${roomInput}」已經被使用了，換一個房號再試一次。\n\n如果這其實是你自己之前建立的房間，請先按「讀取此房號資料」載入，之後再編輯發布就不會被擋。`);
-          return;
-        }
-      } catch (error) {
-        console.error(error);
-        alert(`檢查房號時發生錯誤，請確認網路連線後再試一次。\n\n錯誤訊息：` + error.message);
-        return;
-      }
-    }
 
     syncRoomId = roomInput;
     localStorage.setItem('sync-room-id', roomInput);
@@ -4069,8 +4076,8 @@ ${dayContextLines}
   }
 
   async function syncDownload() {
-    const roomInput = document.getElementById('sync-room-input').value.trim();
-    if (!roomInput) { alert('請先輸入有效的 Room ID！'); return; }
+    const roomInput = syncRoomId;
+    if (!roomInput) { alert('目前沒有所在的房間，請先回首頁建立或加入一個旅程。'); return; }
     
     const previousRoomId = syncRoomId;
     syncRoomId = roomInput;
@@ -4120,10 +4127,10 @@ ${dayContextLines}
   }
 
   function toggleAutoSync(checked) {
-    const roomInput = document.getElementById('sync-room-input').value.trim();
+    const roomInput = syncRoomId;
     if (checked) {
       if (!roomInput) { 
-        alert('請先輸入房號再開啟即時更新。'); 
+        alert('目前沒有所在的房間，請先回首頁建立或加入一個旅程。'); 
         const checkEl = document.getElementById('sync-auto-check');
         if (checkEl) checkEl.checked = false; 
         return; 
