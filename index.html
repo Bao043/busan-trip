@@ -203,15 +203,21 @@
   .save-btn:active { transform: translateY(1px); }
 
   /* 修正 input[type=date] 在 iOS/Android 上跑版問題（原生控制項會忽略部分寬高設定並置中文字，導致與日曆圖示重疊溢出） */
-  input[type="date"] {
+  input[type="date"], input[type="time"], input[type="datetime-local"] {
     -webkit-appearance: none;
     appearance: none;
     min-height: 44px;
     line-height: 1.3;
     color: var(--navy);
+    background-color: #fff;
+    text-align: left;
   }
-  input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
-  input[type="date"]::-webkit-calendar-picker-indicator { margin-left: 6px; padding: 0; cursor: pointer; filter: opacity(0.55); flex-shrink: 0; }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator { margin-left: 6px; padding: 0; cursor: pointer; filter: opacity(0.55); flex-shrink: 0; }
 </style>
 </head>
 <body class="mobile-view sub-mode">
@@ -658,7 +664,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 03:09</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 11:29</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1002,10 +1008,12 @@ Day2 12:00 outlet購物，預計逛一小時
   };
 
   const PREP_DEFAULT = {
-    '證件與資金': ['護照正本 (效期大於6個月)','護照彩色影本 (備用)','小兩吋證件大頭照 (備用)','海外刷卡高回饋信用卡'],
-    '3C電子設備': ['手機+充電線','行動電源 (不可託運，隨身手提)','各國通用萬用轉接頭 (Type C/F)'],
-    '常備保健藥品': ['普拿疼退燒止痛藥','腸胃急救藥 / 止瀉藥','護唇膏 / 保濕乳液'],
-    '衣物與日用品': ['保暖防風外套 (洋蔥式穿法)','舒適好走運動鞋 / 耐走鞋','輕便折疊折疊雨傘']
+    '證件與資金': ['護照正本 (效期大於6個月)','護照彩色影本 (備用)','小兩吋證件大頭照 (備用)','身分證／駕照','國際駕照 (租車必備)','海外刷卡高回饋信用卡','當地現金／外幣','旅遊平安險保單資訊','機票／訂房確認信 (可離線查看)'],
+    '3C電子設備': ['手機+充電線','行動電源 (不可託運，隨身手提)','各國通用萬用轉接頭','充電器／豆腐頭','耳機','相機／記憶卡','手機支架或自拍棒','網卡／eSIM／WiFi分享器'],
+    '盥洗與保養': ['牙刷牙膏','洗面乳','卸妝用品','保養品 (分裝瓶)','防曬乳','護唇膏','保濕乳液','梳子','刮鬍刀','隱形眼鏡／藥水／備用眼鏡'],
+    '常備保健藥品': ['普拿疼退燒止痛藥','腸胃急救藥／止瀉藥','暈車藥','感冒藥','過敏藥','個人慢性病處方藥 (含英文診斷證明)','OK繃／小護士','酸痛貼布'],
+    '衣物與配件': ['上衣 (依天數準備)','褲子／裙子','外套 (洋蔥式穿法)','睡衣','內衣褲','襪子','舒適好走運動鞋','拖鞋','帽子','圍巾／手套 (冬季)','太陽眼鏡'],
+    '隨身與其他': ['輕便折疊雨傘','環保袋／購物袋','水壺','面紙／濕紙巾','口罩','酒精乾洗手','小包包／腰包','行李秤','夾鏈袋 (分裝用)','折疊行李袋 (裝戰利品)']
   };
 
   const ITIN_DEFAULT = {
@@ -2307,7 +2315,7 @@ Day2 12:00 outlet購物，預計逛一小時
     } catch(e) {} 
     renderReminder(true);
   }
-  function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
+  function catIcon(cat) { const map = {'證件與資金':'<i class="fa-solid fa-passport"></i>','3C電子設備':'<i class="fa-solid fa-mobile-screen"></i>','盥洗與保養':'<i class="fa-solid fa-pump-soap"></i>','常備保健藥品':'<i class="fa-solid fa-suitcase-medical"></i>','衣物與配件':'<i class="fa-solid fa-shirt"></i>','隨身與其他':'<i class="fa-solid fa-bag-shopping"></i>','衣物與日用品':'<i class="fa-solid fa-shirt"></i>'}; return map[cat] || '<i class="fa-solid fa-box"></i>'; }
 
   function renderPrep() {
     const wrap = document.getElementById('prep-categories'); if (!wrap) return;
@@ -3066,8 +3074,8 @@ ${dayContextLines}
     if (chevron) chevron.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
   }
 
-  function openQuickAdd(prefill, editId) {
-    const box = document.getElementById('quick-add-box'); box.style.display = 'block';
+  function openQuickAdd(prefill, editId, hostEl) {
+    const box = hostEl || document.getElementById('quick-add-box'); box.style.display = 'block';
     const pf = prefill || {};
     if (pf.category && EXP_CATS.includes(pf.category)) qaCat = pf.category;
     if (pf.payer && travelers.includes(pf.payer)) qaPayer = pf.payer;
@@ -3135,7 +3143,7 @@ ${dayContextLines}
         </div>
 
         <button class="save-btn" style="margin-top:8px;" onclick="submitQuickAdd(${editId?editId:'null'})">${editId ? '儲存修改' : '確認記帳'}</button>
-        ${editId ? `<button class="ghost-btn" style="margin-top:8px;" onclick="document.getElementById('quick-add-box').style.display='none';">取消</button>` : ''}
+        ${editId ? `<button class="ghost-btn" style="margin-top:8px;" onclick="closeExpenseEdit()">取消</button>` : ''}
       </div>
     `;
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
@@ -3143,11 +3151,24 @@ ${dayContextLines}
     renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
   }
 
+  let editingExpenseId = null;
   function editExpenseItem(id) {
     const r = expenseRecords.find(x => x.id === id);
     if (!r) return;
-    openQuickAdd(r, id);
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    editingExpenseId = id;
+    renderExpenseSummary(); // 先重繪，讓該筆紀錄下方產生 inline 容器
+    const host = document.getElementById(`inline-expense-edit-${id}`);
+    if (host) {
+      openQuickAdd(r, id, host); // 把編輯表單直接畫在被編輯那筆的正下方，不用再滑到最底下
+      setTimeout(() => { const el = document.getElementById('qa-amount'); if (el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 50);
+    } else {
+      openQuickAdd(r, id);
+    }
+  }
+  function closeExpenseEdit() {
+    editingExpenseId = null;
+    const box = document.getElementById('quick-add-box'); if (box) box.style.display = 'none';
+    renderExpenseSummary();
   }
 
   function submitQuickAdd(editId) {
@@ -3170,7 +3191,7 @@ ${dayContextLines}
     } else {
       expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: currentRateForCurrency(qaCurrency) });
     }
-    saveExpense(); document.getElementById('quick-add-box').style.display = 'none'; renderExpenseSummary();
+    saveExpense(); editingExpenseId = null; const qab = document.getElementById('quick-add-box'); if (qab) qab.style.display = 'none'; renderExpenseSummary();
   }
 
   // ===== 消費統計切換（類別／成員／日期） =====
@@ -3491,7 +3512,7 @@ ${dayContextLines}
           </span>
         </div>
         <div style="background:#F1F5F9; border-radius:6px; height:6px; overflow:hidden; margin-bottom:12px;"><div style="background:var(--teal); height:100%; width:${pct}%;"></div></div>
-        ${sortedRecords.map(r => renderExpenseCard(r)).join('')}
+        ${sortedRecords.map(r => renderExpenseCard(r) + (editingExpenseId === r.id ? `<div id="inline-expense-edit-${r.id}"></div>` : '')).join('')}
       </div>`;
     }).join('');
   }
