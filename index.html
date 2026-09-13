@@ -523,6 +523,7 @@ Day2 12:00 outlet購物，預計逛一小時
     <div class="calc-tabs full-width">
         <button class="tab-btn-sub active" onclick="switchCalc('simple', this)">快速換算</button>
         <button class="tab-btn-sub" onclick="switchCalc('shop', this)">折扣試算</button>
+        <button class="tab-btn-sub" onclick="switchCalc('settle', this)">分帳結算</button>
     </div>
     
     <div id="calc-simple-box" class="full-width">
@@ -561,6 +562,11 @@ Day2 12:00 outlet購物，預計逛一小時
         </div>
         <div class="final-res-card"><div class="twd" id="final-twd">NT$ 0</div><div class="krw" id="final-krw">≈ ₩ 0</div></div>
         <button class="save-btn only-master" style="margin-top:16px; padding: 16px; font-size:calc(16px * var(--font-scale));" onclick="sendCalcToExpense()"><i class="fa-solid fa-arrow-right-to-bracket"></i> 加入支出紀錄</button>
+    </div>
+
+    <!-- 分帳結算：依每筆支出實際分攤的人計算，算出誰該付誰多少 -->
+    <div id="calc-settle-box" class="full-width" style="display:none;">
+      <div id="settle-content"></div>
     </div>
   </section>
 
@@ -648,6 +654,9 @@ Day2 12:00 outlet購物，預計逛一小時
     <div class="input-label">旅程名稱</div>
     <input type="text" id="cr-title" placeholder="例如：釜山之旅" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:12px;">
 
+    <div class="input-label">你的暱稱（建立者）</div>
+    <input type="text" id="cr-creator" placeholder="例如：Angus" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:4px;">
+    <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 12px;">會顯示在旅程資訊，也會自動加入旅伴名單當作第一位成員</p>
     <div class="input-label">國家</div>
     <select id="cr-country" style="width:100%; border:2px solid #E2E7EC; border-radius:12px; padding:10px 12px; font-size:calc(14px * var(--font-scale)); outline:none; box-sizing:border-box; margin-bottom:12px; background:#fff; font-family:inherit;">
       <option value="🇰🇷 韓國">🇰🇷 韓國</option>
@@ -692,7 +701,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 13:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 14:05</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1296,6 +1305,7 @@ Day2 12:00 outlet購物，預計逛一小時
     const chip = (icon, text) => `<div style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.16); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.22); border-radius:12px; padding:6px 11px; font-size:calc(11.5px * var(--font-scale)); font-weight:700; color:#fff; white-space:nowrap;">${icon} ${escapeHtml(text)}</div>`;
     const chips = [];
     if (tripSettings && tripSettings.country) { chips.push(chip('', tripSettings.country)); }
+    if (tripSettings && tripSettings.creator) { chips.push(chip('<i class="fa-solid fa-user-pen" style="opacity:0.85;"></i>', `${tripSettings.creator} 建立`)); }
     const days = tripDayCount();
     if (days > 0) { chips.push(chip('<i class="fa-solid fa-calendar-days" style="opacity:0.85;"></i>', days > 1 ? `${days}天${days-1}夜` : '單日行程')); }
     const itemCount = Object.values(itinData || {}).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
@@ -1541,8 +1551,10 @@ Day2 12:00 outlet購物，預計逛一小時
     btn.classList.add('active');
     document.getElementById('calc-simple-box').style.display = (type==='simple')?'block':'none';
     document.getElementById('calc-shop-box').style.display = (type==='shop')?'block':'none';
+    const settleBox = document.getElementById('calc-settle-box'); if (settleBox) settleBox.style.display = (type==='settle')?'block':'none';
     refreshCalcCurrencyUI();
     if (type === 'shop') { renderShopItems(); renderShopDiscounts(); runShop(); }
+    if (type === 'settle') renderSettlement();
   }
   // 算帳頁兩個功能原本都寫死用韓元，這裡統一依旅程國家換成對應幣別（符號、名稱、匯率都會跟著換），
   // 匯率方向也統一改成「1外幣≈多少台幣」，比較符合平常看匯率的習慣
@@ -3408,6 +3420,27 @@ ${dayContextLines}
   }
 
   const QA_METHODS = ['現金','信用卡','行動支付','其他'];
+  let qaParticipants = [];
+  // 分攤對象是可複選的，跟其他單選的 chip 列不同，所以另外寫一個
+  function renderQaParticipants() {
+    const el = document.getElementById('qa-participants-row'); if (!el) return;
+    if (!travelers.length) { el.innerHTML = `<span style="font-size:calc(12px * var(--font-scale)); color:var(--gray);">尚未設定成員</span>`; return; }
+    el.innerHTML = travelers.map(name => {
+      const on = qaParticipants.includes(name);
+      return `<div class="chip" data-name="${escapeHtml(name)}" style="background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer;">${escapeHtml(name)}</div>`;
+    }).join('') + `<div onclick="toggleAllQaParticipants()" style="background:#E2E7EC; color:var(--navy); border-radius:10px; padding:6px 12px; font-size:calc(12px * var(--font-scale)); cursor:pointer; font-weight:700;">${qaParticipants.length===travelers.length?'全部取消':'全選'}</div>`;
+    el.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const n = chip.dataset.name;
+        if (qaParticipants.includes(n)) qaParticipants = qaParticipants.filter(x=>x!==n); else qaParticipants.push(n);
+        renderQaParticipants();
+      });
+    });
+  }
+  function toggleAllQaParticipants() {
+    qaParticipants = (qaParticipants.length === travelers.length) ? [] : travelers.slice();
+    renderQaParticipants();
+  }
 
   function setQaCurrency(cur, btn) {
     qaCurrency = cur;
@@ -3461,6 +3494,8 @@ ${dayContextLines}
         <div class="chip-row" id="qa-payer-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         <div class="input-label">付款方式</div>
         <div class="chip-row" id="qa-method-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+        <div class="input-label">這筆由誰分攤（預設全部人平分）</div>
+        <div class="chip-row" id="qa-participants-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         <div class="input-label">金額</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
           <button type="button" onclick="setQaCurrency('KRW', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='KRW'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='KRW'?'#fff':'var(--gray)'};">₩ 韓元</button>
@@ -3502,6 +3537,8 @@ ${dayContextLines}
     renderChipRow('qa-cat-row', EXP_CATS.map(c=>`${CAT_ICON[c]} ${c}`), EXP_CATS.indexOf(qaCat), (i)=>{qaCat=EXP_CATS[i];});
     renderChipRow('qa-payer-row', travelers, travelers.indexOf(qaPayer), (i)=>{qaPayer=travelers[i];});
     renderChipRow('qa-method-row', QA_METHODS, QA_METHODS.indexOf(qaMethod), (i)=>{qaMethod=QA_METHODS[i];});
+    qaParticipants = (pf.participants && pf.participants.length) ? pf.participants.filter(n=>travelers.includes(n)) : travelers.slice();
+    renderQaParticipants();
   }
 
   let editingExpenseId = null;
@@ -3534,7 +3571,7 @@ ${dayContextLines}
     const coupon = document.getElementById('qa-coupon').value.trim();
     const taxRefund = document.getElementById('qa-taxrefund').value.trim();
     const note = document.getElementById('qa-note').value.trim();
-    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note };
+    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
     if (editId) {
       const existing = expenseRecords.find(r => r.id === editId);
       if (existing) {
@@ -3809,6 +3846,87 @@ ${dayContextLines}
   // 將任一幣別的紀錄換算成 KRW／TWD 等值金額，用於統計加總與顯示（支援 KRW/TWD/JPY/USD/EUR；rateAtTime 代表「該筆幣別」兌 1 TWD 的匯率，未知幣別則比照 KRW 處理避免出錯）
   function getCurrencyRate(cur) { if (cur === 'JPY') return rateJPY; if (cur === 'USD') return rateUSD; if (cur === 'EUR') return rateEUR; if (cur === 'THB') return rateTHB; if (cur === 'SGD') return rateSGD; if (cur === 'HKD') return rateHKD; return null; }
   function currentRateForCurrency(cur) { if (!cur || cur === 'KRW') return rateTWD; if (cur === 'TWD') return 1; return getCurrencyRate(cur) || rateTWD; }
+  // ===== 分帳結算 =====
+  // 每筆支出依「實際分攤的人」平分（沒指定就視為全員平分），算出每人應付多少、實付多少，
+  // 再把債務兩兩相抵，產生「誰付給誰多少」的最少轉帳筆數
+  function computeSettlement() {
+    const people = (travelers || []).slice();
+    if (!people.length) return { people: [], rows: [], transfers: [], totalTWD: 0 };
+
+    const paid = {}, share = {};
+    people.forEach(p => { paid[p] = 0; share[p] = 0; });
+
+    (expenseRecords || []).forEach(r => {
+      const twd = recordToTWD(r);
+      if (paid[r.payer] !== undefined) paid[r.payer] += twd;
+      let parts = Array.isArray(r.participants) ? r.participants.filter(n => people.includes(n)) : [];
+      if (!parts.length) parts = people; // 舊資料沒有分攤欄位時，視為全員平分
+      const each = twd / parts.length;
+      parts.forEach(p => { share[p] += each; });
+    });
+
+    const rows = people.map(p => ({ name: p, paid: Math.round(paid[p]), share: Math.round(share[p]), balance: Math.round(paid[p] - share[p]) }));
+
+    // 產生轉帳建議：把「應收」跟「應付」兩邊由大到小配對沖銷
+    const creditors = rows.filter(r => r.balance > 0).map(r => ({...r})).sort((a,b)=>b.balance-a.balance);
+    const debtors = rows.filter(r => r.balance < 0).map(r => ({...r, balance: -r.balance})).sort((a,b)=>b.balance-a.balance);
+    const transfers = [];
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const amt = Math.min(debtors[i].balance, creditors[j].balance);
+      if (amt > 0) transfers.push({ from: debtors[i].name, to: creditors[j].name, amount: Math.round(amt) });
+      debtors[i].balance -= amt; creditors[j].balance -= amt;
+      if (debtors[i].balance <= 0.5) i++;
+      if (creditors[j].balance <= 0.5) j++;
+    }
+    const totalTWD = rows.reduce((s,r)=>s+r.paid, 0);
+    return { people, rows, transfers, totalTWD };
+  }
+
+  function renderSettlement() {
+    const wrap = document.getElementById('settle-content'); if (!wrap) return;
+    const { rows, transfers, totalTWD } = computeSettlement();
+    if (!rows.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">請先到設定新增旅伴成員</div>`; return; }
+    if (!(expenseRecords||[]).length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">還沒有任何支出紀錄</div>`; return; }
+
+    const avg = Math.round(totalTWD / rows.length);
+    let html = `<div class="final-res-card" style="margin-bottom:16px;">
+      <div class="krw" style="opacity:0.85;">總支出</div>
+      <div class="twd">NT$ ${f(totalTWD)}</div>
+      <div class="krw">平均每人 NT$ ${f(avg)}</div>
+    </div>`;
+
+    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-scale-balanced"></i> 每人收支</div>`;
+    html += rows.map(r => {
+      const isPlus = r.balance > 0, isZero = Math.abs(r.balance) < 1;
+      const color = isZero ? 'var(--gray)' : isPlus ? 'var(--teal)' : 'var(--coral)';
+      const label = isZero ? '已平衡' : isPlus ? `應收回 NT$ ${f(r.balance)}` : `應再付 NT$ ${f(-r.balance)}`;
+      return `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">${escapeHtml(r.name)}</b>
+          <b style="color:${color}; font-size:calc(14px * var(--font-scale));">${label}</b>
+        </div>
+        <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">已付 NT$ ${f(r.paid)}　應分攤 NT$ ${f(r.share)}</div>
+      </div>`;
+    }).join('') + `</div>`;
+
+    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-right-left"></i> 結清方式</div>`;
+    if (!transfers.length) {
+      html += `<p style="color:var(--gray); font-size:calc(13px * var(--font-scale)); margin:0;">目前大家都已經平衡，不用互相轉帳。</p>`;
+    } else {
+      html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">照下面 ${transfers.length} 筆轉帳付完就結清了（已算成最少筆數）</p>`;
+      html += transfers.map(t => `<div style="display:flex; align-items:center; gap:8px; padding:11px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale));">
+        <b style="color:var(--coral);">${escapeHtml(t.from)}</b>
+        <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
+        <b style="color:var(--teal);">${escapeHtml(t.to)}</b>
+        <b style="margin-left:auto; color:var(--navy);">NT$ ${f(t.amount)}</b>
+      </div>`).join('');
+    }
+    html += `</div>`;
+    wrap.innerHTML = html;
+  }
+
+
   function recordToKRW(r) {
     if (!r.currency || r.currency === 'KRW') return Math.round(r.amount||0);
     // TWD 記錄的 rateAtTime 語意固定是「1」（代表換成TWD不用另外查匯率），不是「兌韓元的匯率」，
@@ -3992,11 +4110,12 @@ ${dayContextLines}
     try {
       const snapshot = await db.ref('rooms/_registry').once('value');
       const all = snapshot.val() || {};
-      return Object.keys(all).map(key => ({ roomId: key, title: (all[key] && all[key].title) || '' }));
+      return Object.keys(all).map(key => ({ roomId: key, title: (all[key] && all[key].title) || '', creator: (all[key] && all[key].creator) || '' }));
     } catch (e) { console.error('讀取所有房間失敗:', e); return null; }
   }
-  async function registerRoom(roomId, title) {
-    try { await db.ref('rooms/_registry/' + roomId).set({ title: title || '', updatedAt: Date.now() }); } catch(e) { console.error('登記房間失敗:', e); }
+  async function registerRoom(roomId, title, creator) {
+    const c = creator !== undefined ? creator : ((tripSettings && tripSettings.creator) || '');
+    try { await db.ref('rooms/_registry/' + roomId).set({ title: title || '', creator: c, updatedAt: Date.now() }); } catch(e) { console.error('登記房間失敗:', e); }
   }
   async function fetchAllTrashFromFirebase() {
     try {
@@ -4047,7 +4166,7 @@ ${dayContextLines}
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="min-width:0;">
             <div style="font-weight:700; color:var(--navy); font-size:calc(14px * var(--font-scale));">${escapeHtml(r.title || '未命名旅程')}</div>
-            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:2px;">房號 ${escapeHtml(r.roomId)}</div>
+            <div style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin-top:2px;">房號 ${escapeHtml(r.roomId)}${r.creator ? `・${escapeHtml(r.creator)} 建立` : ''}</div>
           </div>
           <button onclick="adminDeleteRoom('${escapeHtml(r.roomId)}')" style="flex-shrink:0; background:#FEF2F2; border:none; padding:8px 14px; border-radius:10px; color:var(--warn); font-weight:700; font-size:calc(12px * var(--font-scale)); cursor:pointer;"><i class="fa-solid fa-trash"></i> 刪除</button>
         </div>
@@ -4177,6 +4296,8 @@ ${dayContextLines}
     document.getElementById('cr-room-id').value = generateRoomId();
     document.getElementById('cr-room-id-status').innerText = '';
     document.getElementById('cr-title').value = '';
+    let lastNick=''; try { lastNick = localStorage.getItem('creator-nickname')||''; } catch(e){}
+    document.getElementById('cr-creator').value = lastNick; // 同一個人通常暱稱固定，帶入上次用過的省得重打
     document.getElementById('cr-startdate').value = '';
     document.getElementById('cr-enddate').value = '';
     document.getElementById('create-room-overlay').style.display = 'flex';
@@ -4186,6 +4307,7 @@ ${dayContextLines}
   async function submitCreateRoom() {
     const roomId = document.getElementById('cr-room-id').value.trim();
     const title = document.getElementById('cr-title').value.trim();
+    const creator = document.getElementById('cr-creator').value.trim();
     const country = document.getElementById('cr-country').value;
     const startDate = document.getElementById('cr-startdate').value;
     const endDate = document.getElementById('cr-enddate').value || startDate;
@@ -4217,10 +4339,12 @@ ${dayContextLines}
     syncRoomId = roomId;
     const countryDefaults = COUNTRY_DEFAULTS[country] || COUNTRY_DEFAULTS['其他'];
     let savedDeviceKey = ''; try { savedDeviceKey = localStorage.getItem('gemini-api-key-device') || ''; } catch(e) {}
-    tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true, geminiApiKey: savedDeviceKey };
+    try { if (creator) localStorage.setItem('creator-nickname', creator); } catch(e) {} // 記住暱稱，下次建立房間直接帶入
+    tripSettings = { title, sub: '', startDate, endDate, country, notes: countryDefaults.notes.slice(), warns: countryDefaults.warns.slice(), climateNote: '', extraContacts: [], hasCustomContacts: true, geminiApiKey: savedDeviceKey, creator: creator || '', createdAt: Date.now() };
     prepData = {};
     Object.keys(PREP_DEFAULT).forEach(cat => { prepData[cat] = PREP_DEFAULT[cat].map(t => ({id: prepItemSeq++, text:t, checked:false})); }); // 新房間也要有預設打包清單，不能空白開始
-    itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] }; travelers = ['我'];
+    itinData = {}; expenseRecords = []; travelDocs = { flights: [], cars: [], hotels: [], passes: [] };
+    travelers = [creator || '我']; // 建立者直接當第一位成員，記帳時才有付款人可選
     wishlistData = []; foodListData = [];
     refreshItinDays();
     localStorage.setItem('sync-room-id', roomId);
@@ -4236,7 +4360,7 @@ ${dayContextLines}
     }
 
     rememberRecentRoom(roomId, title, tripSettings.sub);
-    registerRoom(roomId, title);
+    registerRoom(roomId, title, creator);
     if (btn) btn.disabled = false;
     closeCreateRoomForm();
     // 重置後的資料雖然都存好了，但畫面上原本停留的是「上一個房間」渲染出來的內容，這裡要全部重新渲染一次，
@@ -4555,8 +4679,13 @@ ${dayContextLines}
     const overviewRows = [
       ['項目', '內容'],
       ['行程標題', tripSettings.title || ''],
-      ['日期', tripSettings.sub || ''],
-      ['旅伴成員', travelers.join('、')]
+      ['國家', tripSettings.country || ''],
+      ['日期', tripSettings.sub || autoTripDateLabel()],
+      ['天數', tripDayCount() ? `${tripDayCount()}天${tripDayCount()-1}夜` : ''],
+      ['建立者', tripSettings.creator || ''],
+      ['房號', syncRoomId || ''],
+      ['旅伴成員', travelers.join('、')],
+      ['匯出時間', new Date().toLocaleString('zh-TW')]
     ];
     const wsOverview = XLSX.utils.aoa_to_sheet(overviewRows);
     wsOverview['!cols'] = [{wch:14},{wch:50}];
@@ -4615,28 +4744,65 @@ ${dayContextLines}
     XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
 
     const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
-    const expRows = [['日期','類別','品項','數量','原始金額','幣別','約當KRW','約當TWD','付款人','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
+    const expRows = [['日期','類別','品項','數量','原始金額','幣別','約當KRW','約當TWD','付款人','分攤對象','分攤人數','每人分攤(TWD)','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
     expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
       const itemsStr = Array.isArray(r.items) && r.items.length
         ? r.items.map(it => `${it.nameOriginal||''}${it.nameZh?`(${it.nameZh})`:''} x${it.quantity||1} ${it.price||0}`).join('; ')
         : '';
-      expRows.push([r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
+      const parts = (Array.isArray(r.participants) && r.participants.length) ? r.participants : travelers;
+      const perHead = parts.length ? Math.round(recordToTWD(r)/parts.length) : recordToTWD(r);
+      expRows.push([r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', parts.join('、'), parts.length, perHead, r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
     });
     expRows.push([]);
     expRows.push(['', '', '總計', '', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '', '', '', '', '', '']);
     const wsExp = XLSX.utils.aoa_to_sheet(expRows);
-    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
+    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:20},{wch:10},{wch:14},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
     XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
 
-    const memberTotals = {};
-    expenseRecords.forEach(r => { const k = r.payer || '未指定'; memberTotals[k] = (memberTotals[k]||0) + recordToKRW(r); });
-    const memberRows = [['成員','已付金額(KRW)','約合(TWD)','佔比']];
-    Object.keys(memberTotals).forEach(k => {
-      memberRows.push([k, memberTotals[k], Math.round(memberTotals[k]/rateTWD), totalKrw ? `${Math.round(memberTotals[k]/totalKrw*100)}%` : '0%']);
+    // ===== 分帳結算：每人應付/實付/差額，加上實際該怎麼轉帳才結清 =====
+    const st = computeSettlement();
+    const settleRows = [['分帳結算']];
+    settleRows.push([]);
+    settleRows.push(['總支出(TWD)', st.totalTWD, '', '參與人數', st.rows.length, '', '平均每人(TWD)', st.rows.length?Math.round(st.totalTWD/st.rows.length):0]);
+    settleRows.push([]);
+    settleRows.push(['成員','已付(TWD)','應分攤(TWD)','差額(TWD)','狀態']);
+    st.rows.forEach(r => {
+      const status = Math.abs(r.balance) < 1 ? '已平衡' : r.balance > 0 ? `應收回 ${r.balance}` : `應再付 ${-r.balance}`;
+      settleRows.push([r.name, r.paid, r.share, r.balance, status]);
     });
-    const wsMember = XLSX.utils.aoa_to_sheet(memberRows);
-    wsMember['!cols'] = [{wch:12},{wch:16},{wch:12},{wch:8}];
-    XLSX.utils.book_append_sheet(wb, wsMember, '成員分攤');
+    settleRows.push([]);
+    settleRows.push(['結清方式（依下列轉帳即可結清，已算成最少筆數）']);
+    settleRows.push(['付款人','收款人','金額(TWD)']);
+    if (st.transfers.length) { st.transfers.forEach(t => settleRows.push([t.from, t.to, t.amount])); }
+    else { settleRows.push(['—','—','大家都已平衡，不需轉帳']); }
+    const wsSettle = XLSX.utils.aoa_to_sheet(settleRows);
+    wsSettle['!cols'] = [{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:10},{wch:16},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, wsSettle, '分帳結算');
+
+    // ===== 分類統計 =====
+    const catTotals = {};
+    expenseRecords.forEach(r => { const k = r.category || '其他'; catTotals[k] = (catTotals[k]||0) + recordToTWD(r); });
+    const catRows = [['類別','金額(TWD)','佔比','筆數']];
+    Object.keys(catTotals).sort((a,b)=>catTotals[b]-catTotals[a]).forEach(k => {
+      const cnt = expenseRecords.filter(r => (r.category||'其他') === k).length;
+      catRows.push([k, catTotals[k], st.totalTWD ? `${Math.round(catTotals[k]/st.totalTWD*100)}%` : '0%', cnt]);
+    });
+    catRows.push([]);
+    catRows.push(['總計', st.totalTWD, '100%', expenseRecords.length]);
+    const wsCat = XLSX.utils.aoa_to_sheet(catRows);
+    wsCat['!cols'] = [{wch:14},{wch:14},{wch:10},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsCat, '分類統計');
+
+    // ===== 每日花費統計 =====
+    const dayTotals = {};
+    expenseRecords.forEach(r => { const k = r.date || '未填日期'; dayTotals[k] = (dayTotals[k]||0) + recordToTWD(r); });
+    const dayRows = [['日期','金額(TWD)','筆數']];
+    Object.keys(dayTotals).sort().forEach(k => {
+      dayRows.push([k, dayTotals[k], expenseRecords.filter(r => (r.date||'未填日期') === k).length]);
+    });
+    const wsDay = XLSX.utils.aoa_to_sheet(dayRows);
+    wsDay['!cols'] = [{wch:14},{wch:14},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, wsDay, '每日花費');
 
     const prepRows = [['分類','項目','已完成']];
     Object.keys(prepData||{}).forEach(cat => {
