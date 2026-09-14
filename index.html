@@ -717,7 +717,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 00:45</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 01:30</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4151,42 +4151,105 @@ ${dayContextLines}
     return rows;
   }
 
+  // ===== 分帳計算引擎 =====
+  // 三個關鍵設計：付款人與消費者分離、全程用原幣別計算最後才換匯、代購對象不進旅伴分帳
+  // 舊資料（平均分攤、舊版逐項分配）都會先經 normalizeExpense 轉成同一種格式，走同一套計算
+  function normalizeExpense(r) {
+    const paidTotal = (r.paidTotal !== undefined && r.paidTotal !== null && r.paidTotal !== '') ? Number(r.paidTotal) : Number(r.amount) || 0;
+    const payers = (Array.isArray(r.payers) && r.payers.length) ? r.payers : [{ who: r.payer, amount: paidTotal }];
+    let items = [];
+    if (Array.isArray(r.items) && r.items.length && r.items[0] && r.items[0].mode) {
+      items = r.items;
+    } else if (Array.isArray(r.allocItems) && r.allocItems.length) {
+      items = r.allocItems.map(it => ({ name: it.name, unitPrice: Number(it.unitPrice)||0, qty: Number(it.totalQty)||0, mode: 'qty', alloc: it.alloc||[] }));
+    } else {
+      // 平均分攤：轉成一件「由這些人均分」的商品，讓後續計算完全共用
+      let parts = Array.isArray(r.participants) ? r.participants.filter(n => travelers.includes(n)) : [];
+      if (!parts.length) parts = travelers.slice();
+      items = [{ name: r.item || r.category || '支出', unitPrice: paidTotal, qty: 1, mode: 'even', evenWith: parts, alloc: [] }];
+    }
+    return { ...r, payers, items, extras: r.extras || [], paidTotal };
+  }
+  function itemLines(item) {
+    const unit = Number(item.unitPrice) || 0;
+    const qty = Number(item.qty) || 0;
+    const mode = item.mode || 'qty';
+    if (mode === 'even') {
+      const people = (item.evenWith || []).filter(Boolean);
+      if (!people.length) return [];
+      const each = (unit * qty) / people.length;
+      return people.map(w => ({ who: w, proxyFor: '', amount: each }));
+    }
+    return (item.alloc || []).map(a => ({
+      who: a.who || '', proxyFor: (a.proxyFor || '').trim(),
+      amount: mode === 'amount' ? (Number(a.amount) || 0) : unit * (Number(a.qty) || 0)
+    })).filter(l => l.who || l.proxyFor);
+  }
+  function allocateExpense(raw) {
+    const r = normalizeExpense(raw);
+    const lines = [];
+    (r.items || []).forEach(it => itemLines(it).forEach(l => lines.push({ ...l, itemName: it.name || '' })));
+    const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+    const base = {};
+    lines.forEach(l => { const key = l.proxyFor || l.who; if (key) base[key] = (base[key] || 0) + l.amount; });
+    const extras = r.extras || [];
+    const extrasTotal = extras.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const add = {}; Object.keys(base).forEach(k => { add[k] = 0; });
+    extras.forEach(e => {
+      const amt = Number(e.amount) || 0, how = e.distribute || 'prorata';
+      if (how === 'person' && e.who) { add[e.who] = (add[e.who] || 0) + amt; return; }
+      if (how === 'none' || subtotal <= 0) return;
+      Object.keys(base).forEach(k => { add[k] += amt * (base[k] / subtotal); });
+    });
+    const byPerson = {};
+    Object.keys(base).forEach(k => { byPerson[k] = base[k] + (add[k] || 0); });
+    return { lines, subtotal, extrasTotal, paidTotal: r.paidTotal, byPerson, payers: r.payers, record: r };
+  }
+  // 尾差校正：四捨五入後把差額補到金額最大的人，保證總和等於實付
+  function roundToTarget(byPerson, target) {
+    const keys = Object.keys(byPerson); if (!keys.length) return {};
+    const out = {}; keys.forEach(k => { out[k] = Math.round(byPerson[k]); });
+    const diff = Math.round(target) - keys.reduce((s, k) => s + out[k], 0);
+    if (diff !== 0) { const big = keys.slice().sort((a, b) => Math.abs(byPerson[b]) - Math.abs(byPerson[a]))[0]; out[big] += diff; }
+    return out;
+  }
+
   // ===== 分帳結算 =====
   // 每筆支出依「實際分攤的人」平分（沒指定就視為全員平分），算出每人應付多少、實付多少，
   // 再把債務兩兩相抵，產生「誰付給誰多少」的最少轉帳筆數
   function computeSettlement() {
     const people = (travelers || []).slice();
-    if (!people.length) return { people: [], rows: [], transfers: [], totalTWD: 0 };
+    const paid = {}, owed = {};
+    people.forEach(t => { paid[t] = 0; owed[t] = 0; });
+    const external = {};   // 不在旅伴名單的代購對象
 
-    const paid = {}, share = {};
-    people.forEach(p => { paid[p] = 0; share[p] = 0; });
+    (expenseRecords || []).forEach(raw => {
+      const res = allocateExpense(raw);
+      const rounded = roundToTarget(res.byPerson, res.paidTotal);
+      // 原幣別算完才換算成台幣，避免逐項換算累積誤差
+      const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
+      const payers = res.payers;
+      const paidSum = payers.reduce((s, pp) => s + (Number(pp.amount) || 0), 0) || 1;
+      payers.forEach(pp => { if (paid[pp.who] !== undefined) paid[pp.who] += (Number(pp.amount) || 0) * rate; });
 
-    (expenseRecords || []).forEach(r => {
-      const twd = recordToTWD(r);
-      if (paid[r.payer] !== undefined) paid[r.payer] += twd;
-
-      if (r.splitMode === 'items' && Array.isArray(r.allocItems) && r.allocItems.length) {
-        // 逐項分配：各人只負擔自己拿的那幾件（代購的部分仍算在代墊者身上）
-        const byPerson = allocSharesByPerson(r);
-        let allocated = 0;
-        Object.keys(byPerson).forEach(n => { if (share[n] !== undefined) { share[n] += byPerson[n]; allocated += byPerson[n]; } });
-        // 沒分配到的差額（例如運費、湊整）回歸全員平分，避免金額對不起來
-        const rest = twd - allocated;
-        if (Math.abs(rest) > 0.5) { const each = rest / people.length; people.forEach(n => { share[n] += each; }); }
-        return;
-      }
-
-      let parts = Array.isArray(r.participants) ? r.participants.filter(n => people.includes(n)) : [];
-      if (!parts.length) parts = people; // 舊資料沒有分攤欄位時，視為全員平分
-      const each = twd / parts.length;
-      parts.forEach(p => { share[p] += each; });
+      Object.entries(rounded).forEach(([who, amt]) => {
+        const twd = amt * rate;
+        if (owed[who] !== undefined) { owed[who] += twd; return; }
+        const ext = external[who] || (external[who] = { amount: 0, creditors: {}, arrangedBy: [] });
+        ext.amount += twd;
+        payers.forEach(pp => {
+          const portion = (Number(pp.amount) || 0) / paidSum;
+          ext.creditors[pp.who] = (ext.creditors[pp.who] || 0) + twd * portion;
+        });
+        (res.record.items || []).forEach(it => (it.alloc || []).forEach(a => {
+          if ((a.proxyFor || '').trim() === who && a.who && !ext.arrangedBy.includes(a.who)) ext.arrangedBy.push(a.who);
+        }));
+      });
     });
 
-    const rows = people.map(p => ({ name: p, paid: Math.round(paid[p]), share: Math.round(share[p]), balance: Math.round(paid[p] - share[p]) }));
-
-    // 產生轉帳建議：把「應收」跟「應付」兩邊由大到小配對沖銷
-    const creditors = rows.filter(r => r.balance > 0).map(r => ({...r})).sort((a,b)=>b.balance-a.balance);
-    const debtors = rows.filter(r => r.balance < 0).map(r => ({...r, balance: -r.balance})).sort((a,b)=>b.balance-a.balance);
+    const rows = people.map(t => ({ name: t, paid: Math.round(paid[t]), share: Math.round(owed[t]), balance: Math.round(paid[t] - owed[t]) }));
+    const creditors = rows.filter(r => r.balance > 0).map(r => ({ ...r })).sort((a, b) => b.balance - a.balance);
+    const debtors = rows.filter(r => r.balance < 0).map(r => ({ ...r, balance: -r.balance })).sort((a, b) => b.balance - a.balance);
     const transfers = [];
     let i = 0, j = 0;
     while (i < debtors.length && j < creditors.length) {
@@ -4196,8 +4259,13 @@ ${dayContextLines}
       if (debtors[i].balance <= 0.5) i++;
       if (creditors[j].balance <= 0.5) j++;
     }
-    const totalTWD = rows.reduce((s,r)=>s+r.paid, 0);
-    return { people, rows, transfers, totalTWD };
+    const externalRows = Object.entries(external).map(([name, v]) => ({
+      name, amount: Math.round(v.amount),
+      creditors: Object.entries(v.creditors).map(([who, a]) => ({ who, amount: Math.round(a) })),
+      arrangedBy: v.arrangedBy
+    }));
+    const totalTWD = rows.reduce((s, r) => s + r.paid, 0);
+    return { people, rows, transfers, externalRows, totalTWD };
   }
 
   // 支出頁的分帳摘要：只給結論（誰付給誰多少），細節留在算帳頁
@@ -4237,17 +4305,41 @@ ${dayContextLines}
 
   // 列出某個人參與分攤的每一筆，讓他能核對自己的金額怎麼算出來的
   function settleDetailFor(name) {
-    const people = travelers || [];
-    const lines = [];
-    (expenseRecords||[]).forEach(r => {
-      let parts = Array.isArray(r.participants) ? r.participants.filter(n=>people.includes(n)) : [];
-      if (!parts.length) parts = people;
-      if (!parts.includes(name)) return;
-      const twd = recordToTWD(r);
-      const each = Math.round(twd / parts.length);
-      lines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:3px 0;"><span>${escapeHtml(r.item||r.category||'支出')}${r.payer===name?'（本人付）':''}　<span style="opacity:0.7;">${parts.length}人分</span></span><span style="flex-shrink:0;">NT$ ${f(each)}</span></div>`);
+    const paidLines = [], owedLines = [];
+    let paidSum = 0, owedSum = 0;
+    (expenseRecords||[]).forEach(raw => {
+      const res = allocateExpense(raw);
+      const rounded = roundToTarget(res.byPerson, res.paidTotal);
+      const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
+      // 我代墊的
+      res.payers.forEach(pp => {
+        if (pp.who !== name) return;
+        const twd = Math.round((Number(pp.amount)||0) * rate);
+        if (!twd) return;
+        paidSum += twd;
+        paidLines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:2px 0;"><span>${escapeHtml(raw.item||raw.category||'支出')}</span><span>NT$ ${f(twd)}</span></div>`);
+      });
+      // 我應付的
+      if (rounded[name] !== undefined) {
+        const twd = Math.round(rounded[name] * rate);
+        if (twd) {
+          owedSum += twd;
+          const mine = res.lines.filter(l => (l.proxyFor || l.who) === name).map(l => l.itemName).filter(Boolean);
+          const detail = mine.length ? `（${escapeHtml([...new Set(mine)].slice(0,3).join('、'))}${mine.length>3?'…':''}）` : '';
+          owedLines.push(`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); color:var(--gray); padding:2px 0;"><span>${escapeHtml(raw.item||raw.category||'支出')}${detail}</span><span>NT$ ${f(twd)}</span></div>`);
+        }
+      }
     });
-    return lines.length ? lines.join('') : `<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有參與任何一筆分攤</div>`;
+    const net = paidSum - owedSum;
+    return `
+      <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin-bottom:4px;">我先代墊 NT$ ${f(paidSum)}</div>
+      ${paidLines.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有代墊</div>'}
+      <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin:9px 0 4px;">我的應付 NT$ ${f(owedSum)}</div>
+      ${owedLines.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有應付</div>'}
+      <div style="margin-top:9px; padding-top:8px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; font-size:calc(12.5px * var(--font-scale)); font-weight:800;">
+        <span style="color:var(--navy);">${net >= 0 ? '應收回' : '應再付'}</span>
+        <span style="color:${net >= 0 ? 'var(--teal)' : 'var(--coral)'};">NT$ ${f(Math.abs(net))}</span>
+      </div>`;
   }
   function toggleSettleDetail(name) {
     const el = document.getElementById('settle-detail-' + name); if (!el) return;
@@ -4273,67 +4365,85 @@ ${dayContextLines}
 
   function renderSettlement() {
     const wrap = document.getElementById('settle-content'); if (!wrap) return;
-    const { rows, transfers, totalTWD } = computeSettlement();
+    const { rows, transfers, externalRows, totalTWD } = computeSettlement();
     if (!rows.length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">請先到設定新增旅伴成員</div>`; return; }
     if (!(expenseRecords||[]).length) { wrap.innerHTML = `<div class="card" style="text-align:center; padding:26px; color:var(--gray);">還沒有任何支出紀錄</div>`; return; }
 
-    const avg = Math.round(totalTWD / rows.length);
-    let html = `<div class="final-res-card" style="margin-bottom:16px;">
-      <div class="krw" style="opacity:0.85;">總支出</div>
-      <div class="twd">NT$ ${f(totalTWD)}</div>
-      <div class="krw">平均每人 NT$ ${f(avg)}</div>
+    const pending = transfers.filter(t => !isSettled(t.from, t.to, t.amount));
+    const settledAmt = transfers.filter(t => isSettled(t.from, t.to, t.amount)).reduce((s,t)=>s+t.amount,0);
+    const pendingAmt = pending.reduce((s,t)=>s+t.amount,0);
+
+    // ① 總覽
+    let html = `<div class="card" style="background:linear-gradient(140deg,#16283f 0%,#1d3557 45%,#457b9d 100%); color:#fff; border:none;">
+      <div style="font-size:calc(12px * var(--font-scale)); opacity:0.85;">本趟分帳</div>
+      <div style="font-size:calc(30px * var(--font-scale)); font-weight:800; letter-spacing:-0.5px; margin:4px 0 12px;">NT$ ${f(totalTWD)}</div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1; background:rgba(255,255,255,0.14); border-radius:12px; padding:9px 11px;">
+          <div style="font-size:calc(10.5px * var(--font-scale)); opacity:0.85;">已結清</div>
+          <div style="font-size:calc(15px * var(--font-scale)); font-weight:800;">NT$ ${f(settledAmt)}</div>
+        </div>
+        <div style="flex:1; background:rgba(255,255,255,0.14); border-radius:12px; padding:9px 11px;">
+          <div style="font-size:calc(10.5px * var(--font-scale)); opacity:0.85;">待結清</div>
+          <div style="font-size:calc(15px * var(--font-scale)); font-weight:800;">NT$ ${f(pendingAmt)}</div>
+        </div>
+      </div>
     </div>`;
 
-    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-scale-balanced"></i> 每人收支</div>`;
-    html += rows.map(r => {
-      const isPlus = r.balance > 0, isZero = Math.abs(r.balance) < 1;
-      const color = isZero ? 'var(--gray)' : isPlus ? 'var(--teal)' : 'var(--coral)';
-      const label = isZero ? '已平衡' : isPlus ? `應收回 NT$ ${f(r.balance)}` : `應再付 NT$ ${f(-r.balance)}`;
-      return `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-          <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">${escapeHtml(r.name)}</b>
-          <b style="color:${color}; font-size:calc(14px * var(--font-scale));">${label}</b>
-        </div>
-        <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">已付 NT$ ${f(r.paid)}　應分攤 NT$ ${f(r.share)}</div>
-        <button onclick="toggleSettleDetail('${escapeHtml(r.name)}')" style="background:none; border:none; color:var(--teal); font-size:calc(11.5px * var(--font-scale)); font-weight:700; padding:6px 0 0; cursor:pointer;">明細 <i class="fa-solid fa-chevron-down"></i></button>
-        <div id="settle-detail-${escapeHtml(r.name)}" style="display:none; margin-top:6px; padding-left:10px; border-left:2px solid var(--line);">${settleDetailFor(r.name)}</div>
-      </div>`;
-    }).join('') + `</div>`;
-
-    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-right-left"></i> 結清方式</div>`;
+    // ② 結清這趟旅程（最少筆數）
+    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-right-left"></i> 結清這趟旅程</div>`;
     if (!transfers.length) {
-      html += `<p style="color:var(--gray); font-size:calc(13px * var(--font-scale)); margin:0;">目前大家都已經平衡，不用互相轉帳。</p>`;
+      html += `<p style="margin:0; color:var(--teal); font-weight:700; font-size:calc(13.5px * var(--font-scale));"><i class="fa-solid fa-circle-check"></i> 大家都已平衡，不用互相轉帳</p>`;
+    } else if (!pending.length) {
+      html += `<p style="margin:0; color:var(--teal); font-weight:700; font-size:calc(14.5px * var(--font-scale));">🎉 已全部結清，所有人餘額都是 NT$ 0</p>`;
     } else {
-      html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">照下面 ${transfers.length} 筆轉帳付完就結清了（已算成最少筆數）</p>`;
-      html += transfers.map(t => {
-        const done = isSettled(t.from, t.to, t.amount);
-        return `<div style="display:flex; align-items:center; gap:9px; padding:11px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale)); opacity:${done?0.55:1};">
-        <div onclick="toggleSettled('${escapeHtml(t.from)}','${escapeHtml(t.to)}',${t.amount})" style="width:22px; height:22px; border-radius:6px; border:2px solid ${done?'var(--teal)':'#CBD5E1'}; background:${done?'var(--teal)':'#fff'}; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer;">${done?'<i class="fa-solid fa-check" style="color:#fff; font-size:calc(11px * var(--font-scale));"></i>':''}</div>
-        <b style="color:var(--coral); ${done?'text-decoration:line-through;':''}">${escapeHtml(t.from)}</b>
-        <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
-        <b style="color:var(--teal); ${done?'text-decoration:line-through;':''}">${escapeHtml(t.to)}</b>
-        <b style="margin-left:auto; color:var(--navy); ${done?'text-decoration:line-through;':''}">NT$ ${f(t.amount)}</b>
-      </div>`;}).join('');
-      const doneCount = transfers.filter(t => isSettled(t.from, t.to, t.amount)).length;
-      html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:10px 0 0;">已結清 ${doneCount} / ${transfers.length} 筆。對方把錢拿給你之後，點左邊方框打勾即可。</p>`;
+      html += `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">只需要 ${pending.length} 筆轉帳</p>`;
     }
+    html += transfers.map((t, idx) => {
+      const done = isSettled(t.from, t.to, t.amount);
+      return `<div style="display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid var(--line); opacity:${done?0.5:1};">
+        <div onclick="toggleSettled('${escapeHtml(t.from)}','${escapeHtml(t.to)}',${t.amount})" style="width:26px; height:26px; border-radius:8px; border:2px solid ${done?'var(--teal)':'#CBD5E1'}; background:${done?'var(--teal)':'#fff'}; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer;">${done?'<i class="fa-solid fa-check" style="color:#fff; font-size:calc(12px * var(--font-scale));"></i>':''}</div>
+        <div style="flex:1; min-width:0; ${done?'text-decoration:line-through;':''}">
+          <div style="font-size:calc(14px * var(--font-scale)); font-weight:700; color:var(--navy);">${escapeHtml(t.from)} <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i> ${escapeHtml(t.to)}</div>
+          ${done?'<div style="font-size:calc(11px * var(--font-scale)); color:var(--teal); font-weight:700;">已完成</div>':''}
+        </div>
+        <b style="color:var(--navy); flex-shrink:0; ${done?'text-decoration:line-through;':''}">NT$ ${f(t.amount)}</b>
+      </div>`;}).join('');
     html += `</div>`;
 
-    // 代購墊付：幫旅程外的人買的東西，不進旅伴之間的分帳，另外列出來方便向對方請款
-    const proxies = computeProxyDebts();
-    if (proxies.length) {
-      const byPair = {};
-      proxies.forEach(x => { const k = `${x.fronted}→${x.forWhom}`; (byPair[k] = byPair[k] || { ...x, twd: 0, items: [] }); byPair[k].twd += x.twd; byPair[k].items.push(`${x.item}×${x.qty}`); });
-      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購墊付</div>
-        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">幫旅程以外的人買的，不算在上面的旅伴分帳裡，要另外跟對方收</p>`;
-      html += Object.values(byPair).map(x => `<div style="padding:10px 0; border-bottom:1px solid var(--line);">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-            <span style="font-size:calc(13.5px * var(--font-scale));"><b style="color:var(--navy);">${escapeHtml(x.forWhom)}</b> <span style="color:var(--gray);">應還</span> <b style="color:var(--teal);">${escapeHtml(x.fronted)}</b></span>
-            <b style="color:var(--navy); flex-shrink:0;">NT$ ${f(x.twd)}</b>
+    // ③ 每人收支（可展開看為什麼）
+    html += `<div class="card"><div class="section-title"><i class="fa-solid fa-scale-balanced"></i> 每人收支</div>`;
+    html += rows.map(r => {
+      const zero = Math.abs(r.balance) < 1;
+      const color = zero ? 'var(--gray)' : r.balance > 0 ? 'var(--teal)' : 'var(--coral)';
+      const label = zero ? '✓ 已平衡' : r.balance > 0 ? `＋NT$ ${f(r.balance)}` : `−NT$ ${f(-r.balance)}`;
+      const sub = zero ? `已付 NT$ ${f(r.paid)} · 應付 NT$ ${f(r.share)}`
+        : r.balance > 0 ? `代墊 NT$ ${f(r.paid)} · 自己應付 NT$ ${f(r.share)}`
+        : `已付 NT$ ${f(r.paid)} · 應付 NT$ ${f(r.share)}`;
+      return `<div style="padding:12px 0; border-bottom:1px solid var(--line);">
+        <div onclick="toggleSettleDetail('${escapeHtml(r.name)}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:pointer;">
+          <div style="min-width:0;">
+            <b style="color:var(--navy); font-size:calc(15px * var(--font-scale));">${escapeHtml(r.name)}</b>
+            <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${sub}</div>
           </div>
-          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(x.items.join('、'))}</div>
-        </div>`).join('');
-      html += `</div>`;
+          <b style="color:${color}; font-size:calc(15px * var(--font-scale)); flex-shrink:0;">${label}</b>
+        </div>
+        <div id="settle-detail-${escapeHtml(r.name)}" style="display:none; margin-top:9px; padding:9px 11px; background:#F8FAFC; border-radius:11px;">${settleDetailFor(r.name)}</div>
+      </div>`;
+    }).join('') + `<p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:10px 0 0;">點名字可展開，看金額是怎麼算出來的</p></div>`;
+
+    // ④ 代購待收（不計入旅伴分帳）
+    if (externalRows.length) {
+      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購待收</div>
+        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">這些人不在旅伴名單，金額不計入上面的分帳，要另外跟對方收</p>`;
+      html += externalRows.map(x => `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">${escapeHtml(x.name)}</b>
+            <b style="color:var(--gold); flex-shrink:0;">待收 NT$ ${f(x.amount)}</b>
+          </div>
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">
+            ${x.arrangedBy.length ? `由 ${escapeHtml(x.arrangedBy.join('、'))} 代購・` : ''}應還給 ${x.creditors.map(c=>`${escapeHtml(c.who)} NT$${f(c.amount)}`).join('、')}
+          </div>
+        </div>`).join('') + `</div>`;
     }
 
     wrap.innerHTML = html;
