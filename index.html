@@ -753,7 +753,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 04:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 04:45</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4799,19 +4799,23 @@ ${dayContextLines}
     ].filter(Boolean).join('') + itemsBlock;
 
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
-      <div class="only-master" style="position:absolute; top:10px; right:10px; display:flex; gap:6px;">
-        ${(r.items && r.items.length) ? `<button onclick="event.stopPropagation(); openOwnerEditor(${r.id})" title="編輯誰買的" style="background:#EAF7FA; border:none; width:26px; height:26px; border-radius:50%; color:var(--teal); cursor:pointer;"><i class="fa-solid fa-user-check"></i></button>` : ''}
-        <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-        <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-      </div>
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:${(r.items && r.items.length) ? '96px' : '66px'}; gap:8px;">
-        <div style="min-width:0;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div style="flex:1; min-width:0;">
           <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
         </div>
-        <div style="text-align:right; flex-shrink:0;">
-          <b style="color:var(--coral); font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale));">${primary}</b><br>
-          <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
+        <!-- 右側改成上下兩段：金額在上、操作鈕在下。原本按鈕用絕對定位釘在右上角，
+             為了閃避它必須在左側留一大塊 padding，導致店名被擠成窄窄一條、右下角又空著 -->
+        <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:9px;">
+          <div style="text-align:right;">
+            <b style="color:var(--coral); font-family:"SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale));">${primary}</b><br>
+            <small style="color:var(--gray); font-size:calc(11px * var(--font-scale));">${secondary}</small>
+          </div>
+          <div class="only-master" style="display:flex; gap:6px;">
+            ${(r.items && r.items.length) ? `<button onclick="event.stopPropagation(); openOwnerEditor(${r.id})" title="編輯誰買的" style="background:#EAF7FA; border:none; width:26px; height:26px; border-radius:50%; color:var(--teal); cursor:pointer;"><i class="fa-solid fa-user-check"></i></button>` : ''}
+            <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </div>
       </div>
       <div class="timeline-detail ${isExpanded?'active':''}">${detailRows || `<span style="color:var(--gray); font-size:calc(12px * var(--font-scale));">尚無更多細節</span>`}</div>
