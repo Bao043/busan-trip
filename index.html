@@ -753,7 +753,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 04:45</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 05:15</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4178,8 +4178,10 @@ ${dayContextLines}
             <button type="button" onclick="rrAddProxy(${it._ridx})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:10px; padding:4px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
           </div>
           ${proxyHtml}
-          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${total && remain !== 0 ? 'var(--warn)' : 'var(--gray)'};">
-            ${total ? (remain === 0 ? '已分配完畢' : remain > 0 ? `還有 ${remain} 個沒分（不分也沒關係，會算成全體均分）` : `超出 ${-remain} 個`) : `已分配 ${assigned} 個`}
+          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${total && remain < 0 ? 'var(--warn)' : 'var(--gray)'};">
+            ${total ? (remain === 0 ? '<i class="fa-solid fa-check"></i> 已分配完畢'
+              : remain > 0 ? (assigned === 0 ? `沒特別分配，這 ${total} 個算付款人的` : `其餘 ${remain} 個算付款人的`)
+              : `超出 ${-remain} 個，請檢查`) : `已分配 ${assigned} 個`}
           </div>
         </div>` : ''}
       </div>
@@ -4224,7 +4226,7 @@ ${dayContextLines}
           alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
         }));
         rec.paidTotal = Number(rec.amount)||0;
-        const sub = rec.allocItems.reduce((s2,it)=>s2 + it.unitPrice * (it.alloc||[]).reduce((x,a)=>x+(Number(a.qty)||0),0), 0);
+        const sub = rec.allocItems.reduce((s2,it)=>s2 + it.unitPrice * (Number(it.qty)||0), 0); // 用品項全額，未分配的部分也要算進去
         const diff = rec.paidTotal - sub;
         rec.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
       } else {
@@ -4280,7 +4282,7 @@ ${dayContextLines}
       allocItems: allocItemsFromReceipt,
       paidTotal: amt,
       extras: anyOwner ? (() => {
-        const sub = allocItemsFromReceipt.reduce((s2,it)=>s2 + it.unitPrice * (it.alloc||[]).reduce((x,a)=>x+(Number(a.qty)||0),0), 0);
+        const sub = allocItemsFromReceipt.reduce((s2,it)=>s2 + it.unitPrice * (Number(it.qty)||0), 0); // 用品項全額，未分配的部分也要算進去
         const diff = amt - sub;
         return Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
       })() : []
@@ -4383,8 +4385,21 @@ ${dayContextLines}
   }
   function allocateExpense(raw) {
     const r = normalizeExpense(raw);
+    // 主要付款人：沒有特別指定歸屬的品項一律算他的
+    const mainPayer = (r.payers && r.payers.length)
+      ? r.payers.slice().sort((a,b)=>(Number(b.amount)||0)-(Number(a.amount)||0))[0].who
+      : r.payer;
     const lines = [];
-    (r.items || []).forEach(it => itemLines(it).forEach(l => lines.push({ ...l, itemName: it.name || '' })));
+    (r.items || []).forEach(it => {
+      itemLines(it).forEach(l => lines.push({ ...l, itemName: it.name || '' }));
+      // 沒分配到的數量歸付款人：原本是把它攤給其他有分配的人，
+      // 等於「東西是我買的但沒特別選，反而被大家平分掉」，不合常理
+      if ((it.mode || 'qty') === 'qty' && mainPayer) {
+        const assigned = (it.alloc || []).reduce((s,a)=>s+(Number(a.qty)||0), 0);
+        const rest = (Number(it.qty)||0) - assigned;
+        if (rest > 0) lines.push({ who: mainPayer, proxyFor: '', amount: (Number(it.unitPrice)||0) * rest, itemName: it.name || '' });
+      }
+    });
     const subtotal = lines.reduce((s, l) => s + l.amount, 0);
     const base = {};
     // 代購的金額一律算在「代購者」身上，代購對象只作為標註用途，
@@ -4401,6 +4416,13 @@ ${dayContextLines}
     });
     const byPerson = {};
     Object.keys(base).forEach(k => { byPerson[k] = base[k] + (add[k] || 0); });
+
+    // 分配結果如果跟實付金額差很多（例如舊資料、或金額被改過），差額歸付款人。
+    // 不這樣處理的話，後面的尾差校正會把整筆差額硬塞給某一個人，金額會嚴重失真
+    const allocated = Object.values(byPerson).reduce((a,b)=>a+b, 0);
+    const gap = r.paidTotal - allocated;
+    if (Math.abs(gap) > 1 && mainPayer) { byPerson[mainPayer] = (byPerson[mainPayer] || 0) + gap; }
+
     return { lines, subtotal, extrasTotal, paidTotal: r.paidTotal, byPerson, payers: r.payers, record: r };
   }
   // 尾差校正：四捨五入後把差額補到金額最大的人，保證總和等於實付
