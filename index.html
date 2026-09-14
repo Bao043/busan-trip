@@ -717,7 +717,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 02:40</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 03:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4175,7 +4175,8 @@ ${dayContextLines}
     setupGeneralEdit('編輯：這些東西是誰買的', fields, () => {
       const rec = expenseRecords.find(x => x.id === ownerEditTargetId); if (!rec) { closeGeneralEdit(); return; }
       receiptReviewItemsState.forEach((st, i) => {
-        if (rec.items[i]) rec.items[i].owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0);
+        if (rec.items[i]) rec.items[i].owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0)
+          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }));
       });
       const anyOwner = rec.items.some(it => (it.owners||[]).length);
       if (anyOwner) {
@@ -4218,6 +4219,7 @@ ${dayContextLines}
         price: priceEl ? p(priceEl.value) : it.price,
         quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1,
         owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
+          .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
       };
     }).filter(it => it.nameOriginal || it.nameZh);
 
@@ -4286,21 +4288,22 @@ ${dayContextLines}
     return out;
   }
   // 代購墊付清單：誰幫誰墊了多少，用來跟旅程外的人請款
-  function computeProxyDebts() {
+  // 代購標註：列出「誰幫誰買了什麼、多少錢」。金額已計入代購者的分攤，這裡只是讓他知道要跟對方收多少
+  function computeProxyNotes() {
     const rows = [];
-    (expenseRecords || []).forEach(r => {
-      if (r.splitMode !== 'items') return;
-      const rate = r.currency === 'TWD' ? 1 : (r.rateAtTime || currentRateForCurrency(r.currency) || 1);
-      (r.allocItems || []).forEach(it => {
+    (expenseRecords || []).forEach(raw => {
+      const r = normalizeExpense(raw);
+      const rate = (raw.currency === 'TWD') ? 1 : (1 / (raw.rateAtTime || currentRateForCurrency(raw.currency) || 1));
+      (r.items || []).forEach(it => {
         const unit = Number(it.unitPrice) || 0;
         (it.alloc || []).forEach(a => {
-          if (!a.proxyFor || !a.proxyFor.trim()) return;
-          const amt = unit * (Number(a.qty) || 0);
+          const target = (a.proxyFor || '').trim();
+          if (!target || !a.who) return;
+          const amt = (it.mode === 'amount') ? (Number(a.amount) || 0) : unit * (Number(a.qty) || 0);
           rows.push({
-            fronted: a.who, forWhom: a.proxyFor.trim(),
-            item: it.name || r.item || '商品', qty: Number(a.qty) || 0,
-            twd: Math.round(r.currency === 'TWD' ? amt : amt / rate),
-            date: r.date || ''
+            buyer: a.who, forWhom: target,
+            item: it.name || raw.item || '商品', qty: Number(a.qty) || 0,
+            twd: Math.round(amt * rate), date: raw.date || ''
           });
         });
       });
@@ -4348,7 +4351,9 @@ ${dayContextLines}
     (r.items || []).forEach(it => itemLines(it).forEach(l => lines.push({ ...l, itemName: it.name || '' })));
     const subtotal = lines.reduce((s, l) => s + l.amount, 0);
     const base = {};
-    lines.forEach(l => { const key = l.proxyFor || l.who; if (key) base[key] = (base[key] || 0) + l.amount; });
+    // 代購的金額一律算在「代購者」身上，代購對象只作為標註用途，
+    // 這樣旅伴之間的分帳單純，之後他要跟對方收多少也看得到
+    lines.forEach(l => { const key = l.who || l.proxyFor; if (key) base[key] = (base[key] || 0) + l.amount; });
     const extras = r.extras || [];
     const extrasTotal = extras.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const add = {}; Object.keys(base).forEach(k => { add[k] = 0; });
@@ -4497,12 +4502,22 @@ ${dayContextLines}
         }
       }
     });
+    // 代購標註：這些錢已經算在本人的應付裡，另外列出來讓他知道要跟誰收
+    const myProxies = computeProxyNotes().filter(x => x.buyer === name);
+    const proxyTotal = myProxies.reduce((s,x)=>s+x.twd,0);
+    const proxyBlock = myProxies.length ? `
+      <div style="margin-top:9px; padding:8px 10px; background:#FBF7F1; border:1px solid #E8D9C5; border-radius:10px;">
+        <div style="font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:#8A6A42; margin-bottom:4px;"><i class="fa-solid fa-hand-holding-dollar"></i> 其中含代購 NT$ ${f(proxyTotal)}（要再跟對方收）</div>
+        ${myProxies.map(x=>`<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11px * var(--font-scale)); color:#8A6A42; padding:2px 0;"><span>幫 ${escapeHtml(x.forWhom)} 買 ${escapeHtml(x.item)}${x.qty>1?` ×${x.qty}`:''}</span><span>NT$ ${f(x.twd)}</span></div>`).join('')}
+      </div>` : '';
+
     const net = paidSum - owedSum;
     return `
       <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin-bottom:4px;">我先代墊 NT$ ${f(paidSum)}</div>
       ${paidLines.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有代墊</div>'}
       <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin:9px 0 4px;">我的應付 NT$ ${f(owedSum)}</div>
       ${owedLines.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有應付</div>'}
+      ${proxyBlock}
       <div style="margin-top:9px; padding-top:8px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; font-size:calc(12.5px * var(--font-scale)); font-weight:800;">
         <span style="color:var(--navy);">${net >= 0 ? '應收回' : '應再付'}</span>
         <span style="color:${net >= 0 ? 'var(--teal)' : 'var(--coral)'};">NT$ ${f(Math.abs(net))}</span>
@@ -4598,18 +4613,24 @@ ${dayContextLines}
       </div>`;
     }).join('') + `<p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:10px 0 0;">點名字可展開，看金額是怎麼算出來的</p></div>`;
 
-    // ④ 代購待收（不計入旅伴分帳）
-    if (externalRows.length) {
-      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購待收</div>
-        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">這些人不在旅伴名單，金額不計入上面的分帳，要另外跟對方收</p>`;
-      html += externalRows.map(x => `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
+    // ④ 代購標註（金額已計入代購者的分攤，這裡彙整誰要跟誰收）
+    const proxyNotes = computeProxyNotes();
+    if (proxyNotes.length) {
+      const byPair = {};
+      proxyNotes.forEach(x => {
+        const k = `${x.buyer}→${x.forWhom}`;
+        (byPair[k] = byPair[k] || { buyer: x.buyer, forWhom: x.forWhom, twd: 0, items: [] });
+        byPair[k].twd += x.twd;
+        byPair[k].items.push(`${x.item}${x.qty>1?`×${x.qty}`:''}`);
+      });
+      html += `<div class="card"><div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> 代購標註</div>
+        <p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">這些金額已經算在代購者的分攤裡，列出來是方便他之後跟對方收錢</p>`;
+      html += Object.values(byPair).map(x => `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-            <b style="color:var(--navy); font-size:calc(14.5px * var(--font-scale));">${escapeHtml(x.name)}</b>
-            <b style="color:var(--gold); flex-shrink:0;">待收 NT$ ${f(x.amount)}</b>
+            <span style="font-size:calc(13.5px * var(--font-scale));"><b style="color:var(--navy);">${escapeHtml(x.buyer)}</b> <span style="color:var(--gray);">幫</span> <b style="color:var(--gold);">${escapeHtml(x.forWhom)}</b> <span style="color:var(--gray);">代購</span></span>
+            <b style="color:var(--navy); flex-shrink:0;">NT$ ${f(x.twd)}</b>
           </div>
-          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">
-            ${x.arrangedBy.length ? `由 ${escapeHtml(x.arrangedBy.join('、'))} 代購・` : ''}應還給 ${x.creditors.map(c=>`${escapeHtml(c.who)} NT$${f(c.amount)}`).join('、')}
-          </div>
+          <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:3px;">${escapeHtml(x.items.join('、'))}</div>
         </div>`).join('') + `</div>`;
     }
 
@@ -4712,8 +4733,16 @@ ${dayContextLines}
           const itemSecondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal}${f(recordToTWD(itemRecord) * rateLocal)}`) : `≈ NT$${f(recordToTWD(itemRecord))}`;
           const nameDisplay = it.nameZh ? `${escapeHtml(it.nameOriginal||'')}${it.nameOriginal?' ':''}(${escapeHtml(it.nameZh)})` : escapeHtml(it.nameOriginal || '未命名商品');
           // 誰買的：只是附註資訊，不影響金額
-          const ownerTxt = (it.owners||[]).filter(o=>o.who && (Number(o.qty)||0)>0)
-            .map(o => `${escapeHtml(o.who)}${(o.proxyFor||'').trim()?`→${escapeHtml(o.proxyFor.trim())}`:''} ${o.qty}`).join('　');
+          // 同一人同一種歸屬合併顯示，不要出現「Angus 1　Angus 1」這種重複
+          const ownerMap = {};
+          (it.owners||[]).filter(o=>o.who && (Number(o.qty)||0)>0).forEach(o => {
+            const key = `${o.who}|${(o.proxyFor||'').trim()}`;
+            ownerMap[key] = (ownerMap[key] || 0) + (Number(o.qty)||0);
+          });
+          const ownerTxt = Object.entries(ownerMap).map(([k,q]) => {
+            const [who, pf] = k.split('|');
+            return `${escapeHtml(who)}${pf?`→${escapeHtml(pf)}`:''} ${q}`;
+          }).join('　');
           return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:calc(12px * var(--font-scale)); margin-bottom:6px;">
             <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}
               ${ownerTxt?`<br><small style="color:var(--teal); font-weight:700;"><i class="fa-solid fa-user-check" style="font-size:calc(9px * var(--font-scale));"></i> ${ownerTxt}</small>`:''}
@@ -4739,7 +4768,7 @@ ${dayContextLines}
         <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
         <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:60px; gap:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:${(r.items && r.items.length) ? '96px' : '66px'}; gap:8px;">
         <div style="min-width:0;">
           <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
@@ -5544,16 +5573,23 @@ ${dayContextLines}
       wsAlloc['!cols'] = [{wch:12},{wch:18},{wch:18},{wch:10},{wch:12},{wch:8},{wch:12},{wch:12}];
       XLSX.utils.book_append_sheet(wb, wsAlloc, '逐項分配');
     }
-    const proxyList = computeProxyDebts();
+    const proxyList = computeProxyNotes();
     if (proxyList.length) {
-      const proxyRows = [['日期','代墊者','代購給','商品','數量','金額(TWD)']];
-      proxyList.forEach(x => proxyRows.push([x.date, x.fronted, x.forWhom, x.item, x.qty, x.twd]));
-      const totalProxy = proxyList.reduce((s,x)=>s+x.twd,0);
+      const proxyRows = [['日期','代購者','代購給','商品','數量','金額(TWD)']];
+      proxyList.forEach(x => proxyRows.push([x.date, x.buyer, x.forWhom, x.item, x.qty, x.twd]));
       proxyRows.push([]);
-      proxyRows.push(['合計','','','','', totalProxy]);
+      proxyRows.push(['合計','','','','', proxyList.reduce((s,x)=>s+x.twd,0)]);
+      proxyRows.push([]);
+      proxyRows.push(['說明：以上金額已計入「代購者」的分攤金額，此表供代購者向代購對象收款時對照']);
+      // 各代購者小計，方便一次看出每個人要跟誰收多少
+      const byBuyer = {};
+      proxyList.forEach(x => { const k = `${x.buyer}→${x.forWhom}`; byBuyer[k] = (byBuyer[k]||0) + x.twd; });
+      proxyRows.push([]);
+      proxyRows.push(['代購者','代購給','小計(TWD)']);
+      Object.entries(byBuyer).forEach(([k,v]) => { const [b,fw] = k.split('→'); proxyRows.push([b, fw, v]); });
       const wsProxy = XLSX.utils.aoa_to_sheet(proxyRows);
-      wsProxy['!cols'] = [{wch:12},{wch:12},{wch:12},{wch:18},{wch:8},{wch:12}];
-      XLSX.utils.book_append_sheet(wb, wsProxy, '代購墊付');
+      wsProxy['!cols'] = [{wch:12},{wch:12},{wch:12},{wch:20},{wch:8},{wch:12}];
+      XLSX.utils.book_append_sheet(wb, wsProxy, '代購標註');
     }
 
     // ===== 分類統計 =====
