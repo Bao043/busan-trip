@@ -717,7 +717,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-13 23:25</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 00:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3502,71 +3502,132 @@ ${dayContextLines}
     });
     const evenBox = document.getElementById('qa-even-box'); if (evenBox) evenBox.style.display = mode === 'even' ? 'block' : 'none';
     const itemsBox = document.getElementById('qa-items-box'); if (itemsBox) itemsBox.style.display = mode === 'items' ? 'block' : 'none';
+    // 逐項模式下金額/品項/數量由逐項資料算出來，留著反而讓人以為要再填一次
+    const amtEl = document.getElementById('qa-amount'); if (amtEl) amtEl.parentElement && (amtEl.style.display = mode === 'items' ? 'none' : 'block');
+    const basicEl = document.getElementById('qa-basic-fields'); if (basicEl) basicEl.style.display = mode === 'items' ? 'none' : 'flex';
     if (mode === 'items') { if (!qaAllocItems.length) addAllocItem(); else renderAllocItems(); }
   }
   function addAllocItem() {
-    qaAllocItems.push({ _id: allocSeq++, name: '', unitPrice: 0, alloc: [{ who: travelers[0] || '', qty: 1, proxyFor: '' }] });
+    qaAllocItems.push({ _id: allocSeq++, name: '', unitPrice: 0, alloc: [] });
     renderAllocItems();
   }
   function removeAllocItem(id) { qaAllocItems = qaAllocItems.filter(i => i._id !== id); renderAllocItems(); }
   function updateAllocItem(id, field, val) {
     const it = qaAllocItems.find(i => i._id === id); if (!it) return;
     it[field] = field === 'unitPrice' ? p(val) : val;
-    if (field === 'unitPrice') refreshAllocTotal(); // 只改金額不必整段重畫，不然打字游標會跑掉
+    if (field === 'unitPrice') { renderAllocPicker(); refreshAllocTotal(); } // 不整段重畫，避免打字游標跳掉
   }
-  function addAllocRow(id) {
-    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
-    it.alloc.push({ who: travelers[0] || '', qty: 1, proxyFor: '' });
-    renderAllocItems();
+
+  // 目前正在分配的成員
+  let qaAllocActivePerson = '';
+  function setAllocPerson(name) { qaAllocActivePerson = name; renderAllocPeopleTabs(); renderAllocPicker(); }
+  function renderAllocPeopleTabs() {
+    const el = document.getElementById('qa-alloc-people-tabs'); if (!el) return;
+    if (!travelers.length) { el.innerHTML = '<span style="font-size:calc(12px * var(--font-scale)); color:var(--gray);">尚未設定成員</span>'; return; }
+    if (!qaAllocActivePerson || !travelers.includes(qaAllocActivePerson)) qaAllocActivePerson = travelers[0];
+    el.innerHTML = travelers.map(t => {
+      const on = t === qaAllocActivePerson;
+      const cnt = qaAllocItems.reduce((s,it)=>s + (it.alloc||[]).filter(a=>a.who===t).reduce((x,a)=>x+(Number(a.qty)||0),0), 0);
+      return `<button type="button" onclick="setAllocPerson('${escapeHtml(t)}')" style="padding:7px 13px; border:none; border-radius:11px; font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; font-family:inherit; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'};">${escapeHtml(t)}${cnt?` · ${cnt}件`:''}</button>`;
+    }).join('');
   }
-  function removeAllocRow(id, idx) {
-    const it = qaAllocItems.find(i => i._id === id); if (!it) return;
-    it.alloc.splice(idx, 1); if (!it.alloc.length) it.alloc.push({ who: travelers[0] || '', qty: 1, proxyFor: '' });
-    renderAllocItems();
+  // 某人在某商品上的數量（代購另外一列，這裡只算本人的）
+  function getAllocQty(item, who) {
+    const row = (item.alloc||[]).find(a => a.who === who && !(a.proxyFor||'').trim());
+    return row ? (Number(row.qty)||0) : 0;
   }
-  function updateAllocRow(id, idx, field, val) {
-    const it = qaAllocItems.find(i => i._id === id); if (!it || !it.alloc[idx]) return;
-    it.alloc[idx][field] = field === 'qty' ? (parseInt(val, 10) || 0) : val;
-    if (field !== 'who') refreshAllocTotal();
+  function setAllocQty(itemId, who, qty) {
+    const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
+    it.alloc = it.alloc || [];
+    const idx = it.alloc.findIndex(a => a.who === who && !(a.proxyFor||'').trim());
+    const q = Math.max(0, parseInt(qty,10) || 0);
+    if (q === 0) { if (idx >= 0) it.alloc.splice(idx,1); }
+    else if (idx >= 0) it.alloc[idx].qty = q;
+    else it.alloc.push({ who, qty: q, proxyFor: '' });
+    renderAllocPeopleTabs(); renderAllocPicker(); refreshAllocTotal();
   }
+  function bumpAllocQty(itemId, who, delta) {
+    const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
+    setAllocQty(itemId, who, getAllocQty(it, who) + delta);
+  }
+  // 代購：同一人針對同一商品，可再加一筆「幫誰買的」
+  function getProxyRows(item, who) { return (item.alloc||[]).map((a,i)=>({a,i})).filter(x => x.a.who === who && (x.a.proxyFor||'').trim()); }
+  function addProxyRow(itemId, who) {
+    const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
+    it.alloc = it.alloc || []; it.alloc.push({ who, qty: 1, proxyFor: '' });
+    renderAllocPicker(); refreshAllocTotal();
+  }
+  function updateProxyRow(itemId, idx, field, val) {
+    const it = qaAllocItems.find(i => i._id === itemId); if (!it || !it.alloc[idx]) return;
+    it.alloc[idx][field] = field === 'qty' ? (parseInt(val,10)||0) : val;
+    refreshAllocTotal(); renderAllocPeopleTabs();
+  }
+  function removeProxyRow(itemId, idx) {
+    const it = qaAllocItems.find(i => i._id === itemId); if (!it) return;
+    it.alloc.splice(idx,1); renderAllocPicker(); refreshAllocTotal(); renderAllocPeopleTabs();
+  }
+
+  function renderAllocPicker() {
+    const wrap = document.getElementById('qa-alloc-picker'); if (!wrap) return;
+    const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
+    if (!travelers.length) { wrap.innerHTML = ''; return; }
+    if (!qaAllocActivePerson || !travelers.includes(qaAllocActivePerson)) qaAllocActivePerson = travelers[0];
+    const who = qaAllocActivePerson;
+    const named = qaAllocItems.filter(it => (it.name||'').trim() || (Number(it.unitPrice)||0) > 0);
+    if (!named.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0;">先在上面新增商品，這裡才能勾選</p>`; return; }
+    wrap.innerHTML = named.map(it => {
+      const qty = getAllocQty(it, who);
+      const on = qty > 0;
+      const proxies = getProxyRows(it, who);
+      const proxyHtml = proxies.map(({a,i}) => `
+        <div style="display:flex; gap:5px; align-items:center; margin-top:5px; padding-left:8px;">
+          <span style="font-size:calc(11px * var(--font-scale)); color:var(--gray); flex-shrink:0;">代購給</span>
+          <input type="text" value="${escapeHtml(a.proxyFor||'')}" placeholder="對方名字" oninput="updateProxyRow(${it._id},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid #ccc; font-size:calc(11.5px * var(--font-scale));">
+          <input type="number" min="1" value="${a.qty}" oninput="updateProxyRow(${it._id},${i},'qty',this.value)" style="width:50px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; text-align:center;">
+          <button type="button" onclick="removeProxyRow(${it._id},${i})" style="flex-shrink:0; background:#F1F5F9; border:none; width:26px; height:26px; border-radius:7px; color:var(--warn); cursor:pointer;">×</button>
+        </div>`).join('');
+      return `
+      <div style="background:${on?'#EAF7FA':'#F8FAFC'}; border:1.5px solid ${on?'var(--teal)':'var(--line)'}; border-radius:12px; padding:10px; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:9px;">
+          <div onclick="bumpAllocQty(${it._id},'${escapeHtml(who)}',${on?-qty:1})" style="width:22px; height:22px; border-radius:6px; border:2px solid ${on?'var(--teal)':'#CBD5E1'}; background:${on?'var(--teal)':'#fff'}; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer;">${on?'<i class="fa-solid fa-check" style="color:#fff; font-size:calc(10px * var(--font-scale));"></i>':''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; color:var(--navy); font-size:calc(13px * var(--font-scale));">${escapeHtml(it.name || '未命名商品')}</div>
+            <div style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">單價 ${symbol}${f(Number(it.unitPrice)||0)}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+            <button type="button" onclick="bumpAllocQty(${it._id},'${escapeHtml(who)}',-1)" style="width:28px; height:28px; border:none; border-radius:8px; background:#E2E7EC; color:var(--navy); font-weight:800; cursor:pointer;">−</button>
+            <span style="min-width:22px; text-align:center; font-weight:800; color:var(--navy);">${qty}</span>
+            <button type="button" onclick="bumpAllocQty(${it._id},'${escapeHtml(who)}',1)" style="width:28px; height:28px; border:none; border-radius:8px; background:var(--navy); color:#fff; font-weight:800; cursor:pointer;">＋</button>
+          </div>
+        </div>
+        ${proxyHtml}
+        <button type="button" onclick="addProxyRow(${it._id},'${escapeHtml(who)}')" style="background:none; border:none; color:var(--gold); font-weight:700; font-size:calc(11px * var(--font-scale)); cursor:pointer; padding:6px 0 0;">＋ 這項有幫別人代購</button>
+      </div>`;
+    }).join('');
+  }
+
   function refreshAllocTotal() {
     const el = document.getElementById('qa-alloc-total'); if (!el) return;
     const total = allocItemsTotal(qaAllocItems);
     const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
-    el.innerHTML = `逐項合計：${symbol} ${f(total)}　<span style="color:var(--gray); font-weight:600;">（存檔時會以這個金額為準）</span>`;
+    const unassigned = qaAllocItems.filter(it => ((it.name||'').trim() || (Number(it.unitPrice)||0) > 0) && !(it.alloc||[]).length).length;
+    el.innerHTML = `這筆總金額：${symbol} ${f(total)}`
+      + (unassigned ? `<div style="color:var(--warn); font-weight:600; font-size:calc(11.5px * var(--font-scale)); margin-top:4px;">還有 ${unassigned} 樣商品沒有分配給任何人</div>` : '');
   }
   function renderAllocItems() {
     const wrap = document.getElementById('qa-alloc-list'); if (!wrap) return;
     const symbol = CURRENCY_SYMBOL[qaCurrency] || (qaCurrency + ' ');
-    wrap.innerHTML = qaAllocItems.map(it => {
-      const rows = it.alloc.map((a, idx) => `
-        <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px;">
-          <select onchange="updateAllocRow(${it._id},${idx},'who',this.value)" style="flex:1; min-width:0; padding:7px; border-radius:8px; border:1px solid #ccc; background:#fff; font-family:inherit; font-size:calc(12px * var(--font-scale));">
-            ${travelers.map(t => `<option value="${escapeHtml(t)}" ${a.who===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
-          </select>
-          <input type="number" min="0" value="${a.qty}" oninput="updateAllocRow(${it._id},${idx},'qty',this.value)" style="width:56px; flex-shrink:0; padding:7px; border-radius:8px; border:1px solid #ccc; text-align:center;">
-          <input type="text" value="${escapeHtml(a.proxyFor||'')}" placeholder="代購給(選填)" oninput="updateAllocRow(${it._id},${idx},'proxyFor',this.value)" style="flex:1; min-width:0; padding:7px; border-radius:8px; border:1px solid #ccc; font-size:calc(12px * var(--font-scale));">
-          <button type="button" onclick="removeAllocRow(${it._id},${idx})" style="flex-shrink:0; background:#F1F5F9; border:none; width:28px; height:28px; border-radius:8px; color:var(--warn); cursor:pointer;">×</button>
-        </div>`).join('');
-      const subtotal = (Number(it.unitPrice)||0) * it.alloc.reduce((s,a)=>s+(Number(a.qty)||0),0);
-      return `
-      <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:10px;">
-        <div style="display:flex; gap:5px; align-items:center; margin-bottom:7px;">
-          <input type="text" value="${escapeHtml(it.name)}" placeholder="商品名稱" oninput="updateAllocItem(${it._id},'name',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale));">
-          <input type="text" inputmode="decimal" value="${it.unitPrice||''}" placeholder="單價" oninput="updateAllocItem(${it._id},'unitPrice',this.value)" style="width:76px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
-          <button type="button" onclick="removeAllocItem(${it._id})" style="flex-shrink:0; background:#FEF2F2; border:none; width:30px; height:30px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-        </div>
-        ${rows}
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-          <button type="button" onclick="addAllocRow(${it._id})" style="background:none; border:none; color:var(--teal); font-weight:700; font-size:calc(11.5px * var(--font-scale)); cursor:pointer; padding:0;">＋ 再加一個人</button>
-          <span style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">小計 ${symbol}${f(subtotal)}</span>
-        </div>
-      </div>`;
-    }).join('');
+    wrap.innerHTML = qaAllocItems.map(it => `
+      <div style="display:flex; gap:5px; align-items:center; margin-bottom:7px;">
+        <input type="text" value="${escapeHtml(it.name)}" placeholder="商品名稱" oninput="updateAllocItem(${it._id},'name',this.value)" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; font-size:calc(12.5px * var(--font-scale));">
+        <input type="text" inputmode="decimal" value="${it.unitPrice||''}" placeholder="單價" oninput="updateAllocItem(${it._id},'unitPrice',this.value)" style="width:80px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc;">
+        <button type="button" onclick="removeAllocItem(${it._id})" style="flex-shrink:0; background:#FEF2F2; border:none; width:30px; height:30px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+      </div>`).join('');
+    renderAllocPeopleTabs();
+    renderAllocPicker();
     refreshAllocTotal();
   }
 
-  // 分攤對象是可複選的，跟其他單選的 chip 列不同，所以另外寫一個
   function renderQaParticipants() {
     const el = document.getElementById('qa-participants-row'); if (!el) return;
     if (!travelers.length) { el.innerHTML = `<span style="font-size:calc(12px * var(--font-scale)); color:var(--gray);">尚未設定成員</span>`; return; }
@@ -3654,12 +3715,19 @@ ${dayContextLines}
           <div class="chip-row" id="qa-participants-row" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
         </div>
 
-        <!-- 逐項分配：一次結帳買了多樣東西、各自屬於不同人時使用，也可標記某幾件是幫別人代購 -->
+        <!-- 逐項分配：先列出買了什麼，再切換到每個人、勾選他拿了哪幾樣、各幾個 -->
         <div id="qa-items-box" style="display:none; margin-bottom:12px;">
-          <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">適合一起結帳但東西各自歸屬的情況。每件商品填單價，再列出誰拿幾個；幫旅程外的人買的可填「代購給」。</p>
+          <p style="font-size:calc(11px * var(--font-scale)); color:var(--gray); margin:0 0 8px; line-height:1.6;">步驟一：列出這次買的東西（AI 辨識收據後會自動帶入）。步驟二：點成員名字，勾選他拿了哪幾樣、各幾個。</p>
+
+          <div class="input-label" style="margin-bottom:5px;">① 買了什麼</div>
           <div id="qa-alloc-list"></div>
-          <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:9px;" onclick="addAllocItem()"><i class="fa-solid fa-plus"></i> 新增商品</button>
-          <div id="qa-alloc-total" style="margin-top:10px; font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"></div>
+          <button type="button" class="ghost-btn" style="font-size:calc(12px * var(--font-scale)); padding:9px; margin-bottom:14px;" onclick="addAllocItem()"><i class="fa-solid fa-plus"></i> 新增商品</button>
+
+          <div class="input-label" style="margin-bottom:5px;">② 誰拿了哪幾樣</div>
+          <div id="qa-alloc-people-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+          <div id="qa-alloc-picker"></div>
+
+          <div id="qa-alloc-total" style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); font-size:calc(12.5px * var(--font-scale)); color:var(--navy); font-weight:700;"></div>
         </div>
         <div class="input-label">金額</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
@@ -3670,7 +3738,7 @@ ${dayContextLines}
           <button type="button" onclick="setQaCurrency('EUR', this)" style="padding:10px 12px; border:none; border-radius:10px; font-weight:700; font-size:calc(13px * var(--font-scale)); cursor:pointer; background:${qaCurrency==='EUR'?'var(--navy)':'#E2E7EC'}; color:${qaCurrency==='EUR'?'#fff':'var(--gray)'};">€ 歐元</button>
         </div>
         <input type="number" id="qa-amount" inputmode="decimal" placeholder="金額 (${qaCurrency})" value="${escapeHtml(prefillAmount)}" style="width:100%; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <div id="qa-basic-fields" style="display:flex; gap:8px; margin-bottom:12px;">
           <div style="flex:1; min-width:0;">
             <div class="input-label">品項名稱</div>
             <input type="text" id="qa-item" placeholder="例如：晚餐、地鐵票、門票" value="${escapeHtml(prefillItem)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
@@ -4154,12 +4222,19 @@ ${dayContextLines}
     if (!transfers.length) {
       html += `<p style="margin:0; font-size:calc(13px * var(--font-scale)); color:var(--teal); font-weight:700;"><i class="fa-solid fa-circle-check"></i> 大家都已平衡，不用互相轉帳</p>`;
     } else {
-      html += transfers.map(t => `<div style="display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale));">
-        <b style="color:var(--coral);">${escapeHtml(t.from)}</b>
-        <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
-        <b style="color:var(--teal);">${escapeHtml(t.to)}</b>
-        <b style="margin-left:auto; color:var(--navy);">NT$ ${f(t.amount)}</b>
-      </div>`).join('');
+      const pending = transfers.filter(t => !isSettled(t.from, t.to, t.amount));
+      if (!pending.length) {
+        html += `<p style="margin:0; font-size:calc(13px * var(--font-scale)); color:var(--teal); font-weight:700;"><i class="fa-solid fa-circle-check"></i> 全部已結清</p>`;
+      } else {
+        html += pending.map(t => `<div style="display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale));">
+          <b style="color:var(--coral);">${escapeHtml(t.from)}</b>
+          <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
+          <b style="color:var(--teal);">${escapeHtml(t.to)}</b>
+          <b style="margin-left:auto; color:var(--navy);">NT$ ${f(t.amount)}</b>
+        </div>`).join('');
+        const doneN = transfers.length - pending.length;
+        if (doneN) html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:8px 0 0;">另有 ${doneN} 筆已結清</p>`;
+      }
     }
     body.innerHTML = html;
   }
@@ -4186,6 +4261,23 @@ ${dayContextLines}
   function toggleSettleDetail(name) {
     const el = document.getElementById('settle-detail-' + name); if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // 已結清紀錄：某人已經把錢拿給另一人時，把那筆勾掉，之後結算就不再顯示
+  function settledKey(from, to) { return `${from}→${to}`; }
+  function getSettled() { return (tripSettings && tripSettings.settledPairs) || {}; }
+  function isSettled(from, to, amount) {
+    const rec = getSettled()[settledKey(from, to)];
+    // 金額有變動（又多記了帳）就視為未結清，避免舊的結清狀態蓋掉新增的欠款
+    return !!(rec && Math.abs((rec.amount || 0) - amount) < 1);
+  }
+  function toggleSettled(from, to, amount) {
+    if (!tripSettings.settledPairs) tripSettings.settledPairs = {};
+    const k = settledKey(from, to);
+    if (isSettled(from, to, amount)) delete tripSettings.settledPairs[k];
+    else tripSettings.settledPairs[k] = { amount: Math.round(amount), at: Date.now() };
+    saveTripSettings();
+    renderSettlement(); renderSettlementSummary();
   }
 
   function renderSettlement() {
@@ -4222,12 +4314,17 @@ ${dayContextLines}
       html += `<p style="color:var(--gray); font-size:calc(13px * var(--font-scale)); margin:0;">目前大家都已經平衡，不用互相轉帳。</p>`;
     } else {
       html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">照下面 ${transfers.length} 筆轉帳付完就結清了（已算成最少筆數）</p>`;
-      html += transfers.map(t => `<div style="display:flex; align-items:center; gap:8px; padding:11px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale));">
-        <b style="color:var(--coral);">${escapeHtml(t.from)}</b>
+      html += transfers.map(t => {
+        const done = isSettled(t.from, t.to, t.amount);
+        return `<div style="display:flex; align-items:center; gap:9px; padding:11px 0; border-bottom:1px solid var(--line); font-size:calc(13.5px * var(--font-scale)); opacity:${done?0.55:1};">
+        <div onclick="toggleSettled('${escapeHtml(t.from)}','${escapeHtml(t.to)}',${t.amount})" style="width:22px; height:22px; border-radius:6px; border:2px solid ${done?'var(--teal)':'#CBD5E1'}; background:${done?'var(--teal)':'#fff'}; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer;">${done?'<i class="fa-solid fa-check" style="color:#fff; font-size:calc(11px * var(--font-scale));"></i>':''}</div>
+        <b style="color:var(--coral); ${done?'text-decoration:line-through;':''}">${escapeHtml(t.from)}</b>
         <i class="fa-solid fa-arrow-right" style="color:var(--gray); font-size:calc(11px * var(--font-scale));"></i>
-        <b style="color:var(--teal);">${escapeHtml(t.to)}</b>
-        <b style="margin-left:auto; color:var(--navy);">NT$ ${f(t.amount)}</b>
-      </div>`).join('');
+        <b style="color:var(--teal); ${done?'text-decoration:line-through;':''}">${escapeHtml(t.to)}</b>
+        <b style="margin-left:auto; color:var(--navy); ${done?'text-decoration:line-through;':''}">NT$ ${f(t.amount)}</b>
+      </div>`;}).join('');
+      const doneCount = transfers.filter(t => isSettled(t.from, t.to, t.amount)).length;
+      html += `<p style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin:10px 0 0;">已結清 ${doneCount} / ${transfers.length} 筆。對方把錢拿給你之後，點左邊方框打勾即可。</p>`;
     }
     html += `</div>`;
 
@@ -4273,7 +4370,12 @@ ${dayContextLines}
     // 防禦性檢查
     const krwEl = document.getElementById('exp-total-krw');
     const twdEl = document.getElementById('exp-total-twd');
-    if (krwEl) krwEl.innerText = `≈ ₩ ${f(totalKrw)}`;
+    // 次要金額改用旅程當地幣別，不再固定韓元
+    const localCur = getCountryInfo().currency;
+    const localSym = CURRENCY_SYMBOL[localCur] || (localCur + ' ');
+    const localRate = currentRateForCurrency(localCur) || 1;
+    const totalTwdAll = expenseRecords.reduce((s,r)=>s+recordToTWD(r),0);
+    if (krwEl) krwEl.innerText = (localCur === 'TWD') ? '' : `≈ ${localSym} ${f(totalTwdAll * localRate)}`;
     if (twdEl) twdEl.innerText = `NT$ ${f(totalKrw/rateTWD)}`;
 
     const wrap = document.getElementById('cat-breakdown'); if (!wrap) return;
@@ -4306,7 +4408,7 @@ ${dayContextLines}
           <span style="font-size:calc(13px * var(--font-scale));">${icon} ${escapeHtml(label)}</span>
           <span style="text-align:right; flex-shrink:0;">
             <span style="font-weight:700; color:var(--navy); font-size:calc(13px * var(--font-scale));">${pct}% · NT$ ${f(g.total/rateTWD)}</span>
-            <span style="display:block; color:var(--gray); font-size:calc(10.5px * var(--font-scale)); margin-top:1px;">≈ ₩ ${f(g.total)}</span>
+            <span style="display:block; color:var(--gray); font-size:calc(10.5px * var(--font-scale)); margin-top:1px;">${localCur === 'TWD' ? '' : `≈ ${localSym} ${f((g.total/rateTWD) * localRate)}`}</span>
           </span>
         </div>
         <div style="background:#F1F5F9; border-radius:6px; height:6px; overflow:hidden; margin-bottom:12px;"><div style="background:var(--teal); height:100%; width:${pct}%;"></div></div>
@@ -4327,7 +4429,10 @@ ${dayContextLines}
     const isTwd = cur === 'TWD';
     const symbol = CURRENCY_SYMBOL[cur] || (cur + ' ');
     const primary = `${symbol} ${f(r.amount)}`;
-    const secondary = isTwd ? `≈ ₩ ${f(recordToKRW(r))}` : `≈ NT$ ${f(recordToTWD(r))}`;
+    const curLocal = getCountryInfo().currency;
+    const symLocal = CURRENCY_SYMBOL[curLocal] || (curLocal + ' ');
+    const rateLocal = currentRateForCurrency(curLocal) || 1;
+    const secondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal} ${f(recordToTWD(r) * rateLocal)}`) : `≈ NT$ ${f(recordToTWD(r))}`;
     const isExpanded = expandedExpenseIds.has(r.id);
     const metaBits = [`數量 ×${r.quantity||1}`, r.payer, r.method].filter(Boolean).map(escapeHtml).join(' · ');
 
@@ -4336,7 +4441,7 @@ ${dayContextLines}
         <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ul"></i> 商品明細</div>
         ${r.items.map(it => {
           const itemRecord = { amount: it.price, currency: cur, rateAtTime: r.rateAtTime };
-          const itemSecondary = isTwd ? `≈ ₩${f(recordToKRW(itemRecord))}` : `≈ NT$${f(recordToTWD(itemRecord))}`;
+          const itemSecondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal}${f(recordToTWD(itemRecord) * rateLocal)}`) : `≈ NT$${f(recordToTWD(itemRecord))}`;
           const nameDisplay = it.nameZh ? `${escapeHtml(it.nameOriginal||'')}${it.nameOriginal?' ':''}(${escapeHtml(it.nameZh)})` : escapeHtml(it.nameOriginal || '未命名商品');
           return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:calc(12px * var(--font-scale)); margin-bottom:6px;">
             <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}</span>
@@ -5141,8 +5246,8 @@ ${dayContextLines}
     });
     settleRows.push([]);
     settleRows.push(['結清方式（依下列轉帳即可結清，已算成最少筆數）']);
-    settleRows.push(['付款人','收款人','金額(TWD)']);
-    if (st.transfers.length) { st.transfers.forEach(t => settleRows.push([t.from, t.to, t.amount])); }
+    settleRows.push(['付款人','收款人','金額(TWD)','結清狀態']);
+    if (st.transfers.length) { st.transfers.forEach(t => settleRows.push([t.from, t.to, t.amount, isSettled(t.from, t.to, t.amount) ? '已結清' : '未結清'])); }
     else { settleRows.push(['—','—','大家都已平衡，不需轉帳']); }
     const wsSettle = XLSX.utils.aoa_to_sheet(settleRows);
     wsSettle['!cols'] = [{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:10},{wch:16},{wch:12}];
