@@ -717,7 +717,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 01:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 02:40</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3662,6 +3662,12 @@ ${dayContextLines}
     if (chevron) chevron.className = opening ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
   }
 
+  // 下一個沒被用過的編號，當作新增時的建議值（使用者不填就不會有編號）
+  function nextRefNo() {
+    const used = (expenseRecords||[]).map(r => Number(r.refNo)).filter(n => n > 0);
+    return used.length ? Math.max(...used) + 1 : 1;
+  }
+
   function openQuickAdd(prefill, editId, hostEl) {
     // 同一時間只允許存在一份表單：兩份並存時欄位 id 會重複，查到的可能是另一份的空欄位
     const mainBox = document.getElementById('quick-add-box');
@@ -3744,6 +3750,17 @@ ${dayContextLines}
 
         <button type="button" onclick="toggleQaMoreDetails()" style="width:100%; background:#F1F5F9; border:none; border-radius:12px; padding:10px; color:var(--navy); font-weight:700; font-size:calc(12.5px * var(--font-scale)); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:12px;"><i class="fa-solid fa-chevron-${moreDetailsOpen?'up':'down'}" id="qa-more-chevron"></i> 更多詳細資訊（地點／優惠券／退稅／備註）</button>
         <div id="qa-more-details" style="display:${moreDetailsOpen?'block':'none'}; margin-bottom:4px;">
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <div style="flex:0 0 88px;">
+              <div class="input-label">編號</div>
+              <input type="number" id="qa-refno" min="1" value="${pf.refNo || ''}" placeholder="${editId ? '選填' : String(nextRefNo())}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-align:center;">
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div class="input-label">當下匯率（1 TWD ≈ ? ${qaCurrency}）</div>
+              <input type="text" inputmode="decimal" id="qa-rate" value="${pf.rateAtTime || ''}" placeholder="留空用即時匯率" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box;">
+            </div>
+          </div>
+          <p style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin:-6px 0 12px; line-height:1.6;">編號可寫在實體收據上方便核對。匯率改了之後，台幣金額會跟著重算。</p>
           <div class="input-label">消費地點</div>
           <input type="text" id="qa-location" placeholder="店家或地點名稱" value="${escapeHtml(prefillLocation)}" style="width:100%; min-width:0; padding:10px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; margin-bottom:12px;">
           <div class="input-label">優惠券／折扣</div>
@@ -3815,7 +3832,9 @@ ${dayContextLines}
     const coupEl = q('qa-coupon'); const coupon = coupEl ? coupEl.value.trim() : '';
     const taxEl = q('qa-taxrefund'); const taxRefund = taxEl ? taxEl.value.trim() : '';
     const noteEl = q('qa-note'); const note = noteEl ? noteEl.value.trim() : '';
-    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
+    const refEl = q('qa-refno'); const refNo = (refEl && parseInt(refEl.value,10) > 0) ? parseInt(refEl.value,10) : null;
+    const rateEl = q('qa-rate'); const manualRate = (rateEl && p(rateEl.value) > 0) ? p(rateEl.value) : null;
+    const data = { amount: amt, currency: qaCurrency, category: qaCat, payer: qaPayer, method: qaMethod, date, item: item||qaCat, quantity, location, coupon, taxRefund, note, refNo, participants: (qaParticipants && qaParticipants.length) ? qaParticipants.slice() : travelers.slice() };
     // 逐項分配模式：金額以各項小計加總為準，避免跟填寫的總額對不起來
     if (qaSplitMode === 'items' && qaAllocItems.length) {
       data.splitMode = 'items';
@@ -3829,11 +3848,14 @@ ${dayContextLines}
     if (editId) {
       const existing = expenseRecords.find(r => r.id === editId);
       if (existing) {
-        if (existing.currency !== qaCurrency) { data.rateAtTime = currentRateForCurrency(qaCurrency); } // 幣別有改才需要重新記錄當下匯率，其餘欄位直接覆蓋（原本的商品明細 items 不受影響）
+        // 手動填的匯率優先；沒填但換了幣別才重新抓即時匯率
+        if (manualRate) data.rateAtTime = manualRate;
+        else if (existing.currency !== qaCurrency) data.rateAtTime = currentRateForCurrency(qaCurrency);
         Object.assign(existing, data);
+        if (existing.paidTotal !== undefined) existing.paidTotal = data.amount; // 逐項分配的紀錄，實付金額要跟著更新
       }
     } else {
-      expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: currentRateForCurrency(qaCurrency) });
+      expenseRecords.push({ id: expItemSeq++, ...data, rateAtTime: manualRate || currentRateForCurrency(qaCurrency) });
     }
     saveExpense(); editingExpenseId = null;
     const qab = document.getElementById('quick-add-box'); if (qab) { qab.style.display = 'none'; qab.innerHTML = ''; }
@@ -4034,10 +4056,73 @@ ${dayContextLines}
     });
   }
 
+  // 品項的「誰買的」分配：點名字加一個、點數字歸零；不影響金額，只是記錄歸屬
+  function rrTapPerson(ridx, who) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    it.owners = it.owners || [];
+    const row = it.owners.find(o => o.who === who && !(o.proxyFor||'').trim());
+    if (row) row.qty = (Number(row.qty)||0) + 1; else it.owners.push({ who, qty: 1, proxyFor: '' });
+    renderReceiptItemsList();
+  }
+  function rrClearPerson(ridx, who) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    it.owners = (it.owners||[]).filter(o => !(o.who === who && !(o.proxyFor||'').trim()));
+    renderReceiptItemsList();
+  }
+  function rrOwnerQty(it, who) {
+    const row = (it.owners||[]).find(o => o.who === who && !(o.proxyFor||'').trim());
+    return row ? (Number(row.qty)||0) : 0;
+  }
+  function rrAddProxy(ridx) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    it.owners = it.owners || []; it.owners.push({ who: travelers[0]||'', qty: 1, proxyFor: '' });
+    renderReceiptItemsList();
+  }
+  function rrUpdateProxy(ridx, oi, field, val) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it || !it.owners[oi]) return;
+    it.owners[oi][field] = field === 'qty' ? (parseInt(val,10)||0) : val;
+  }
+  function rrRemoveProxy(ridx, oi) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    it.owners.splice(oi,1); renderReceiptItemsList();
+  }
+  function rrSplitEven(ridx) {
+    const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it || !travelers.length) return;
+    const total = Number(it.quantity)||0;
+    if (!total) { alert('這個品項沒有數量，無法平均分'); return; }
+    it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim());
+    const base = Math.floor(total / travelers.length); let rest = total - base*travelers.length;
+    travelers.forEach(t => { const q = base + (rest>0?1:0); if (rest>0) rest--; if (q>0) it.owners.push({ who:t, qty:q, proxyFor:'' }); });
+    renderReceiptItemsList();
+  }
+
   function renderReceiptItemsList() {
     const wrap = document.getElementById('receipt-items-list'); if (!wrap) return;
     if (!receiptReviewItemsState.length) { wrap.innerHTML = `<p style="font-size:calc(12px * var(--font-scale)); color:var(--gray); margin:0 0 10px;">尚無商品明細，可按下方按鈕手動新增</p>`; return; }
-    wrap.innerHTML = receiptReviewItemsState.map(it => `
+    wrap.innerHTML = receiptReviewItemsState.map(it => {
+      const assigned = (it.owners||[]).reduce((s,o)=>s+(Number(o.qty)||0),0);
+      const total = Number(it.quantity)||0;
+      const remain = total - assigned;
+      const chips = travelers.map(t => {
+        const q = rrOwnerQty(it, t); const on = q > 0;
+        return `<span style="display:inline-flex; align-items:center; gap:4px; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:10px; padding:5px 9px; font-size:calc(11.5px * var(--font-scale)); font-weight:700;">
+          <span onclick="rrTapPerson(${it._ridx},'${escapeHtml(t)}')" style="cursor:pointer;">${escapeHtml(t)}</span>
+          ${on?`<span onclick="rrClearPerson(${it._ridx},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:6px; padding:0 5px;">${q}</span>`:''}
+        </span>`;
+      }).join('');
+      const proxyRows = (it.owners||[]).map((o,i)=>({o,i})).filter(x => String(x.o.proxyFor||'').trim() !== '' || (x.o.proxyFor === '' && false));
+      const proxyEditable = (it.owners||[]).map((o,i)=>({o,i})).filter(x => Object.prototype.hasOwnProperty.call(x.o,'proxyFor') && String(x.o.proxyFor||'').trim() !== '');
+      const proxyHtml = proxyEditable.map(({o,i}) => `
+        <div style="display:flex; gap:5px; align-items:center; margin-top:5px;">
+          <select onchange="rrUpdateProxy(${it._ridx},${i},'who',this.value)" style="width:74px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; background:#fff; font-family:inherit; font-size:calc(11px * var(--font-scale));">
+            ${travelers.map(t=>`<option value="${escapeHtml(t)}" ${o.who===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
+          </select>
+          <span style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); flex-shrink:0;">代購給</span>
+          <input type="text" value="${escapeHtml(o.proxyFor||'')}" placeholder="對方名字" oninput="rrUpdateProxy(${it._ridx},${i},'proxyFor',this.value)" style="flex:1; min-width:0; padding:6px; border-radius:8px; border:1px solid #ccc; font-size:calc(11px * var(--font-scale));">
+          <input type="number" min="1" value="${o.qty}" oninput="rrUpdateProxy(${it._ridx},${i},'qty',this.value)" style="width:44px; flex-shrink:0; padding:6px; border-radius:8px; border:1px solid #ccc; text-align:center;">
+          <button onclick="rrRemoveProxy(${it._ridx},${i})" style="flex-shrink:0; background:#F1F5F9; border:none; width:24px; height:24px; border-radius:7px; color:var(--warn); cursor:pointer;">×</button>
+        </div>`).join('');
+      return `
       <div class="card" id="rr-item-${it._ridx}" style="border:1px solid var(--line); padding:10px; margin-bottom:8px;">
         <div style="display:flex; gap:6px; margin-bottom:6px;">
           <input type="text" id="rr-orig-${it._ridx}" value="${escapeHtml(it.nameOriginal)}" placeholder="原文名稱" style="flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale));">
@@ -4048,8 +4133,21 @@ ${dayContextLines}
           <input type="number" id="rr-qty-${it._ridx}" min="1" value="${it.quantity}" placeholder="數量" style="width:56px; flex-shrink:0; padding:8px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; font-size:calc(12.5px * var(--font-scale)); text-align:center;">
           <button onclick="removeReceiptItemRow(${it._ridx})" style="flex-shrink:0; background:#F1F5F9; border:none; width:32px; height:32px; border-radius:8px; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
         </div>
+        ${travelers.length ? `
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);">
+          <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-bottom:5px;">這項誰買的？（點名字加一個，點數字歸零）</div>
+          <div style="display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
+            ${chips}
+            ${travelers.length>1?`<button type="button" onclick="rrSplitEven(${it._ridx})" style="background:#E2E7EC; border:none; border-radius:10px; padding:5px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">平均分</button>`:''}
+            <button type="button" onclick="rrAddProxy(${it._ridx})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:10px; padding:4px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
+          </div>
+          ${proxyHtml}
+          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${total && remain !== 0 ? 'var(--warn)' : 'var(--gray)'};">
+            ${total ? (remain === 0 ? '已分配完畢' : remain > 0 ? `還有 ${remain} 個沒分（不分也沒關係，會算成全體均分）` : `超出 ${-remain} 個`) : `已分配 ${assigned} 個`}
+          </div>
+        </div>` : ''}
       </div>
-    `).join('');
+    `;}).join('');
   }
 
   function addReceiptItemRow() {
@@ -4060,6 +4158,44 @@ ${dayContextLines}
   function removeReceiptItemRow(ridx) {
     receiptReviewItemsState = receiptReviewItemsState.filter(it => it._ridx !== ridx);
     renderReceiptItemsList();
+  }
+
+  // 事後編輯「誰買的」：重用收據確認畫面的分配介面，只更新歸屬不動金額
+  let ownerEditTargetId = null;
+  function openOwnerEditor(id) {
+    const r = expenseRecords.find(x => x.id === id); if (!r || !r.items) return;
+    ownerEditTargetId = id;
+    rrItemSeq = 0;
+    receiptReviewItemsState = r.items.map(it => ({
+      _ridx: rrItemSeq++, nameOriginal: it.nameOriginal||'', nameZh: it.nameZh||'',
+      price: it.price||0, quantity: it.quantity||1,
+      owners: (it.owners||[]).map(o => ({ ...o }))
+    }));
+    const fields = `<div id="receipt-items-list"></div>`;
+    setupGeneralEdit('編輯：這些東西是誰買的', fields, () => {
+      const rec = expenseRecords.find(x => x.id === ownerEditTargetId); if (!rec) { closeGeneralEdit(); return; }
+      receiptReviewItemsState.forEach((st, i) => {
+        if (rec.items[i]) rec.items[i].owners = (st.owners||[]).filter(o => o.who && (Number(o.qty)||0) > 0);
+      });
+      const anyOwner = rec.items.some(it => (it.owners||[]).length);
+      if (anyOwner) {
+        rec.splitMode = 'items';
+        rec.allocItems = rec.items.map(it => ({
+          name: it.nameZh || it.nameOriginal,
+          unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
+          qty: Number(it.quantity)||1, mode: 'qty',
+          alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
+        }));
+        rec.paidTotal = Number(rec.amount)||0;
+        const sub = rec.allocItems.reduce((s2,it)=>s2 + it.unitPrice * (it.alloc||[]).reduce((x,a)=>x+(Number(a.qty)||0),0), 0);
+        const diff = rec.paidTotal - sub;
+        rec.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
+      } else {
+        rec.splitMode = 'even'; rec.allocItems = []; rec.extras = [];
+      }
+      saveExpense(); renderExpenseSummary(); closeGeneralEdit();
+    });
+    setTimeout(renderReceiptItemsList, 30); // 等 modal 的 DOM 產生後再畫
   }
 
   function confirmReceiptImport() {
@@ -4080,15 +4216,36 @@ ${dayContextLines}
         nameOriginal: origEl ? origEl.value.trim() : it.nameOriginal,
         nameZh: zhEl ? zhEl.value.trim() : it.nameZh,
         price: priceEl ? p(priceEl.value) : it.price,
-        quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1
+        quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1,
+        owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
       };
     }).filter(it => it.nameOriginal || it.nameZh);
+
+    // 有指定歸屬的話，轉成分帳引擎看得懂的格式；沒指定的品項會落到「未分配」由全員均分
+    const anyOwner = items.some(it => (it.owners||[]).length);
+    const allocItemsFromReceipt = anyOwner ? items.map(it => ({
+      name: it.nameZh || it.nameOriginal,
+      unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
+      qty: Number(it.quantity)||1,
+      mode: 'qty',
+      alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
+    })) : [];
 
     expenseRecords.push({
       id: expItemSeq++, amount: amt, currency: rrCurrency, category: rrCategory,
       payer: qaPayer, method: qaMethod, date: date, item: name,
       rateAtTime: currentRateForCurrency(rrCurrency), quantity: 1, location: location, coupon: '', taxRefund: '', note: note,
-      items: items
+      items: items,
+      // 分帳用：有指定歸屬才寫入，並把「品項加總與實付金額的差額」當成折扣按比例分攤，
+      // 這樣即使有滿額折扣，各人分到的金額加起來仍會等於實際付款
+      splitMode: anyOwner ? 'items' : 'even',
+      allocItems: allocItemsFromReceipt,
+      paidTotal: amt,
+      extras: anyOwner ? (() => {
+        const sub = allocItemsFromReceipt.reduce((s2,it)=>s2 + it.unitPrice * (it.alloc||[]).reduce((x,a)=>x+(Number(a.qty)||0),0), 0);
+        const diff = amt - sub;
+        return Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
+      })() : []
     });
     saveExpense(); renderExpenseSummary();
     closeReceiptReview();
@@ -4247,7 +4404,17 @@ ${dayContextLines}
       });
     });
 
-    const rows = people.map(t => ({ name: t, paid: Math.round(paid[t]), share: Math.round(owed[t]), balance: Math.round(paid[t] - owed[t]) }));
+    // 換算成台幣後再做一次尾差校正：每個人各自四捨五入會累積誤差，
+    // 這裡把差額補回金額最大的人，確保「應付總額 + 代購待收 = 實付總額」完全相等
+    const paidTotalTWD = Math.round(people.reduce((s, t) => s + paid[t], 0));
+    const combined = {};
+    people.forEach(t => { combined['T:' + t] = owed[t]; });
+    Object.entries(external).forEach(([n, v]) => { combined['E:' + n] = v.amount; });
+    const balanced = roundToTarget(combined, paidTotalTWD);
+    people.forEach(t => { owed[t] = balanced['T:' + t] || 0; });
+    Object.entries(external).forEach(([n, v]) => { v.amount = balanced['E:' + n] || 0; });
+
+    const rows = people.map(t => ({ name: t, paid: Math.round(paid[t]), share: Math.round(owed[t]), balance: Math.round(paid[t]) - Math.round(owed[t]) }));
     const creditors = rows.filter(r => r.balance > 0).map(r => ({ ...r })).sort((a, b) => b.balance - a.balance);
     const debtors = rows.filter(r => r.balance < 0).map(r => ({ ...r, balance: -r.balance })).sort((a, b) => b.balance - a.balance);
     const transfers = [];
@@ -4544,8 +4711,13 @@ ${dayContextLines}
           const itemRecord = { amount: it.price, currency: cur, rateAtTime: r.rateAtTime };
           const itemSecondary = isTwd ? (curLocal === 'TWD' ? '' : `≈ ${symLocal}${f(recordToTWD(itemRecord) * rateLocal)}`) : `≈ NT$${f(recordToTWD(itemRecord))}`;
           const nameDisplay = it.nameZh ? `${escapeHtml(it.nameOriginal||'')}${it.nameOriginal?' ':''}(${escapeHtml(it.nameZh)})` : escapeHtml(it.nameOriginal || '未命名商品');
+          // 誰買的：只是附註資訊，不影響金額
+          const ownerTxt = (it.owners||[]).filter(o=>o.who && (Number(o.qty)||0)>0)
+            .map(o => `${escapeHtml(o.who)}${(o.proxyFor||'').trim()?`→${escapeHtml(o.proxyFor.trim())}`:''} ${o.qty}`).join('　');
           return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:calc(12px * var(--font-scale)); margin-bottom:6px;">
-            <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}</span>
+            <span style="flex:1; min-width:0; color:var(--navy);">${nameDisplay}${it.quantity>1?` ×${it.quantity}`:''}
+              ${ownerTxt?`<br><small style="color:var(--teal); font-weight:700;"><i class="fa-solid fa-user-check" style="font-size:calc(9px * var(--font-scale));"></i> ${ownerTxt}</small>`:''}
+            </span>
             <span style="flex-shrink:0; text-align:right;"><b style="color:var(--navy);">${symbol}${f(it.price||0)}</b><br><small style="color:var(--gray);">${itemSecondary}</small></span>
           </div>`;
         }).join('')}
@@ -4563,12 +4735,13 @@ ${dayContextLines}
 
     return `<div class="timeline-card" style="margin-bottom:10px; padding:14px; position:relative;" onclick="toggleExpenseDetail(${r.id})">
       <div class="only-master" style="position:absolute; top:10px; right:10px; display:flex; gap:6px;">
+        ${(r.items && r.items.length) ? `<button onclick="event.stopPropagation(); openOwnerEditor(${r.id})" title="編輯誰買的" style="background:#EAF7FA; border:none; width:26px; height:26px; border-radius:50%; color:var(--teal); cursor:pointer;"><i class="fa-solid fa-user-check"></i></button>` : ''}
         <button onclick="event.stopPropagation(); editExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
         <button onclick="event.stopPropagation(); deleteExpenseItem(${r.id})" style="background:#F1F5F9; border:none; width:26px; height:26px; border-radius:50%; color:var(--warn); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-right:60px; gap:8px;">
         <div style="min-width:0;">
-          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${escapeHtml(r.item)}</div>
+          <div class="timeline-title" style="font-size:calc(15px * var(--font-scale));">${r.refNo ? `<span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; background:var(--navy); color:#fff; border-radius:7px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; margin-right:6px; vertical-align:middle;">${r.refNo}</span>` : ''}${escapeHtml(r.item)}</div>
           <div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray); margin-top:4px;">${metaBits}</div>
         </div>
         <div style="text-align:right; flex-shrink:0;">
@@ -5319,19 +5492,19 @@ ${dayContextLines}
     XLSX.utils.book_append_sheet(wb, wsItin, '每日行程');
 
     const totalKrw = expenseRecords.reduce((s,r)=>s+recordToKRW(r),0);
-    const expRows = [['日期','類別','品項','數量','原始金額','幣別','約當KRW','約當TWD','付款人','分攤對象','分攤人數','每人分攤(TWD)','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
+    const expRows = [['編號','日期','類別','品項','數量','原始金額','幣別','當下匯率','約當KRW','約當TWD','付款人','分攤對象','分攤人數','每人分攤(TWD)','付款方式','消費地點','優惠券/折扣','退稅金額','商品明細','備註']];
     expenseRecords.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
       const itemsStr = Array.isArray(r.items) && r.items.length
         ? r.items.map(it => `${it.nameOriginal||''}${it.nameZh?`(${it.nameZh})`:''} x${it.quantity||1} ${it.price||0}`).join('; ')
         : '';
       const parts = (Array.isArray(r.participants) && r.participants.length) ? r.participants : travelers;
       const perHead = parts.length ? Math.round(recordToTWD(r)/parts.length) : recordToTWD(r);
-      expRows.push([r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', recordToKRW(r), recordToTWD(r), r.payer||'', parts.join('、'), parts.length, perHead, r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
+      expRows.push([r.refNo||'', r.date||'', r.category||'', r.item||'', r.quantity||1, r.amount||0, r.currency||'KRW', r.rateAtTime||'', recordToKRW(r), recordToTWD(r), r.payer||'', parts.join('、'), parts.length, perHead, r.method||'', r.location||'', r.coupon||'', r.taxRefund||'', itemsStr, r.note||'']);
     });
     expRows.push([]);
     expRows.push(['', '', '總計', '', '', '', totalKrw, Math.round(totalKrw/rateTWD), '', '', '', '', '', '', '']);
     const wsExp = XLSX.utils.aoa_to_sheet(expRows);
-    wsExp['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:10},{wch:20},{wch:10},{wch:14},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
+    wsExp['!cols'] = [{wch:6},{wch:12},{wch:10},{wch:22},{wch:6},{wch:12},{wch:8},{wch:12},{wch:12},{wch:12},{wch:10},{wch:20},{wch:10},{wch:14},{wch:10},{wch:16},{wch:14},{wch:12},{wch:40},{wch:20}];
     XLSX.utils.book_append_sheet(wb, wsExp, '消費紀錄');
 
     // ===== 分帳結算：每人應付/實付/差額，加上實際該怎麼轉帳才結清 =====
