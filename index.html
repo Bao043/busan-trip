@@ -26,7 +26,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
 <style>
   :root {
-    --bg: #F5F7FA; --card: #FFFFFF; --navy: #1D2B45; --coral: #FF8A84;
+    --bg: #F7F9FC; --card: #FFFFFF; --navy: #1D2B45; --coral: #FF8A84;
     --teal: #49B8D0; --gold: #C5A07A; --gray: #98A2B3; --line: rgba(0,0,0,0.06);
     --text-general: #49566B; --text-secondary: #667085; --success: #28C76F;
     --warn: #FF5A5F; --warn-bg: #FFF5F2; --warn-border: #FF8E7E;
@@ -74,7 +74,8 @@
   body.tablet-view .full-width { grid-column: 1 / -1; }
   
   .view-switcher {
-    position: fixed; top: 16px; right: 16px; z-index: 2000;
+    /* 必須避開 iPhone 瀏海/動態島的安全區，否則會被狀態列蓋住、上緣被切掉也點不到 */
+    position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); z-index: 2000;
     background: var(--glass); backdrop-filter: blur(15px);
     padding: 4px; border-radius: 20px; display: flex; gap: 4px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid white;
@@ -89,7 +90,7 @@
   
   .hero-header {
     background: linear-gradient(140deg, #16283f 0%, #1d3557 45%, #457b9d 100%);
-    padding: 56px 25px 30px; color: white; 
+    padding: calc(56px + env(safe-area-inset-top, 0px)) 25px 30px; color: white; 
     border-radius: 0 0 36px 36px; position: relative; overflow: hidden; margin: 0 -16px;
     box-shadow: 0 10px 30px rgba(29,53,87,0.22);
   }
@@ -105,7 +106,7 @@
     background: radial-gradient(circle, rgba(255,142,126,0.4) 0%, rgba(255,255,255,0) 70%); filter: blur(15px);
     pointer-events: none; /* 純裝飾光暈，位置正好蓋在右上角齒輪上，不加這行會把點擊事件吃掉 */
   }
-  .page-header { padding: 56px 12px 15px; }
+  .page-header { padding: calc(56px + env(safe-area-inset-top, 0px)) 12px 15px; }
   .card { background: var(--card); border-radius: 28px; padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.02); border: 1px solid var(--line); }
   .section-title { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(18px * var(--font-scale)); font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--navy); }
   .calc-tabs { display: flex; background: #E2E7EC; border-radius: 20px; padding: 4px; margin-bottom: 20px; }
@@ -598,48 +599,72 @@ Day2 12:00 outlet購物，預計逛一小時
 
 <!-- 首頁：建立新旅程／加入房間。開啟App時的第一道畫面，只有明確建立或加入房間後才會進到主要功能 -->
 <div class="app-container" id="home-screen" style="display:none; text-align:center; position:relative; overflow:hidden; min-height:100dvh; box-sizing:border-box; flex-direction:column;">
-  <div style="position:absolute; top:-50px; right:-60px; width:220px; height:220px; background:radial-gradient(circle, rgba(73,184,208,0.28) 0%, rgba(255,255,255,0) 70%); filter:blur(18px); pointer-events:none;"></div>
-  <div style="position:absolute; bottom:80px; left:-80px; width:200px; height:200px; background:radial-gradient(circle, rgba(255,138,132,0.22) 0%, rgba(255,255,255,0) 70%); filter:blur(18px); pointer-events:none;"></div>
-  <div style="position:absolute; top:220px; left:-40px; width:120px; height:120px; background:radial-gradient(circle, rgba(197,160,122,0.18) 0%, rgba(255,255,255,0) 70%); filter:blur(16px); pointer-events:none;"></div>
+  <!-- ===== 背景層 ===== 
+       設計原則：第一眼乾淨、第二眼才發現旅行元素。
+       所有元素透明度壓在 6~20%，讓兩顆主要按鈕成為畫面上唯一飽和的東西。 -->
 
-  <!-- 背景裝飾：拆成幾個各自獨立的元素散落在畫面裡，不再是一整組擠在右下角被切掉。
-       全部低透明度，只當氛圍 -->
+  <!-- 柔光：右上青綠、左下暖沙（珊瑚紅降級成點綴，不再是大面積色霧） -->
+  <div style="position:absolute; top:-90px; right:-90px; width:300px; height:300px; background:radial-gradient(circle, rgba(101,200,191,0.26) 0%, rgba(255,255,255,0) 68%); filter:blur(26px); pointer-events:none; z-index:0;"></div>
+  <div style="position:absolute; bottom:-60px; left:-100px; width:280px; height:280px; background:radial-gradient(circle, rgba(231,205,181,0.30) 0%, rgba(255,255,255,0) 70%); filter:blur(26px); pointer-events:none; z-index:0;"></div>
+  <div style="position:absolute; bottom:40px; left:-40px; width:150px; height:150px; background:radial-gradient(circle, rgba(232,155,141,0.16) 0%, rgba(255,255,255,0) 70%); filter:blur(22px); pointer-events:none; z-index:0;"></div>
 
-  <!-- 右上：飛機與航跡 -->
-  <div style="position:absolute; top:96px; right:14px; width:118px; opacity:0.16; pointer-events:none; z-index:0;">
-    <svg viewBox="0 0 120 70" style="width:100%; height:auto; display:block;" aria-hidden="true">
-      <path d="M 4 62 C 30 52, 58 38, 86 18" fill="none" stroke="#1d3557" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.5 8"/>
-      <g transform="translate(92 14) rotate(-30)">
-        <path d="M 0 0 L 22 -5 L 25 -2 L 10 5 L 3 15 L 0 15 L 2 5 L -7 8 L -9 4 Z" fill="#1d3557"/>
-      </g>
-    </svg>
-  </div>
+  <!-- 線條層：整頁滿版，弧線才能真的橫跨畫面而不是被切在某個小方框裡 -->
+  <svg viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
+       style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0;">
 
-  <!-- 左側偏下：定位圖釘 -->
-  <div style="position:absolute; bottom:132px; left:10px; width:52px; opacity:0.14; pointer-events:none; z-index:0;">
-    <svg viewBox="0 0 52 76" style="width:100%; height:auto; display:block;" aria-hidden="true">
-      <circle cx="26" cy="24" r="18" fill="#1d3557"/>
-      <path d="M 12.5 37 L 26 60 L 39.5 37 Z" fill="#1d3557"/>
-      <circle cx="26" cy="24" r="6.6" fill="#F4F7FA"/>
-    </svg>
-  </div>
+    <!-- 上方大弧：像衛星軌道，只露一段，上面掛兩個旅行節點 -->
+    <path d="M -40 176 C 60 92, 170 58, 300 40" fill="none" stroke="#5C91C2" stroke-width="1.1" opacity="0.30"/>
+    <circle cx="74" cy="132" r="5.2" fill="none" stroke="#65C8BF" stroke-width="1" opacity="0.40"/>
+    <circle cx="74" cy="132" r="2.6" fill="#65C8BF" opacity="0.55"/>
+    <circle cx="132" cy="100" r="4.2" fill="none" stroke="#E7CDB5" stroke-width="1" opacity="0.45"/>
+    <circle cx="132" cy="100" r="2.1" fill="#E7CDB5" opacity="0.65"/>
 
-  <!-- 右下：攤開的地圖，局部出血看起來像延伸到畫面外 -->
-  <div style="position:absolute; bottom:24px; right:-26px; width:150px; opacity:0.13; pointer-events:none; z-index:0;">
-    <svg viewBox="0 0 160 70" style="width:100%; height:auto; display:block;" aria-hidden="true">
-      <path d="M 4 24 L 54 12 L 54 54 L 8 62 Z" fill="#1d3557" opacity="0.55"/>
-      <path d="M 54 12 L 104 26 L 104 62 L 54 54 Z" fill="#1d3557" opacity="0.8"/>
-      <path d="M 104 26 L 156 10 L 158 50 L 104 62 Z" fill="#1d3557" opacity="0.45"/>
-    </svg>
-  </div>
+    <!-- 飛機：半透明實心，不是插圖式描邊 -->
+    <g transform="translate(332 168) rotate(-32)" opacity="0.20">
+      <path d="M 0 0 L 30 -7 L 34 -3 L 14 7 L 5 21 L 0 21 L 3 7 L -10 11 L -13 6 Z" fill="#244A70"/>
+    </g>
+    <!-- 航跡：由小到大、由淡到明，像正在飛離 -->
+    <g>
+      <circle cx="196.0" cy="300.0" r="1.00" fill="#5C91C2" opacity="0.10"/>
+      <circle cx="207.9" cy="292.4" r="1.18" fill="#5C91C2" opacity="0.12"/>
+      <circle cx="219.4" cy="284.4" r="1.37" fill="#5C91C2" opacity="0.14"/>
+      <circle cx="230.6" cy="276.0" r="1.55" fill="#5C91C2" opacity="0.16"/>
+      <circle cx="241.6" cy="267.3" r="1.74" fill="#5C91C2" opacity="0.18"/>
+      <circle cx="252.1" cy="258.2" r="1.92" fill="#5C91C2" opacity="0.20"/>
+      <circle cx="262.3" cy="248.8" r="2.11" fill="#5C91C2" opacity="0.22"/>
+      <circle cx="272.1" cy="239.1" r="2.29" fill="#5C91C2" opacity="0.24"/>
+      <circle cx="281.5" cy="229.2" r="2.48" fill="#5C91C2" opacity="0.26"/>
+      <circle cx="290.5" cy="218.9" r="2.66" fill="#5C91C2" opacity="0.28"/>
+      <circle cx="299.1" cy="208.5" r="2.85" fill="#5C91C2" opacity="0.30"/>
+      <circle cx="307.2" cy="197.8" r="3.03" fill="#5C91C2" opacity="0.32"/>
+      <circle cx="314.8" cy="187.0" r="3.22" fill="#5C91C2" opacity="0.34"/>
+    </g>
 
-  <!-- 左上：兩個小圓點，呼應圖示的光點 -->
-  <div style="position:absolute; top:150px; left:26px; opacity:0.22; pointer-events:none; z-index:0;">
-    <svg viewBox="0 0 30 22" style="width:30px; height:auto; display:block;" aria-hidden="true">
-      <circle cx="5" cy="6" r="3.2" fill="#C5A07A"/>
-      <circle cx="18" cy="15" r="2" fill="#49B8D0"/>
-    </svg>
-  </div>
+    <!-- 左側小圖釘，低調地標一個點 -->
+    <g opacity="0.16">
+      <circle cx="34" cy="470" r="13" fill="#244A70"/>
+      <path d="M 24.5 479 L 34 496 L 43.5 479 Z" fill="#244A70"/>
+      <circle cx="34" cy="470" r="4.8" fill="#F7F9FC"/>
+    </g>
+
+    <!-- 下方旅行軌跡：一條超大細弧，從左下外側往中央展開，途中幾顆極淡的點 -->
+    <path d="M -50 700 C 90 664, 210 690, 330 770" fill="none" stroke="#5C91C2" stroke-width="1.1" opacity="0.26"/>
+    <circle cx="52" cy="678" r="2.6" fill="#E7CDB5" opacity="0.50"/>
+    <circle cx="140" cy="676" r="1.8" fill="#5C91C2" opacity="0.28"/>
+    <circle cx="228" cy="702" r="1.5" fill="#5C91C2" opacity="0.22"/>
+
+    <!-- 右下線稿地圖：三摺、延伸出畫面右緣，加一個定位點與環繞軌道 -->
+    <g>
+      <path d="M 236 742 L 296 726 L 296 794 L 240 808 Z" fill="#244A70" opacity="0.07"/>
+      <path d="M 296 726 L 356 746 L 356 812 L 296 794 Z" fill="#244A70" opacity="0.11"/>
+      <path d="M 356 746 L 420 728 L 424 800 L 356 812 Z" fill="#244A70" opacity="0.06"/>
+      <path d="M 296 726 L 296 794 M 356 746 L 356 812" stroke="#8AA7C2" stroke-width="0.9" opacity="0.30"/>
+      <path d="M 236 742 L 296 726 L 356 746 L 420 728" fill="none" stroke="#8AA7C2" stroke-width="0.9" opacity="0.28"/>
+      <circle cx="318" cy="762" r="4.6" fill="#65C8BF" opacity="0.50"/>
+      <circle cx="318" cy="762" r="9" fill="none" stroke="#65C8BF" stroke-width="0.9" opacity="0.28"/>
+      <ellipse cx="330" cy="772" rx="96" ry="30" fill="none" stroke="#5C91C2" stroke-width="1" opacity="0.20" transform="rotate(-9 330 772)"/>
+    </g>
+  </svg>
 
   <div style="padding-top:38px; position:relative; z-index:1;">
     <div style="width:78px; height:78px; border-radius:24px; background:linear-gradient(135deg, #1d3557 0%, #457b9d 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; box-shadow:0 14px 30px rgba(29,53,87,0.32), 0 2px 6px rgba(29,53,87,0.15);">
@@ -745,7 +770,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 09:10</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 09:50</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
