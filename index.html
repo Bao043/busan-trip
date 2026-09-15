@@ -597,62 +597,71 @@ Day2 12:00 outlet購物，預計逛一小時
 </div>
 
 <!-- 首頁：建立新旅程／加入房間。開啟App時的第一道畫面，只有明確建立或加入房間後才會進到主要功能 -->
-<div class="app-container" id="home-screen" style="display:none; text-align:center; position:relative; overflow:hidden;">
+<div class="app-container" id="home-screen" style="display:none; text-align:center; position:relative; overflow:hidden; min-height:100dvh; box-sizing:border-box; flex-direction:column;">
   <div style="position:absolute; top:-50px; right:-60px; width:220px; height:220px; background:radial-gradient(circle, rgba(73,184,208,0.28) 0%, rgba(255,255,255,0) 70%); filter:blur(18px); pointer-events:none;"></div>
   <div style="position:absolute; bottom:80px; left:-80px; width:200px; height:200px; background:radial-gradient(circle, rgba(255,138,132,0.22) 0%, rgba(255,255,255,0) 70%); filter:blur(18px); pointer-events:none;"></div>
   <div style="position:absolute; top:220px; left:-40px; width:120px; height:120px; background:radial-gradient(circle, rgba(197,160,122,0.18) 0%, rgba(255,255,255,0) 70%); filter:blur(16px); pointer-events:none;"></div>
 
-  <!-- 背景插圖：刻意偏右下、往畫面外出血、透明度壓很低，
-       當成氛圍而不是一個獨立區塊，才不會跟按鈕搶視覺 -->
-  <div style="position:absolute; right:-58px; bottom:-30px; width:78%; max-width:340px; opacity:0.30; pointer-events:none; z-index:0;">
-    <svg viewBox="0 0 320 175" style="width:100%; height:auto; display:block;" aria-hidden="true">
-      <defs>
-        <linearGradient id="hmMapA" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#DCE8F4"/><stop offset="100%" stop-color="#BACFE4"/>
-        </linearGradient>
-        <linearGradient id="hmMapB" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#C6D9EB"/><stop offset="100%" stop-color="#A5BFD8"/>
-        </linearGradient>
-        <linearGradient id="hmMapC" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#D3E2F0"/><stop offset="100%" stop-color="#B2C9DF"/>
-        </linearGradient>
-        <linearGradient id="hmPin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3B5C7E"/><stop offset="100%" stop-color="#22395A"/>
-        </linearGradient>
-      </defs>
-      <path d="M 38 118 L 112 104 L 112 152 L 43 160 Z" fill="url(#hmMapA)"/>
-      <path d="M 112 104 L 186 120 L 186 161 L 112 152 Z" fill="url(#hmMapB)"/>
-      <path d="M 186 120 L 282 103 L 286 147 L 186 161 Z" fill="url(#hmMapC)"/>
-      <path d="M 132 92 C 170 78, 206 66, 236 48" fill="none" stroke="#49B8D0" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.5 10" opacity="0.8"/>
-      <g transform="translate(248 40) rotate(-28)">
-        <path d="M 0 0 L 26 -6 L 30 -2 L 12 6 L 4 18 L 0 18 L 2 6 L -8 9 L -11 5 Z" fill="#2A4566"/>
+  <!-- 背景裝飾：拆成幾個各自獨立的元素散落在畫面裡，不再是一整組擠在右下角被切掉。
+       全部低透明度，只當氛圍 -->
+
+  <!-- 右上：飛機與航跡 -->
+  <div style="position:absolute; top:96px; right:14px; width:118px; opacity:0.16; pointer-events:none; z-index:0;">
+    <svg viewBox="0 0 120 70" style="width:100%; height:auto; display:block;" aria-hidden="true">
+      <path d="M 4 62 C 30 52, 58 38, 86 18" fill="none" stroke="#1d3557" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.5 8"/>
+      <g transform="translate(92 14) rotate(-30)">
+        <path d="M 0 0 L 22 -5 L 25 -2 L 10 5 L 3 15 L 0 15 L 2 5 L -7 8 L -9 4 Z" fill="#1d3557"/>
       </g>
-      <circle cx="120" cy="72" r="21" fill="url(#hmPin)"/>
-      <path d="M 104.5 87 L 120 112 L 135.5 87 Z" fill="#22395A"/>
-      <circle cx="120" cy="72" r="7.6" fill="#EEF4FA"/>
     </svg>
   </div>
 
-  <div style="padding-top:54px; position:relative;">
-    <div style="width:78px; height:78px; border-radius:24px; background:linear-gradient(135deg, #1d3557 0%, #457b9d 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:0 14px 30px rgba(29,53,87,0.32), 0 2px 6px rgba(29,53,87,0.15);">
+  <!-- 左側偏下：定位圖釘 -->
+  <div style="position:absolute; bottom:132px; left:10px; width:52px; opacity:0.14; pointer-events:none; z-index:0;">
+    <svg viewBox="0 0 52 76" style="width:100%; height:auto; display:block;" aria-hidden="true">
+      <circle cx="26" cy="24" r="18" fill="#1d3557"/>
+      <path d="M 12.5 37 L 26 60 L 39.5 37 Z" fill="#1d3557"/>
+      <circle cx="26" cy="24" r="6.6" fill="#F4F7FA"/>
+    </svg>
+  </div>
+
+  <!-- 右下：攤開的地圖，局部出血看起來像延伸到畫面外 -->
+  <div style="position:absolute; bottom:24px; right:-26px; width:150px; opacity:0.13; pointer-events:none; z-index:0;">
+    <svg viewBox="0 0 160 70" style="width:100%; height:auto; display:block;" aria-hidden="true">
+      <path d="M 4 24 L 54 12 L 54 54 L 8 62 Z" fill="#1d3557" opacity="0.55"/>
+      <path d="M 54 12 L 104 26 L 104 62 L 54 54 Z" fill="#1d3557" opacity="0.8"/>
+      <path d="M 104 26 L 156 10 L 158 50 L 104 62 Z" fill="#1d3557" opacity="0.45"/>
+    </svg>
+  </div>
+
+  <!-- 左上：兩個小圓點，呼應圖示的光點 -->
+  <div style="position:absolute; top:150px; left:26px; opacity:0.22; pointer-events:none; z-index:0;">
+    <svg viewBox="0 0 30 22" style="width:30px; height:auto; display:block;" aria-hidden="true">
+      <circle cx="5" cy="6" r="3.2" fill="#C5A07A"/>
+      <circle cx="18" cy="15" r="2" fill="#49B8D0"/>
+    </svg>
+  </div>
+
+  <div style="padding-top:38px; position:relative; z-index:1;">
+    <div style="width:78px; height:78px; border-radius:24px; background:linear-gradient(135deg, #1d3557 0%, #457b9d 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; box-shadow:0 14px 30px rgba(29,53,87,0.32), 0 2px 6px rgba(29,53,87,0.15);">
       <i class="fa-solid fa-route" style="font-size:calc(32px * var(--font-scale)); color:#fff;"></i>
     </div>
     <h1 class="clean-title">Travel-app</h1>
     <p style="color:var(--gray); font-size:calc(14px * var(--font-scale)); margin-top:6px; margin-bottom:0;">一起規劃、同步、記錄你的旅程</p>
   </div>
 
-  <div style="padding:0 4px; margin-top:32px; text-align:left; position:relative;">
+  <div style="padding:0 4px; margin-top:26px; text-align:left; position:relative; z-index:1;">
     <button class="save-btn" style="padding:17px; font-size:calc(15.5px * var(--font-scale)); margin-bottom:10px; box-shadow:0 8px 20px rgba(255,138,132,0.3);" onclick="openCreateRoomForm()"><i class="fa-solid fa-plus"></i> 建立新旅程</button>
     <button class="ghost-btn" style="padding:17px; font-size:calc(15.5px * var(--font-scale)); background:#fff;" onclick="openJoinRoomForm()"><i class="fa-solid fa-door-open"></i> 加入房間</button>
   </div>
 
-  <div id="home-recent-rooms" style="margin-top:28px; text-align:left; position:relative;"></div>
+  <!-- 最近旅程過多時只有這一區內部捲動，整頁仍維持一屏 -->
+  <div id="home-recent-rooms" style="margin-top:22px; text-align:left; position:relative; z-index:1; flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
 
-  <p style="text-align:center; margin:30px 0 0; font-size:calc(12.5px * var(--font-scale)); color:var(--gray); font-weight:700; line-height:1.7; position:relative; z-index:1;">
+  <p style="text-align:center; margin:18px 0 0; font-size:calc(12.5px * var(--font-scale)); color:var(--gray); font-weight:700; line-height:1.7; position:relative; z-index:1;">
     從出發到回家，行程、花費、分帳<br>都在同一個地方安排好
   </p>
 
-  <div style="margin-top:36px; text-align:center; position:relative; z-index:1;">
+  <div style="margin-top:14px; padding-bottom:6px; text-align:center; position:relative; z-index:1;">
     <button onclick="openAdminPanel()" style="background:none; border:none; color:var(--gray); font-size:calc(12px * var(--font-scale)); cursor:pointer; padding:8px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-user-shield"></i> 管理員後台</button>
   </div>
 </div>
@@ -736,7 +745,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 08:35</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 09:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4571,6 +4580,9 @@ ${dayContextLines}
 
   // 列出某個人參與分攤的每一筆，讓他能核對自己的金額怎麼算出來的
   function settleDetailFor(name) {
+    // 用成員在名單中的序號當前綴：不同人的同一筆收據若共用 ID，
+    // getElementById 只會找到第一個，點了會變成展開別人的區塊（等於點不開）
+    const pIdx = (travelers || []).indexOf(name);
     const paidLines = []; let paidSum = 0;
     const owedBlocks = []; let owedSum = 0;
 
@@ -4613,7 +4625,7 @@ ${dayContextLines}
       const adjRow = Math.abs(adj) >= 1 ? `<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11px * var(--font-scale)); color:${adj<0?'var(--teal)':'var(--gold)'}; padding:2px 0;"><span>${adjLabel}</span><span>${adj<0?'−':'＋'}NT$ ${f(Math.abs(adj))}</span></div>` : '';
 
       // 收合：預設只顯示一行（收據名稱＋金額），點了才展開逐項明細，避免品項多時整頁過長
-      const detailId = `sd-${raw.id}-${owedBlocks.length}`;
+      const detailId = `sd-p${pIdx}-${raw.id}-${owedBlocks.length}`;
       const itemCount = mine.length;
       owedBlocks.push(`<div style="margin-bottom:7px; padding-bottom:6px; border-bottom:1px dotted var(--line);">
         <div onclick="event.stopPropagation(); toggleSettleRecord('${detailId}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:var(--navy); cursor:pointer; padding:3px 0;">
@@ -5141,7 +5153,7 @@ ${dayContextLines}
     if (activeSyncListener) { activeSyncListener.off(); activeSyncListener = null; } // 離開房間context，不要繼續在背景聽這個房的更新
     document.getElementById('main-app-container').style.display = 'none';
     document.getElementById('bottom-nav').style.display = 'none';
-    document.getElementById('home-screen').style.display = 'block';
+    document.getElementById('home-screen').style.display = 'flex'; // 用 flex 才能讓最近旅程那區自動撐開、整頁維持一屏
     localStorage.setItem('app-screen', 'home');
     renderRecentRooms();
   }
