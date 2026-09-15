@@ -617,54 +617,65 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <div id="home-recent-rooms" style="margin-top:28px; text-align:left; position:relative;"></div>
 
-  <!-- 路線插圖：呼應 App 圖示的簡約線條風格，兩個點之間的虛線代表「從這裡到那裡都安排好了」。
-       純裝飾不可點，所以刻意不做成卡片或按鈕外觀 -->
-  <div style="margin-top:26px; position:relative;">
-    <svg viewBox="0 0 320 150" style="width:100%; height:auto; display:block;" aria-hidden="true">
+  <!-- 首頁插圖：直接呼應 App 圖示的三個元素（攤開的地圖、定位圖釘、起飛的飛機），
+       但改成淺色背景用的配色，維持裝飾性、不搶按鈕的視覺 -->
+  <div style="margin-top:22px; position:relative;">
+    <svg viewBox="0 0 320 175" style="width:100%; height:auto; display:block;" aria-hidden="true">
       <defs>
-        <linearGradient id="pinNavy" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2C4763"/><stop offset="100%" stop-color="#1d3557"/>
+        <linearGradient id="mapA" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#E4EDF6"/><stop offset="100%" stop-color="#C6D8E9"/>
         </linearGradient>
-        <linearGradient id="pinTeal" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#5FC6DC"/><stop offset="100%" stop-color="#3A9DB5"/>
+        <linearGradient id="mapB" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#CFDFEE"/><stop offset="100%" stop-color="#AFC6DC"/>
         </linearGradient>
-        <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1d3557" flood-opacity="0.20"/>
+        <linearGradient id="mapC" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#DBE7F2"/><stop offset="100%" stop-color="#BBD0E3"/>
+        </linearGradient>
+        <linearGradient id="pinG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#31506F"/><stop offset="100%" stop-color="#1B3050"/>
+        </linearGradient>
+        <filter id="dropSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#1d3557" flood-opacity="0.18"/>
         </filter>
       </defs>
 
-      <!-- 地平線：淡淡一道，讓兩個點看起來有前後距離 -->
-      <ellipse cx="160" cy="126" rx="132" ry="12" fill="#1d3557" opacity="0.045"/>
+      <!-- 地面陰影 -->
+      <ellipse cx="163" cy="163" rx="118" ry="9" fill="#1d3557" opacity="0.055"/>
 
-      <!-- 目的地的訊號圈 -->
-      <circle cx="242" cy="48" r="30" fill="none" stroke="#49B8D0" stroke-width="1.4" opacity="0.30"/>
-      <circle cx="242" cy="48" r="42" fill="none" stroke="#49B8D0" stroke-width="1.1" opacity="0.16"/>
+      <!-- 攤開的地圖：三片摺頁，明暗交錯做出摺痕 -->
+      <g filter="url(#dropSoft)">
+        <path d="M 38 118 L 112 104 L 112 152 L 43 160 Z" fill="url(#mapA)"/>
+        <path d="M 112 104 L 186 120 L 186 161 L 112 152 Z" fill="url(#mapB)"/>
+        <path d="M 186 120 L 282 103 L 286 147 L 186 161 Z" fill="url(#mapC)"/>
+      </g>
+      <!-- 摺線 -->
+      <path d="M 112 104 L 112 152" stroke="#9FB8D0" stroke-width="0.8" opacity="0.55"/>
+      <path d="M 186 120 L 186 161" stroke="#9FB8D0" stroke-width="0.8" opacity="0.55"/>
 
-      <!-- 虛線路徑：起點到終點 -->
-      <path d="M 80 103 C 124 126, 188 116, 234 82"
-            fill="none" stroke="#C5A07A" stroke-width="4.6" stroke-linecap="round"
-            stroke-dasharray="1 14" opacity="0.95"/>
+      <!-- 航線：從圖釘後方往右上飛出 -->
+      <path d="M 132 92 C 170 78, 206 66, 236 48"
+            fill="none" stroke="#49B8D0" stroke-width="3.4" stroke-linecap="round"
+            stroke-dasharray="0.5 10" opacity="0.85"/>
 
-      <!-- 起點（小、青綠） -->
-      <g filter="url(#softShadow)">
-        <circle cx="78" cy="74" r="15" fill="url(#pinTeal)"/>
-        <path d="M 67.4 84.6 L 78 100 L 88.6 84.6 Z" fill="#3A9DB5"/>
-        <circle cx="78" cy="74" r="5.6" fill="#EAF7FA"/>
+      <!-- 飛機 -->
+      <g transform="translate(248 40) rotate(-28)">
+        <path d="M 0 0 L 26 -6 L 30 -2 L 12 6 L 4 18 L 0 18 L 2 6 L -8 9 L -11 5 Z"
+              fill="#1d3557" opacity="0.92"/>
       </g>
 
-      <!-- 終點（大、深藍） -->
-      <g filter="url(#softShadow)">
-        <circle cx="242" cy="48" r="21" fill="url(#pinNavy)"/>
-        <path d="M 227 63 L 242 85 L 257 63 Z" fill="#1d3557"/>
-        <circle cx="242" cy="48" r="7.8" fill="#F4F7FA"/>
+      <!-- 定位圖釘：站在地圖上 -->
+      <g filter="url(#dropSoft)">
+        <circle cx="120" cy="72" r="21" fill="url(#pinG)"/>
+        <path d="M 104.5 87 L 120 112 L 135.5 87 Z" fill="#1B3050"/>
+        <circle cx="120" cy="72" r="7.6" fill="#F3F7FB"/>
       </g>
 
-      <!-- 終點旁的小亮點，呼應圖示的光暈 -->
-      <circle cx="276" cy="24" r="2.6" fill="#C5A07A" opacity="0.75"/>
-      <circle cx="288" cy="36" r="1.8" fill="#C5A07A" opacity="0.45"/>
+      <!-- 小亮點，呼應圖示右上角的光 -->
+      <circle cx="282" cy="24" r="2.4" fill="#C5A07A" opacity="0.7"/>
+      <circle cx="293" cy="35" r="1.5" fill="#C5A07A" opacity="0.4"/>
     </svg>
 
-    <p style="text-align:center; margin:10px 0 0; font-size:calc(12.5px * var(--font-scale)); color:var(--gray); font-weight:700; line-height:1.7;">
+    <p style="text-align:center; margin:12px 0 0; font-size:calc(12.5px * var(--font-scale)); color:var(--gray); font-weight:700; line-height:1.7;">
       從出發到回家，行程、花費、分帳<br>都在同一個地方安排好
     </p>
   </div>
@@ -753,7 +764,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 07:10</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 07:55</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -4122,6 +4133,7 @@ ${dayContextLines}
   // 品項的「誰買的」分配：點名字加一個、點數字歸零；不影響金額，只是記錄歸屬
   function rrTapPerson(ridx, who) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
+    it.evenSplit = false; // 改成指定給某人，就不再是平均分
     it.owners = it.owners || [];
     const row = it.owners.find(o => o.who === who && !(o.proxyFor||'').trim());
     if (row) row.qty = (Number(row.qty)||0) + 1; else it.owners.push({ who, qty: 1, proxyFor: '' });
@@ -4149,13 +4161,12 @@ ${dayContextLines}
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it) return;
     it.owners.splice(oi,1); renderReceiptItemsList();
   }
+  // 平均分＝金額平分給所有成員。
+  // 原本是用數量去除人數，數量 1 但有 4 個人時 1÷4=0 餘 1，餘數全給第一個人，等於沒有平分
   function rrSplitEven(ridx) {
     const it = receiptReviewItemsState.find(x => x._ridx === ridx); if (!it || !travelers.length) return;
-    const total = Number(it.quantity)||0;
-    if (!total) { alert('這個品項沒有數量，無法平均分'); return; }
-    it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim());
-    const base = Math.floor(total / travelers.length); let rest = total - base*travelers.length;
-    travelers.forEach(t => { const q = base + (rest>0?1:0); if (rest>0) rest--; if (q>0) it.owners.push({ who:t, qty:q, proxyFor:'' }); });
+    it.evenSplit = !it.evenSplit;
+    if (it.evenSplit) it.owners = (it.owners||[]).filter(o => (o.proxyFor||'').trim()); // 保留代購列
     renderReceiptItemsList();
   }
 
@@ -4167,7 +4178,7 @@ ${dayContextLines}
       const total = Number(it.quantity)||0;
       const remain = total - assigned;
       const chips = travelers.map(t => {
-        const q = rrOwnerQty(it, t); const on = q > 0;
+        const q = rrOwnerQty(it, t); const on = q > 0 && !it.evenSplit;
         return `<span style="display:inline-flex; align-items:center; gap:4px; background:${on?'var(--navy)':'#F1F5F9'}; color:${on?'#fff':'var(--navy)'}; border-radius:10px; padding:5px 9px; font-size:calc(11.5px * var(--font-scale)); font-weight:700;">
           <span onclick="rrTapPerson(${it._ridx},'${escapeHtml(t)}')" style="cursor:pointer;">${escapeHtml(t)}</span>
           ${on?`<span onclick="rrClearPerson(${it._ridx},'${escapeHtml(t)}')" style="cursor:pointer; background:rgba(255,255,255,0.25); border-radius:6px; padding:0 5px;">${q}</span>`:''}
@@ -4201,12 +4212,13 @@ ${dayContextLines}
           <div style="font-size:calc(10.5px * var(--font-scale)); color:var(--gray); margin-bottom:5px;">這項誰買的？（點名字加一個，點數字歸零）</div>
           <div style="display:flex; flex-wrap:wrap; gap:5px; align-items:center;">
             ${chips}
-            ${travelers.length>1?`<button type="button" onclick="rrSplitEven(${it._ridx})" style="background:#E2E7EC; border:none; border-radius:10px; padding:5px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; color:var(--navy); cursor:pointer;">平均分</button>`:''}
+            ${travelers.length>1?`<button type="button" onclick="rrSplitEven(${it._ridx})" style="background:${it.evenSplit?'var(--teal)':'#E2E7EC'}; border:none; border-radius:10px; padding:5px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; color:${it.evenSplit?'#fff':'var(--navy)'}; cursor:pointer;">${it.evenSplit?'✓ ':''}平均分</button>`:''}
             <button type="button" onclick="rrAddProxy(${it._ridx})" style="background:none; border:1px dashed var(--gold); color:var(--gold); border-radius:10px; padding:4px 9px; font-size:calc(11px * var(--font-scale)); font-weight:700; cursor:pointer;">代購</button>
           </div>
           ${proxyHtml}
-          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${total && remain < 0 ? 'var(--warn)' : 'var(--gray)'};">
-            ${total ? (remain === 0 ? '<i class="fa-solid fa-check"></i> 已分配完畢'
+          <div style="font-size:calc(10.5px * var(--font-scale)); margin-top:6px; color:${it.evenSplit ? 'var(--teal)' : (total && remain < 0 ? 'var(--warn)' : 'var(--gray)')};">
+            ${it.evenSplit ? `<i class="fa-solid fa-check"></i> 金額由 ${travelers.length} 人平均分攤`
+              : total ? (remain === 0 ? '<i class="fa-solid fa-check"></i> 已分配完畢'
               : remain > 0 ? (assigned === 0 ? `沒特別分配，這 ${total} 個算付款人的` : `其餘 ${remain} 個算付款人的`)
               : `超出 ${-remain} 個，請檢查`) : `已分配 ${assigned} 個`}
           </div>
@@ -4233,7 +4245,7 @@ ${dayContextLines}
     rrItemSeq = 0;
     receiptReviewItemsState = r.items.map(it => ({
       _ridx: rrItemSeq++, nameOriginal: it.nameOriginal||'', nameZh: it.nameZh||'',
-      price: it.price||0, quantity: it.quantity||1,
+      price: it.price||0, quantity: it.quantity||1, evenSplit: !!it.evenSplit,
       owners: (it.owners||[]).map(o => ({ ...o }))
     }));
     const fields = `<div id="receipt-items-list"></div>`;
@@ -4249,7 +4261,9 @@ ${dayContextLines}
         rec.allocItems = rec.items.map(it => ({
           name: it.nameZh || it.nameOriginal,
           unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
-          qty: Number(it.quantity)||1, mode: 'qty',
+          qty: Number(it.quantity)||1,
+          mode: it.evenSplit ? 'even' : 'qty',
+          evenWith: it.evenSplit ? travelers.slice() : [],
           alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
         }));
         rec.paidTotal = Number(rec.amount)||0;
@@ -4283,18 +4297,20 @@ ${dayContextLines}
         nameZh: zhEl ? zhEl.value.trim() : it.nameZh,
         price: priceEl ? p(priceEl.value) : it.price,
         quantity: (qtyEl && parseInt(qtyEl.value,10) > 0) ? parseInt(qtyEl.value,10) : 1,
+        evenSplit: !!it.evenSplit,
         owners: (it.owners || []).filter(o => o.who && (Number(o.qty)||0) > 0)
           .map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
       };
     }).filter(it => it.nameOriginal || it.nameZh);
 
     // 有指定歸屬的話，轉成分帳引擎看得懂的格式；沒指定的品項會落到「未分配」由全員均分
-    const anyOwner = items.some(it => (it.owners||[]).length);
+    const anyOwner = items.some(it => (it.owners||[]).length || it.evenSplit);
     const allocItemsFromReceipt = anyOwner ? items.map(it => ({
       name: it.nameZh || it.nameOriginal,
       unitPrice: (Number(it.quantity)||1) > 0 ? (Number(it.price)||0) / (Number(it.quantity)||1) : (Number(it.price)||0),
       qty: Number(it.quantity)||1,
-      mode: 'qty',
+      mode: it.evenSplit ? 'even' : 'qty',              // 平均分＝按金額平分，不受數量限制
+      evenWith: it.evenSplit ? travelers.slice() : [],
       alloc: (it.owners||[]).map(o => ({ who: o.who, qty: Number(o.qty)||0, proxyFor: (o.proxyFor||'').trim() }))
     })) : [];
 
@@ -4387,7 +4403,13 @@ ${dayContextLines}
     if (Array.isArray(r.items) && r.items.length && r.items[0] && r.items[0].mode) {
       items = r.items;
     } else if (Array.isArray(r.allocItems) && r.allocItems.length) {
-      items = r.allocItems.map(it => ({ name: it.name, unitPrice: Number(it.unitPrice)||0, qty: Number(it.totalQty)||0, mode: 'qty', alloc: it.alloc||[] }));
+      // 要保留 mode/evenWith，寫死成 'qty' 會把「平均分」的設定整個蓋掉
+      items = r.allocItems.map(it => ({
+        name: it.name, unitPrice: Number(it.unitPrice)||0,
+        qty: Number(it.totalQty)||Number(it.qty)||0,
+        mode: it.mode || 'qty', evenWith: it.evenWith || [],
+        alloc: it.alloc||[]
+      }));
     } else {
       // 平均分攤：轉成一件「由這些人均分」的商品，讓後續計算完全共用
       let parts = Array.isArray(r.participants) ? r.participants.filter(n => travelers.includes(n)) : [];
@@ -4423,7 +4445,7 @@ ${dayContextLines}
       itemLines(it).forEach(l => lines.push({ ...l, itemName: it.name || '' }));
       // 沒分配到的數量歸付款人：原本是把它攤給其他有分配的人，
       // 等於「東西是我買的但沒特別選，反而被大家平分掉」，不合常理
-      if ((it.mode || 'qty') === 'qty' && mainPayer) {
+      if ((it.mode || 'qty') === 'qty' && mainPayer) {  // 平均分(even)的品項已整筆分完，不需要補
         const assigned = (it.alloc || []).reduce((s,a)=>s+(Number(a.qty)||0), 0);
         const rest = (Number(it.qty)||0) - assigned;
         if (rest > 0) lines.push({ who: mainPayer, proxyFor: '', qty: rest, unit: Number(it.unitPrice)||0, amount: (Number(it.unitPrice)||0) * rest, itemName: it.name || '', unclaimed: true });
