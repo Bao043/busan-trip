@@ -64,7 +64,8 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); overflow: hidden;
   }
   body.tablet-view .app-container { max-width: 700px; padding-bottom: 130px; }
-  body.tablet-view .hero-header { padding: 32px; }
+  /* 平板模式原本把上留白壓成 32px，會讓內容鑽到右上角切換列底下 */
+  body.tablet-view .hero-header { padding: calc(56px + env(safe-area-inset-top, 0px)) 32px 32px; }
   body.tablet-view .hero-header .clean-title { font-size: calc(30px * var(--font-scale)); }
   body.tablet-view .hero-header .hero-sub { font-size: calc(16px * var(--font-scale)); }
   body.tablet-view .card { padding: 26px; }
@@ -131,7 +132,8 @@
   .final-res-card .twd { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(42px * var(--font-scale)); font-weight: 700; color: var(--coral); margin: 6px 0; }
   .final-res-card .krw { font-family: "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif; font-size:calc(16px * var(--font-scale)); opacity: 0.7; font-weight: 500; }
   
-  .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
+  /* 加上安全區：加到主畫面的全螢幕模式下，原本 bottom:20px 會跟 Home 指示條重疊 */
+  .bottom-nav { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 76px; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 38px; box-shadow: 0 10px 35px rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 1500; padding: 0 8px; border: 1px solid rgba(255,255,255,0.6); }
   body.tablet-view .bottom-nav { max-width: 640px; }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; color: var(--gray); border: none; background: none; font-size:calc(11px * var(--font-scale)); font-weight: 600; cursor: pointer; transition: 0.3s; }
   .nav-btn.active { color: var(--teal); }
@@ -838,7 +840,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 10:20</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 10:45</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
