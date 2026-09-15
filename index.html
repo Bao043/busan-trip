@@ -753,7 +753,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 06:30</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 07:10</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -3902,7 +3902,7 @@ ${dayContextLines}
       data.paidTotal = data.amount;
       const sub = data.allocItems.reduce((x,it)=>x + it.unitPrice * (Number(it.qty)||0), 0);
       const diff = data.paidTotal - sub;
-      data.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
+      data.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '未列出的消費', amount: diff, distribute: diff < 0 ? 'prorata' : 'payer' }] : [];
     } else {
       data.splitMode = 'even';
       data.allocItems = [];
@@ -4255,7 +4255,7 @@ ${dayContextLines}
         rec.paidTotal = Number(rec.amount)||0;
         const sub = rec.allocItems.reduce((s2,it)=>s2 + it.unitPrice * (Number(it.qty)||0), 0); // 用品項全額，未分配的部分也要算進去
         const diff = rec.paidTotal - sub;
-        rec.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
+        rec.extras = Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '未列出的消費', amount: diff, distribute: diff < 0 ? 'prorata' : 'payer' }] : [];
       } else {
         rec.splitMode = 'even'; rec.allocItems = []; rec.extras = [];
       }
@@ -4311,7 +4311,8 @@ ${dayContextLines}
       extras: anyOwner ? (() => {
         const sub = allocItemsFromReceipt.reduce((s2,it)=>s2 + it.unitPrice * (Number(it.qty)||0), 0); // 用品項全額，未分配的部分也要算進去
         const diff = amt - sub;
-        return Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '其他費用', amount: diff, distribute: 'prorata' }] : [];
+        // 差額為負＝折扣（大家一起受惠，按比例分攤）；為正＝沒列進品項的消費，算付款人的
+        return Math.abs(diff) > 0.5 ? [{ label: diff < 0 ? '折扣' : '未列出的消費', amount: diff, distribute: diff < 0 ? 'prorata' : 'payer' }] : [];
       })() : []
     });
     saveExpense(); renderExpenseSummary();
@@ -4438,10 +4439,12 @@ ${dayContextLines}
     const add = {}; Object.keys(base).forEach(k => { add[k] = 0; });
     extras.forEach(e => {
       const amt = Number(e.amount) || 0, how = e.distribute || 'prorata';
+      if (how === 'payer' && mainPayer) { add[mainPayer] = (add[mainPayer] || 0) + amt; return; } // 沒人認領的金額一律算付款人的
       if (how === 'person' && e.who) { add[e.who] = (add[e.who] || 0) + amt; return; }
       if (how === 'none' || subtotal <= 0) return;
       Object.keys(base).forEach(k => { add[k] += amt * (base[k] / subtotal); });
     });
+    if (mainPayer && base[mainPayer] === undefined && add[mainPayer]) base[mainPayer] = 0;
     const byPerson = {};
     Object.keys(base).forEach(k => { byPerson[k] = base[k] + (add[k] || 0); });
 
@@ -4599,15 +4602,23 @@ ${dayContextLines}
       // 品項加總與最終應付的差額 = 折扣/其他費用的分攤，單獨列出才對得起來
       const rawSum = Math.round(mine.reduce((a,l)=>a+l.amount,0) * rate);
       const adj = myTotal - rawSum;
-      const adjRow = Math.abs(adj) >= 1 ? `<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11px * var(--font-scale)); color:${adj<0?'var(--teal)':'var(--coral)'}; padding:2px 0;"><span>${adj<0?'折扣分攤':'其他費用分攤'}</span><span>${adj<0?'−':'＋'}NT$ ${f(Math.abs(adj))}</span></div>` : '';
+      // 差額來源要講清楚：是折扣分攤，還是沒列進品項、算付款人的部分
+      const isPayer = res.payers.some(pp => pp.who === name);
+      const adjLabel = adj < 0 ? '折扣分攤' : (isPayer ? '沒列進品項的部分（算你的）' : '其他費用分攤');
+      const adjRow = Math.abs(adj) >= 1 ? `<div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11px * var(--font-scale)); color:${adj<0?'var(--teal)':'var(--gold)'}; padding:2px 0;"><span>${adjLabel}</span><span>${adj<0?'−':'＋'}NT$ ${f(Math.abs(adj))}</span></div>` : '';
 
-      owedBlocks.push(`<div style="margin-bottom:9px; padding-bottom:8px; border-bottom:1px dotted var(--line);">
-        <div style="display:flex; justify-content:space-between; gap:8px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:var(--navy); margin-bottom:3px;">
-          <span style="flex:1; min-width:0;">${escapeHtml(raw.item||raw.category||'支出')}${raw.refNo?`（#${raw.refNo}）`:''}</span>
+      // 收合：預設只顯示一行（收據名稱＋金額），點了才展開逐項明細，避免品項多時整頁過長
+      const detailId = `sd-${raw.id}-${owedBlocks.length}`;
+      const itemCount = mine.length;
+      owedBlocks.push(`<div style="margin-bottom:7px; padding-bottom:6px; border-bottom:1px dotted var(--line);">
+        <div onclick="event.stopPropagation(); toggleSettleRecord('${detailId}')" style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:calc(11.5px * var(--font-scale)); font-weight:800; color:var(--navy); cursor:pointer; padding:3px 0;">
+          <span style="flex:1; min-width:0;"><i class="fa-solid fa-chevron-right" id="${detailId}-chev" style="font-size:calc(9px * var(--font-scale)); color:var(--gray); transition:transform 0.2s; margin-right:5px;"></i>${escapeHtml(raw.item||raw.category||'支出')}${raw.refNo?`（#${raw.refNo}）`:''}${itemCount?`<span style="color:var(--gray); font-weight:600;"> · ${itemCount}項</span>`:''}</span>
           <span style="flex-shrink:0;">NT$ ${f(myTotal)}</span>
         </div>
-        ${itemRows || `<div style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">整筆均分</div>`}
-        ${adjRow}
+        <div id="${detailId}" style="display:none; padding:4px 0 2px 14px;">
+          ${itemRows || `<div style="font-size:calc(11px * var(--font-scale)); color:var(--gray);">整筆均分</div>`}
+          ${adjRow}
+        </div>
       </div>`);
     });
 
@@ -4623,13 +4634,23 @@ ${dayContextLines}
     return `
       <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin-bottom:4px;">我先代墊 NT$ ${f(paidSum)}</div>
       ${paidLines.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有代墊</div>'}
-      <div style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy); margin:11px 0 6px;">我的應付 NT$ ${f(owedSum)}</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin:11px 0 6px;">
+        <span style="font-size:calc(12px * var(--font-scale)); font-weight:800; color:var(--navy);">我的應付 NT$ ${f(owedSum)}</span>
+        ${owedBlocks.length ? `<span style="font-size:calc(10px * var(--font-scale)); color:var(--gray);">點收據可展開品項</span>` : ''}
+      </div>
       ${owedBlocks.join('') || '<div style="font-size:calc(11.5px * var(--font-scale)); color:var(--gray);">沒有應付</div>'}
       ${proxyBlock}
       <div style="margin-top:9px; padding-top:8px; border-top:1px dashed var(--line); display:flex; justify-content:space-between; font-size:calc(12.5px * var(--font-scale)); font-weight:800;">
         <span style="color:var(--navy);">${net >= 0 ? '應收回' : '應再付'}</span>
         <span style="color:${net >= 0 ? 'var(--teal)' : 'var(--coral)'};">NT$ ${f(Math.abs(net))}</span>
       </div>`;
+  }
+  function toggleSettleRecord(id) {
+    const el = document.getElementById(id); if (!el) return;
+    const open = el.style.display === 'none';
+    el.style.display = open ? 'block' : 'none';
+    const chev = document.getElementById(id + '-chev');
+    if (chev) chev.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
   }
   function toggleSettleDetail(name) {
     const el = document.getElementById('settle-detail-' + name); if (!el) return;
