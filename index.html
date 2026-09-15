@@ -208,6 +208,17 @@
   body.sub-mode .role-toggle-badge { background: #E6F4EA; color: #137333; }
   body.master-mode .role-toggle-badge { background: #FCE8E6; color: #C5221F; }
 
+  .pinkey {
+    height:60px; border:none; border-radius:18px; background:#F1F5F9; color:var(--navy);
+    font-size:calc(21px * var(--font-scale)); font-weight:700; cursor:pointer;
+    font-family:inherit; transition:transform 0.08s, background 0.15s;
+  }
+  .pinkey:active { transform:scale(0.94); background:#E2E8F0; }
+  .pinkey-ghost { background:transparent; color:var(--gray); font-size:calc(15px * var(--font-scale)); }
+  .pinkey-ghost:active { background:#F1F5F9; }
+  .pindot { width:13px; height:13px; border-radius:50%; background:#E2E8F0; transition:background 0.15s, transform 0.15s; }
+  .pindot.on { background:var(--navy); transform:scale(1.15); }
+
   .guide-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9000; align-items:center; justify-content:center; padding: 20px; }
   .guide-content { background: white; border-radius: 28px; padding: 25px; width: 100%; max-width: 360px; text-align: center; position: relative; }
 
@@ -675,8 +686,33 @@ Day2 12:00 outlet購物，預計逛一小時
   </div>
 
   <div style="padding:0 4px; margin-top:26px; text-align:left; position:relative; z-index:1;">
-    <button class="save-btn" style="padding:17px; font-size:calc(15.5px * var(--font-scale)); margin-bottom:10px; box-shadow:0 8px 20px rgba(255,138,132,0.3);" onclick="openCreateRoomForm()"><i class="fa-solid fa-plus"></i> 建立新旅程</button>
-    <button class="ghost-btn" style="padding:17px; font-size:calc(15.5px * var(--font-scale)); background:#fff;" onclick="openJoinRoomForm()"><i class="fa-solid fa-door-open"></i> 加入房間</button>
+    <!-- 主要動作：深藍漸層膠囊，左側圖示＋分隔線，中英雙標，右側箭頭 -->
+    <button onclick="openCreateRoomForm()" style="width:100%; border:none; cursor:pointer; font-family:inherit;
+        display:flex; align-items:center; gap:14px; padding:16px 20px; margin-bottom:12px;
+        border-radius:999px; background:linear-gradient(135deg,#1F4470 0%,#3E6FA5 55%,#5C91C2 100%);
+        box-shadow:0 12px 26px rgba(36,74,112,0.30), inset 0 1px 0 rgba(255,255,255,0.18);">
+      <i class="fa-solid fa-map-location-dot" style="color:#fff; font-size:calc(21px * var(--font-scale)); opacity:0.95; flex-shrink:0;"></i>
+      <span style="width:1px; height:30px; background:rgba(255,255,255,0.28); flex-shrink:0;"></span>
+      <span style="flex:1; min-width:0; text-align:left;">
+        <span style="display:block; color:#fff; font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:1px;">建立新旅程</span>
+        <span style="display:block; color:rgba(255,255,255,0.72); font-size:calc(10px * var(--font-scale)); font-weight:600; letter-spacing:1.6px; margin-top:1px;">NEW TRIP</span>
+      </span>
+      <i class="fa-solid fa-arrow-right" style="color:rgba(255,255,255,0.9); font-size:calc(14px * var(--font-scale)); flex-shrink:0;"></i>
+    </button>
+
+    <!-- 次要動作：透光白膠囊，重量明顯低於主要動作 -->
+    <button onclick="openJoinRoomForm()" style="width:100%; cursor:pointer; font-family:inherit;
+        display:flex; align-items:center; gap:14px; padding:16px 20px;
+        border-radius:999px; background:rgba(255,255,255,0.86); backdrop-filter:blur(10px);
+        border:1.5px solid rgba(92,145,194,0.22); box-shadow:0 8px 20px rgba(36,74,112,0.10);">
+      <i class="fa-solid fa-user-group" style="color:#5C91C2; font-size:calc(19px * var(--font-scale)); flex-shrink:0;"></i>
+      <span style="width:1px; height:30px; background:rgba(92,145,194,0.22); flex-shrink:0;"></span>
+      <span style="flex:1; min-width:0; text-align:left;">
+        <span style="display:block; color:#244A70; font-size:calc(16px * var(--font-scale)); font-weight:800; letter-spacing:1px;">加入房間</span>
+        <span style="display:block; color:#8AA7C2; font-size:calc(10px * var(--font-scale)); font-weight:600; letter-spacing:1.6px; margin-top:1px;">JOIN ROOM</span>
+      </span>
+      <i class="fa-solid fa-arrow-right" style="color:#8AA7C2; font-size:calc(14px * var(--font-scale)); flex-shrink:0;"></i>
+    </button>
   </div>
 
   <!-- 最近旅程過多時只有這一區內部捲動，整頁仍維持一屏 -->
@@ -688,6 +724,38 @@ Day2 12:00 outlet購物，預計逛一小時
 
   <div style="margin-top:14px; padding-bottom:6px; text-align:center; position:relative; z-index:1;">
     <button onclick="openAdminPanel()" style="background:none; border:none; color:var(--gray); font-size:calc(12px * var(--font-scale)); cursor:pointer; padding:8px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-user-shield"></i> 管理員後台</button>
+  </div>
+</div>
+
+<!-- 自製密碼鍵盤：取代瀏覽器原生 prompt，避免叫出系統鍵盤、也讓視覺跟 App 一致 -->
+<div class="guide-overlay" id="pin-pad-overlay" style="align-items:flex-end;">
+  <div onclick="event.stopPropagation()" style="background:#fff; width:100%; max-width:420px; border-radius:30px 30px 0 0; padding:26px 22px calc(26px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -12px 40px rgba(29,53,87,0.18);">
+    <div style="text-align:center; margin-bottom:4px;">
+      <div id="pin-pad-icon" style="width:52px; height:52px; border-radius:17px; background:linear-gradient(140deg,#244A70 0%,#5C91C2 100%); display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+        <i class="fa-solid fa-lock" style="color:#fff; font-size:calc(19px * var(--font-scale));"></i>
+      </div>
+      <h3 id="pin-pad-title" style="margin:0; color:var(--navy); font-size:calc(17px * var(--font-scale));">請輸入密碼</h3>
+      <p id="pin-pad-sub" style="margin:5px 0 0; color:var(--gray); font-size:calc(12px * var(--font-scale));">4 位數字</p>
+    </div>
+
+    <!-- 圓點指示目前輸入了幾位 -->
+    <div id="pin-pad-dots" style="display:flex; justify-content:center; gap:14px; margin:20px 0 6px;"></div>
+    <div id="pin-pad-err" style="text-align:center; color:var(--warn); font-size:calc(12px * var(--font-scale)); font-weight:700; height:18px;"></div>
+
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-top:12px;">
+      <button class="pinkey" onclick="pinPadPress('1')">1</button>
+      <button class="pinkey" onclick="pinPadPress('2')">2</button>
+      <button class="pinkey" onclick="pinPadPress('3')">3</button>
+      <button class="pinkey" onclick="pinPadPress('4')">4</button>
+      <button class="pinkey" onclick="pinPadPress('5')">5</button>
+      <button class="pinkey" onclick="pinPadPress('6')">6</button>
+      <button class="pinkey" onclick="pinPadPress('7')">7</button>
+      <button class="pinkey" onclick="pinPadPress('8')">8</button>
+      <button class="pinkey" onclick="pinPadPress('9')">9</button>
+      <button class="pinkey pinkey-ghost" onclick="closePinPad()">取消</button>
+      <button class="pinkey" onclick="pinPadPress('0')">0</button>
+      <button class="pinkey pinkey-ghost" onclick="pinPadBack()"><i class="fa-solid fa-delete-left"></i></button>
+    </div>
   </div>
 </div>
 
@@ -770,7 +838,7 @@ Day2 12:00 outlet購物，預計逛一小時
 <div class="guide-overlay" id="settings-drawer-overlay" onclick="closeSettingsModal()">
   <div class="guide-content" style="max-height: 85vh; overflow-y: auto; text-align: left;" onclick="event.stopPropagation()">
     <h3 style="margin-top: 0; margin-bottom: 4px; color: var(--navy);"><i class="fa-solid fa-gears"></i> 設定與工具</h3>
-    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 09:50</b></p>
+    <p style="margin: 0 0 16px; font-size:calc(11px * var(--font-scale)); color: var(--text-secondary);">版本 <b id="app-version-tag">2026-09-14 10:20</b></p>
 
     <!-- 文字大小：任何身分都能調整，方便長輩閱讀，只改文字大小不影響版面 -->
     <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 15px; border-radius: 18px; margin-bottom: 18px;">
@@ -1321,13 +1389,61 @@ Day2 12:00 outlet購物，預計逛一小時
     }
   }
 
+  // ===== 自製數字鍵盤 =====
+  let pinPadValue = '', pinPadLen = 4, pinPadOnDone = null;
+  function openPinPad({ title, sub, len = 4, icon = 'fa-lock', onDone }) {
+    pinPadValue = ''; pinPadLen = len; pinPadOnDone = onDone;
+    document.getElementById('pin-pad-title').innerText = title || '請輸入密碼';
+    document.getElementById('pin-pad-sub').innerText = sub || `${len} 位數字`;
+    const ic = document.querySelector('#pin-pad-icon i'); if (ic) ic.className = `fa-solid ${icon}`;
+    document.getElementById('pin-pad-err').innerText = '';
+    renderPinDots();
+    document.getElementById('pin-pad-overlay').style.display = 'flex';
+  }
+  function closePinPad() {
+    document.getElementById('pin-pad-overlay').style.display = 'none';
+    pinPadValue = ''; pinPadOnDone = null;
+  }
+  function renderPinDots() {
+    const wrap = document.getElementById('pin-pad-dots'); if (!wrap) return;
+    wrap.innerHTML = Array.from({length: pinPadLen}, (_, i) =>
+      `<div class="pindot${i < pinPadValue.length ? ' on' : ''}"></div>`).join('');
+  }
+  function pinPadPress(n) {
+    if (pinPadValue.length >= pinPadLen) return;
+    pinPadValue += n;
+    document.getElementById('pin-pad-err').innerText = '';
+    renderPinDots();
+    if (pinPadValue.length === pinPadLen) {
+      const v = pinPadValue, cb = pinPadOnDone;
+      setTimeout(() => {                    // 等最後一顆圓點畫出來再驗證，回饋比較自然
+        const ok = cb ? cb(v) : true;
+        if (ok === false) {                 // 密碼錯：清空重來，不關閉鍵盤
+          pinPadValue = ''; renderPinDots();
+          const err = document.getElementById('pin-pad-err');
+          if (err) err.innerText = '密碼不正確，請再試一次';
+        } else { closePinPad(); }
+      }, 140);
+    }
+  }
+  function pinPadBack() {
+    pinPadValue = pinPadValue.slice(0, -1);
+    document.getElementById('pin-pad-err').innerText = '';
+    renderPinDots();
+  }
+
   function triggerRoleSwitch() {
     if (isMasterMode) {
       isMasterMode = false; updateRoleUI(); alert('已自動鎖定並返回「一般使用者模式」！');
     } else {
-      const pin = prompt('請輸入 4 位數主操作者解鎖密碼：');
-      if (pin === masterPin) { isMasterMode = true; updateRoleUI(); alert('主操作者解鎖成功！您現在有權限編輯並發布所有資訊。'); }
-      else if (pin !== null) { alert('密碼不正確，授權驗證失敗！'); }
+      openPinPad({
+        title: '主操作者解鎖', sub: '輸入 4 位數密碼即可編輯', icon: 'fa-user-shield',
+        onDone: (pin) => {
+          if (pin !== masterPin) return false;      // 回傳 false 代表密碼錯，鍵盤會留著讓他重試
+          isMasterMode = true; updateRoleUI();
+          return true;
+        }
+      });
     }
   }
 
@@ -5072,12 +5188,15 @@ ${dayContextLines}
   }
 
   async function openAdminPanel() {
-    const pin = prompt('請輸入管理員密碼：');
-    if (pin === null) return;
-    if (pin !== getAdminPin()) { alert('密碼錯誤'); return; }
-    document.getElementById('admin-panel-overlay').style.display = 'flex';
-    await purgeExpiredTrash();
-    renderAdminRoomList();
+    openPinPad({
+      title: '管理員後台', sub: '輸入 4 位數管理員密碼', icon: 'fa-user-shield',
+      onDone: (pin) => {
+        if (pin !== getAdminPin()) return false;
+        document.getElementById('admin-panel-overlay').style.display = 'flex';
+        purgeExpiredTrash().then(renderAdminRoomList);
+        return true;
+      }
+    });
   }
   function closeAdminPanel() { document.getElementById('admin-panel-overlay').style.display = 'none'; }
   function switchAdminPanelTab(tab, btn) {
